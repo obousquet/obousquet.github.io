@@ -1,3 +1,7 @@
-This is where I intend to publish stuff that I want to share.
+# Projects
 
-*Stay tuned*
+## Database Generator
+https://github.com/obousquet/math_database
+
+## Combinatorial Parameters
+https://obousquet.github.io/Combinatorial-Parameters
