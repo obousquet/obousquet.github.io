@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Associative Memory, States, Attention, Optimization: A Unifying Perspective</title>
+
+  <!-- KaTeX -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '$', right: '$', display: false}
+      ]
+    });"></script>
+
+  <style>
+    /* ── Typography & layout ── */
+    :root {
+      --text: #1a1a1a;
+      --muted: #555;
+      --accent: #2563eb;
+      --bg: #fff;
+      --bg-aside: #f8f8f8;
+      --border: #e0e0e0;
+      --max-w: 720px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { font-size: 18px; }
+
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.75;
+      padding: 0 1.5rem;
+    }
+
+    /* ── Page chrome ── */
+    header {
+      max-width: var(--max-w);
+      margin: 2.5rem auto 0;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+      font-family: system-ui, sans-serif;
+      font-size: 0.85rem;
+    }
+    header a { color: var(--accent); text-decoration: none; }
+    header a:hover { text-decoration: underline; }
+    header nav { display: flex; gap: 1.5rem; margin-top: 0.4rem; color: var(--muted); }
+
+    /* ── Article ── */
+    article { max-width: var(--max-w); margin: 0 auto; padding-bottom: 5rem; }
+
+    h1.post-title {
+      font-family: system-ui, sans-serif;
+      font-size: 1.9rem;
+      line-height: 1.25;
+      margin: 2.5rem 0 0.4rem;
+      font-weight: 700;
+    }
+
+    .post-meta {
+      font-family: system-ui, sans-serif;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 2rem;
+    }
+
+    h2 {
+      font-family: system-ui, sans-serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin: 2.8rem 0 0.8rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    h3 {
+      font-family: system-ui, sans-serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin: 2rem 0 0.5rem;
+    }
+
+    p { margin-bottom: 1.1rem; }
+
+    /* ── Table of contents ── */
+    .toc {
+      background: var(--bg-aside);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.2rem 1.5rem;
+      margin: 2rem 0;
+      font-family: system-ui, sans-serif;
+      font-size: 0.88rem;
+    }
+    .toc strong { display: block; margin-bottom: 0.6rem; font-size: 0.9rem; }
+    .toc ol { padding-left: 1.4rem; }
+    .toc li { margin: 0.25rem 0; }
+    .toc a { color: var(--accent); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+
+    /* ── Display math ── */
+    .katex-display {
+      overflow-x: auto;
+      padding: 0.2rem 0;
+      margin: 1.2rem 0;
+    }
+
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      font-family: system-ui, sans-serif;
+    }
+    th {
+      background: var(--bg-aside);
+      font-weight: 600;
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 2px solid var(--border);
+    }
+    td {
+      padding: 0.45rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+
+    /* ── Callout boxes ── */
+    .callout {
+      background: var(--bg-aside);
+      border-left: 3px solid var(--accent);
+      padding: 1rem 1.25rem;
+      margin: 1.5rem 0;
+      border-radius: 0 6px 6px 0;
+      font-size: 0.95rem;
+    }
+    .callout strong { display: block; margin-bottom: 0.3rem; font-family: system-ui, sans-serif; }
+
+    /* ── Footnotes / references ── */
+    .references {
+      font-size: 0.82rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      margin-top: 3rem;
+      padding-top: 1rem;
+      font-family: system-ui, sans-serif;
+    }
+    .references h2 { border-top: none; margin-top: 0; font-size: 1rem; }
+    .references ol { padding-left: 1.4rem; }
+    .references li { margin: 0.3rem 0; }
+
+    /* ── Responsive ── */
+    @media (max-width: 500px) {
+      html { font-size: 16px; }
+      h1.post-title { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="https://obousquet.github.io">Olivier Bousquet</a>
+  <nav>
+    <a href="https://obousquet.github.io">home</a>
+    <a href="https://obousquet.github.io/blog">blog</a>
+  </nav>
+</header>
+
+<article>
+
+<h1 class="post-title">Associative Memory, States, Attention, Optimization:<br>A Unifying Perspective</h1>
+<div class="post-meta">March 2026 &nbsp;·&nbsp; Olivier Bousquet</div>
+
+<div class="toc">
+  <strong>Contents</strong>
+  <ol>
+    <li><a href="#hook">The 60-year coincidence</a></li>
+    <li><a href="#primitive">The state update primitive</a></li>
+    <li><a href="#axes">Three axes of computation</a></li>
+    <li><a href="#duality">Recurrent vs. attention: the SSD duality</a></li>
+    <li><a href="#pe">Positional encoding = forget gate</a></li>
+    <li><a href="#cost">Cost functions as the deeper story</a></li>
+    <li><a href="#mixing">Depth as inner loop</a></li>
+    <li><a href="#transfer">New predictions from the unified view</a></li>
+    <li><a href="#open">Open questions</a></li>
+  </ol>
+</div>
+
+
+<h2 id="hook">The 60-year coincidence</h2>
+
+<p>In 1960, Widrow and Hoff published what they called the <em>delta rule</em> <a href="#ref1">[1]</a>: an adaptive algorithm for learning linear filters. Given a target output $y$ and a current prediction $\hat{y} = W x$, update the weights by:</p>
+
+$$W \leftarrow W + \eta\,(y - Wx)\,x^\top$$
+
+<p>The name "delta rule" refers to the error $\delta = y - Wx$ that drives the update. This is the same as stochastic gradient descent on the squared loss $\frac{1}{2}\|y - Wx\|^2$, rediscovered many times under different names: LMS, Widrow–Hoff, perceptron learning rule.</p>
+
+<p>In 2024, Yang et al. introduced DeltaNet <a href="#ref2">[2]</a>, a new sequence modeling architecture. Its memory update rule, applied token by token, is:</p>
+
+$$S_t \leftarrow S_{t-1} + (v_t - S_{t-1} k_t)\, k_t^\top$$
+
+<p>Where $S_t$ is a key-value memory matrix, $k_t$ is the new key, and $v_t$ is the value to store. They named it the "delta rule" because of its error-corrective structure. Neither the 2024 paper nor any subsequent discussion noted the exact correspondence: this is Widrow–Hoff, applied to tokens instead of training examples, with keys playing the role of inputs and values playing the role of targets.</p>
+
+<div class="callout">
+  <strong>The same algorithm, rediscovered 64 years later.</strong>
+  This is not an isolated coincidence. Once you see the structure, it appears everywhere.
+</div>
+
+<p>This post is about that structure.</p>
+
+
+<h2 id="primitive">The state update primitive</h2>
+
+<p>The common pattern in Widrow–Hoff and DeltaNet can be abstracted to a single recurrence:</p>
+
+$$S_t = A_t \cdot S_{t-1} + B_t \cdot x_t$$
+
+<p>where $S_t$ is a state (vector or matrix), $A_t$ controls how much of the old state to retain (forgetting), $B_t$ is an input operator, and $x_t$ is new information arriving at step $t$.</p>
+
+<p>This recurrence appears across many domains under different names:</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>System</th><th>State $S$</th><th>Transition $A$</th><th>Input $B \cdot x$</th><th>Index</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>RNN</td><td>Hidden state $h_t$</td><td>Recurrent matrix</td><td>$W_x x_t$</td><td>Time $t$</td></tr>
+    <tr><td>SSM (S4, Mamba)</td><td>Latent state $s_t$</td><td>State matrix</td><td>$B u_t$</td><td>Time $t$</td></tr>
+    <tr><td>Linear attention</td><td>KV memory $\sum v_j k_j^\top$</td><td>$I$ (no forget)</td><td>$v_t k_t^\top$</td><td>Token $t$</td></tr>
+    <tr><td>Residual network</td><td>Representation $x^{(\ell)}$</td><td>$I$ (identity)</td><td>$f(x^{(\ell-1)})$</td><td>Layer $\ell$</td></tr>
+    <tr><td>SGD + weight decay</td><td>Weight matrix $W$</td><td>$(1{-}\lambda\eta)I$</td><td>$\eta g_n$</td><td>Step $n$</td></tr>
+    <tr><td>Momentum</td><td>Buffer $m$</td><td>$\beta I$</td><td>$(1-\beta)g_n$</td><td>Step $n$</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>These systems differ in <em>what</em> $A$, $B$, and $x$ are — not in the structure of the operation. The question is: why does this one recurrence appear in such different contexts?</p>
+
+
+<h2 id="axes">Three axes of computation</h2>
+
+<p>The answer becomes clear once we notice that the index $t$ in the table above is not always the same thing. It indexes different <em>axes of computation</em>:</p>
+
+<ul style="margin-bottom: 1rem;">
+  <li><strong>Sequence axis</strong> ($t$ = token): processing a sequence of tokens left-to-right. The state $S_t$ is the KV cache of a linear attention head, accumulating information about past tokens.</li>
+  <li><strong>Depth axis</strong> ($\ell$ = layer): processing a representation through successive layers. The state $x^{(\ell)}$ is the residual stream, refined by each layer.</li>
+  <li><strong>Data axis</strong> ($n$ = example): training on a dataset. The state $W$ is the weight matrix, updated by each gradient step.</li>
+</ul>
+
+<p>Every one of the systems in the table is the same operation applied along one of these three axes. This gives a natural <em>memory hierarchy</em>:</p>
+
+<div class="callout">
+  <strong>Working memory</strong> (sequence axis): the attention KV cache. Holds information about the current context. Ephemeral — reset for each new sequence.
+</div>
+<div class="callout">
+  <strong>Processing memory</strong> (depth axis): the residual stream. Accumulates and integrates representations across layers. Ephemeral — exists only during a forward pass.
+</div>
+<div class="callout">
+  <strong>Long-term memory</strong> (data axis): the weight matrices. Stores associations learned across the entire training dataset. Persistent.
+</div>
+
+<p>Feed-forward network (FFN) layers are themselves associative memories <a href="#ref3">[3]</a>: each weight matrix $W$ stores key-value associations as its rows, and a forward pass through the FFN is a retrieval operation. Training — updating $W$ via gradient descent — is precisely the state update applied along the data axis.</p>
+
+
+<h2 id="duality">Recurrent vs. attention: the SSD duality</h2>
+
+<p>On the sequence axis, the same computation has two equivalent forms. The recurrent form processes tokens one at a time:</p>
+
+$$S_t = A_t \cdot S_{t-1} + v_t k_t^\top, \qquad y_t = S_t\, q_t$$
+
+<p>The attention form processes all tokens in parallel:</p>
+
+$$y_t = \sum_{j \leq t} \underbrace{A_{j\to t}}_{\text{decay}} \cdot (k_j^\top q_t)\, v_j$$
+
+<p>where $A_{j\to t} = \prod_{s=j+1}^{t} A_s$ is the cumulative decay from position $j$ to $t$. These are not approximations of each other — they compute exactly the same thing. Dao and Gu <a href="#ref4">[4]</a> formalized this as the <em>State Space Duality</em> (SSD): both views are different factorizations of the same semiseparable matrix.</p>
+
+<p>This duality extends to all three axes:</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Axis</th><th>Recurrent view</th><th>Attention view</th><th>Interpolation</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Sequence</td><td>RNN / SSM</td><td>Softmax / linear attention</td><td>Chunked attention</td></tr>
+    <tr><td>Depth</td><td>Layer-by-layer forward pass</td><td>Depth-wise attention</td><td>Stage-wise groups</td></tr>
+    <tr><td>Data</td><td>Online SGD</td><td>Batch gradient / pseudoinverse</td><td>Mini-batch SGD</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The "chunk" column — chunked attention, stage groups, mini-batch SGD — interpolates between the two extremes in every case. Mini-batch SGD is exactly chunked attention on the data axis.</p>
+
+
+<h2 id="pe">Positional encoding = forget gate</h2>
+
+<p>One of the most striking consequences of this framework is a complete unification of positional encodings and recurrent forget gates, established by Afzal <a href="#ref5">[5]</a>.</p>
+
+<p>Consider the cumulative product of transition matrices on the sequence axis:</p>
+
+$$P_{j \to t} = \prod_{s=j+1}^{t} A_s$$
+
+<p>This measures how much the state at position $j$ contributes to position $t$. In the log domain, $d(j,t) = -\log \|P_{j \to t}\|$ defines an asymmetric distance metric between positions. This distance is precisely the <em>positional bias</em> in the equivalent attention-view computation.</p>
+
+<p>The monoid (algebraic structure) of the transition matrices $\{A_t\}$ determines the geometry of this distance, and hence both the recurrent decay behavior <em>and</em> the equivalent positional encoding:</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Transition monoid</th><th>Recurrence</th><th>Positional encoding</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>$\{I\}$ (trivial)</td><td>Linear attention</td><td>NoPE</td></tr>
+    <tr><td>$\mathbb{R}_{>0}$ (scalars)</td><td>RetNet</td><td>ALiBi</td></tr>
+    <tr><td>Diagonal matrices</td><td>Mamba2 / GLA</td><td>FoX</td></tr>
+    <tr><td>$\mathrm{SO}(2)$ (rotations)</td><td>Complex-valued gates</td><td>RoPE</td></tr>
+    <tr><td>Householder reflections</td><td>DeltaNet</td><td>PaTH</td></tr>
+    <tr><td>Householder $\times$ scalar</td><td>GatedDeltaNet</td><td>PaTH-FoX</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Every positional encoding scheme corresponds to a specific choice of transition monoid, and vice versa. RoPE arises from rotational transitions; ALiBi arises from scalar decay. They are not independently designed — they are dual descriptions of the same underlying geometry.</p>
+
+<p>This table extends directly to the data axis. The forget gate in SGD with weight decay is $(1 - \lambda\eta_n)I$ — a scalar contraction. Unrolling the recurrence:</p>
+
+$$W_N = \sum_{j=1}^{N} \underbrace{\eta_j \prod_{s=j+1}^{N}(1 - \lambda\eta_s)}_{\text{influence weight of step } j} \, g_j$$
+
+<p>The cumulative retention $\rho(j,N) = \prod_{s=j+1}^{N}(1 - \lambda\eta_s)$ is the data-axis analogue of the positional decay. In the log domain:</p>
+
+$$d(j, N) = -\log \rho(j,N) \approx \lambda \int_j^N \eta(s)\, ds$$
+
+<p>The learning rate schedule $\eta(s)$ determines the metric geometry of training time — it is the positional encoding of the data axis:</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>LR schedule</th><th>Data-axis geometry</th><th>Sequence-axis analogue</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Constant $\eta_0$</td><td>Uniform exponential decay</td><td>ALiBi / RetNet</td></tr>
+    <tr><td>Linear warmup</td><td>Compresses early steps</td><td>Short-range PE handling</td></tr>
+    <tr><td>Cosine annealing</td><td>Linear + sinusoidal correction</td><td>Sinusoidal PE</td></tr>
+    <tr><td>Adam's bias correction</td><td>Schedule-free warmup</td><td>Position-dependent rescaling</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Concretely: with $\lambda = 0.1$ and $\eta_0 = 10^{-3}$, gradients have a half-life of about 7,000 steps — gradients from further back contribute half as much as recent ones. Curriculum learning, where example selection depends on model state, is the data-axis analogue of input-dependent gating (Mamba/FoX).</p>
+
+
+<h2 id="cost">Cost functions as the deeper story</h2>
+
+<p>So far we've described <em>what</em> the state update looks like. But there's a deeper question: <em>why</em> does this update have this particular form?</p>
+
+<p>The answer: in most cases, the state update is a gradient step on a natural cost function. The cost determines everything — the update rule, the kernel structure, and the memory capacity.</p>
+
+<h3>The same cost form, different axes</h3>
+
+<p>Consider the quadratic cost. On the data axis, it's the per-example squared loss:</p>
+
+$$\mathcal{L}(W) = \tfrac{1}{2}\|y - Wx\|^2 \implies W \leftarrow W - \eta \nabla_W \mathcal{L} = W + \eta(y - Wx)x^\top$$
+
+<p>This is Widrow–Hoff. On the sequence axis, the same quadratic cost applied to the memory $S$:</p>
+
+$$\mathcal{L}(S) = \tfrac{1}{2}\|v - Sk\|^2 \implies S \leftarrow S + (v - Sk)k^\top$$
+
+<p>This is DeltaNet's delta rule. The two algorithms are gradient descent on the same cost function, applied to different axes.</p>
+
+<p>Linear attention corresponds to an even simpler cost — the alignment objective $-\text{tr}(V^\top S K)$ — whose gradient is $-VK^\top$, giving a Hebbian (additive) update that ignores the current state. DeltaNet is strictly more principled: it uses the error $v - Sk$, accounting for what the current state already predicts.</p>
+
+<h3>From quadratic to exponential: the capacity hierarchy</h3>
+
+<p>Softmax attention corresponds to the modern Hopfield energy <a href="#ref6">[6]</a>:</p>
+
+$$E(q) = -\log \sum_i \exp(k_i^\top q) + \tfrac{1}{2}\|q\|^2$$
+
+<p>A gradient step on this energy gives softmax-weighted retrieval — i.e., softmax attention. The cost form (log-sum-exp rather than quadratic) is what gives softmax attention its exponential memory capacity: $e^{O(d)}$ patterns versus $O(d)$ for linear attention.</p>
+
+<p>The same cost hierarchy appears on the data axis:</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Cost form</th><th>Sequence axis</th><th>Data axis</th><th>Capacity</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Linear (alignment)</td><td>Linear attention</td><td>Hebbian</td><td>$O(1)$/step</td></tr>
+    <tr><td>Quadratic (MSE)</td><td>DeltaNet</td><td>Widrow–Hoff / SGD</td><td>$O(d)$</td></tr>
+    <tr><td>Log-sum-exp</td><td>Softmax attention</td><td>Cross-entropy</td><td>$e^{O(d)}$</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>This is striking: <strong>cross-entropy training is the data-axis analogue of softmax attention</strong>. Both arise from the log-sum-exp cost, and both should achieve "exponential capacity" — the ability to separate exponentially many patterns. This suggests that natural gradient descent on cross-entropy is, in a precise sense, the optimizer that achieves the data-axis analogue of softmax attention's exponential retrieval performance.</p>
+
+<h3>The chain from cost to capacity</h3>
+
+<p>The cost function determines a complete cascade:</p>
+
+$$\mathcal{L} \;\xrightarrow{\;\nabla\;}\; \text{update rule} \;\xrightarrow{\;\nabla^2\;}\; \text{local metric} \;\xrightarrow{\;\text{Mercer}\;}\; \text{kernel} \;\xrightarrow{\;\text{capacity}\;}\; \text{SNR}$$
+
+<p>The gradient gives the update rule. The Hessian gives the local metric (preconditioning by the Hessian inverse = natural gradient). The metric induces a kernel via Mercer's theorem. The kernel determines the memory capacity and the signal-to-noise ratio of retrieval. Choosing the cost determines all of these simultaneously.</p>
+
+
+<h2 id="mixing">Depth as inner loop</h2>
+
+<p>The three axes are not symmetric, and this asymmetry is important to understand.</p>
+
+<p>The sequence and data axes are <em>outer loops</em> — they accumulate persistent state. The depth axis is always an <em>inner loop</em>, nested inside one of the outer axes:</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Mode</th><th>Inner axis</th><th>Outer axis</th><th>Persistent state</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Inference</td><td>Depth ($\ell$)</td><td>Sequence ($t$)</td><td>KV cache $S_t^{(\ell)}$</td></tr>
+    <tr><td>Training</td><td>Depth ($\ell$)</td><td>Data ($n$)</td><td>Weights $W^{(\ell)}$</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>At inference, each token triggers a complete traversal of all layers. The residual stream $x^{(\ell)}$ exists only during this traversal and is then discarded. The persistent state (KV cache) lives on the sequence axis. At training time, each example similarly triggers a full forward-and-backward depth traversal, and the persistent state (weights) lives on the data axis.</p>
+
+<p>This means depth "mixes" with each outer axis. The KV cache update at layer $\ell$ involves quantities produced by the depth computation:</p>
+
+$$S_t^{(\ell)} = S_{t-1}^{(\ell)} + \underbrace{v_t^{(\ell)}}_{\text{computed by layers } 1\ldots\ell}\;(k_t^{(\ell)})^\top$$
+
+<p>And the weight gradient is a depth-data product:</p>
+
+$$\Delta W^{(\ell)} = \sum_n \underbrace{\delta_n^{(\ell)}}_{\text{backprop through depth}}\;(x_n^{(\ell-1)})^\top$$
+
+<p>This explains several things that might otherwise seem puzzling:</p>
+
+<ul style="margin-bottom: 1rem;">
+  <li><strong>Why the residual stream is ephemeral</strong>: it belongs to an inner loop, not an outer one. Only the outer axes carry persistent memory.</li>
+  <li><strong>Why the depth-axis duality is different</strong>: on the outer axes, the recurrent-vs-attention duality is about how to compute the persistent state update. On the depth axis, the analogous choice (layer-by-layer vs. depth-wise attention) is about how to organize the inner computation.</li>
+  <li><strong>Why backpropagation is special</strong>: it is not a data-axis operation alone — it is a depth×data operation that unrolls the inner loop backward to compute the outer-axis gradient.</li>
+</ul>
+
+<p>The depth axis is the shared computational substrate through which both outer axes operate. A transformer block is an instance of this: the block computes depth-axis transformations (attention + FFN) that produce the quantities (keys, values, gradients) used by both the sequence and data axes.</p>
+
+
+<h2 id="transfer">New predictions from the unified view</h2>
+
+<p>Unification is most valuable when it yields predictions that weren't obvious from any single field. Here are several.</p>
+
+<h3>Learning rate schedules as positional encodings</h3>
+
+<p>As shown above, the learning rate schedule $\eta(s)$ is the positional encoding of the data axis. This gives a new design principle: the rich literature on positional encoding for transformers should directly inspire LR schedule design.</p>
+
+<p>For example: RoPE uses rotational structure to give tokens a periodic positional representation that extrapolates well beyond training length. What would a "RoPE-inspired" LR schedule look like? It would use a schedule with periodic structure — and it might have good extrapolation properties for fine-tuning on tasks with different training lengths.</p>
+
+<h3>DeltaNet = Widrow–Hoff: a completed circle</h3>
+
+<p>The delta rule hierarchy is the same on both axes:</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Method</th><th>Sequence axis</th><th>Data axis</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Additive</td><td>Linear attention</td><td>Hebbian learning</td></tr>
+    <tr><td>Error-corrective</td><td>DeltaNet</td><td>Widrow–Hoff / SGD</td></tr>
+    <tr><td>Normalized</td><td>Normalized DeltaNet</td><td>NLMS</td></tr>
+    <tr><td>Spectral</td><td>—</td><td>Muon optimizer</td></tr>
+    <tr><td>Full curvature</td><td>—</td><td>Natural gradient / Newton</td></tr>
+    <tr><td>Batch optimal</td><td>—</td><td>Pseudoinverse $VK^+$</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The table is asymmetric: the data axis has richer methods (Muon, natural gradient) that have no current sequence-axis counterparts. This points to unexplored architectures: what would a "Muon-style" linear attention look like? It would apply spectral normalization to the memory update — which is precisely what Mak and Flanigan's Residual Matrix Transformer <a href="#ref7">[7]</a> begins to approach.</p>
+
+<h3>Critical batch size = memory capacity</h3>
+
+<p>The retrieval SNR in a linear associative memory with $N$ stored patterns of dimension $d$ is:</p>
+
+$$\mathrm{SNR}_{\text{ret}}^{\text{linear}} = \frac{d}{N}$$
+
+<p>The memory saturates (SNR = 1) at $N_{\max} \sim d$ patterns. On the data axis, the gradient SNR for a mini-batch of size $B$ is:</p>
+
+$$\mathrm{SNR}_{\text{grad}}(B) = \frac{B\,\|G\|^2}{\mathrm{tr}(\Sigma)}$$
+
+<p>where $G = \mathbb{E}[g_n]$ is the true gradient and $\Sigma = \mathrm{Cov}(g_n)$ is the per-example gradient covariance. The "capacity threshold" — where SNR = 1 — is the <em>critical batch size</em> of McCandlish et al. <a href="#ref8">[8]</a>:</p>
+
+$$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
+
+<p>The correspondence is exact. The head dimension $d$ plays the role of the batch size $B$; the number of stored patterns plays the role of conflicting gradient directions (the effective rank of $\Sigma$). The optimal batch size $B^* \sim B_{\text{crit}}$ corresponds to the optimal chunk size $C^* \sim d$ in chunked attention.</p>
+
+<p>This gives a new interpretation of $B_{\text{crit}}$: it is the retrieval capacity of the data-axis associative memory. And it suggests that preconditioning by natural gradient (the data-axis analogue of softmax) could reduce $B_{\text{crit}}$ exponentially, just as softmax extends linear attention's capacity from $O(d)$ to $e^{O(d)}$.</p>
+
+
+<h2 id="open">Open questions</h2>
+
+<p>The unified view raises several questions that we don't yet know how to answer:</p>
+
+<ul>
+  <li><strong>The rotation monoid on the data axis.</strong> The sequence-axis table has RoPE (rotation group → periodic structure). What optimizer corresponds to a rotational forget gate? Such an optimizer would have "periodic" behavior in some sense — perhaps related to cyclical learning rates?</li>
+
+  <li><strong>Exponential capacity on the data axis.</strong> Softmax attention achieves $e^{O(d)}$ capacity. Natural gradient on cross-entropy should be the data-axis analogue. Can we compute $B_{\text{crit}}$ for cross-entropy vs. MSE on a simple model and verify the exponential gap?</li>
+
+  <li><strong>Depth-axis positional encoding.</strong> Standard residual connections use $A = I$ (no decay across layers). Hyper-connections <a href="#ref9">[9]</a> use learned mixing matrices. What is the "depth-axis positional encoding" — the geometry induced by the transition operator across layers?</li>
+
+  <li><strong>The normalization–manifold conjecture.</strong> Softmax projects onto the probability simplex (Bregman projection), RMSNorm onto the sphere (Euclidean projection), polar decomposition (Muon) onto the Stiefel manifold (Frobenius projection). We conjecture that every normalization in deep learning is a metric projection onto a compact manifold, with the manifold determined by the algebraic structure of the memory. Can this be made into a theorem?</li>
+
+  <li><strong>An RLS-Net.</strong> DeltaNet approximates the pseudoinverse by making a single pass. The Recursive Least Squares (RLS) algorithm achieves the pseudoinverse exactly by also maintaining the inverse key-correlation matrix $P_t = (\sum_{j \leq t} k_j k_j^\top)^{-1}$ as recurrent state. An "RLS-Net" would achieve optimal single-pass learning at the cost of $O(d_k^2)$ additional state. Can this be implemented efficiently and does it outperform DeltaNet?</li>
+</ul>
+
+<p>The unified view doesn't just explain existing systems — it maps out a design space. Many combinations of (axis, monoid, cost, normalization) have not been explored. The framework suggests that ideas proven effective on one axis — like the exponential capacity of softmax or the spectral normalization of Muon — should have natural counterparts on the other axes waiting to be discovered.</p>
+
+<div class="references">
+  <h2>References</h2>
+  <ol>
+    <li id="ref1">Widrow, B. and Hoff, M. E. (1960). Adaptive switching circuits. <em>IRE WESCON Convention Record</em>.</li>
+    <li id="ref2">Yang, S., Wang, B., Zhang, Y., Shen, Y., and Kim, Y. (2024). Parallelizing linear transformers with the delta rule over sequence length. <em>NeurIPS</em>.</li>
+    <li id="ref3">Zhong, S., Xu, M., Ao, T., and Shi, G. (2025). Understanding transformer from the perspective of associative memory. <em>arXiv:2505.19488</em>.</li>
+    <li id="ref4">Dao, T. and Gu, A. (2024). Transformers are SSMs: Generalized models and efficient algorithms through structured state space duality. <em>ICML</em>.</li>
+    <li id="ref5">Afzal, A. (2026). On the legacy of linear transformers in positional embeddings. <a href="https://arshiaafzal.github.io/blog/2026/pe/">arshiaafzal.github.io/blog/2026/pe/</a></li>
+    <li id="ref6">Ramsauer, H. et al. (2021). Hopfield networks is all you need. <em>ICLR</em>.</li>
+    <li id="ref7">Mak, B. and Flanigan, J. (2025). Residual matrix transformers: Scaling the size of the residual stream. <em>ICML</em>. arXiv:2506.22696.</li>
+    <li id="ref8">McCandlish, S., Kaplan, J., Amodei, D., and OpenAI Dota Team (2018). An empirical model of large-batch training. <em>arXiv:1812.06162</em>.</li>
+    <li id="ref9">Zhu, D. et al. (2024). Hyper-connections. <em>arXiv:2409.19606</em>.</li>
+  </ol>
+</div>
+
+</article>
+</body>
+</html>
