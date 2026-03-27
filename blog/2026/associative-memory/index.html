@@ -208,14 +208,14 @@ $$W \leftarrow W + \eta\,(y - Wx)\,x^\top$$
 
 $$S_t \leftarrow S_{t-1} + (v_t - S_{t-1} k_t)\, k_t^\top$$
 
-<p>DeltaNet knowingly borrows the delta rule &mdash; the paper cites Widrow and Hoff. But what has not been fully appreciated is how <em>exact</em> the correspondence is. This is literally the same algorithm with a change of variable names: keys $k_t$ play the role of inputs $x$, values $v_t$ play the role of targets $y$, and the memory $S_t$ plays the role of the weight matrix $W$. The algebra is identical; only the <em>axis of computation</em> changes &mdash; from training examples to tokens.</p>
+<p>DeltaNet knowingly borrows the delta rule &mdash; the paper cites Widrow and Hoff. But what has not been fully appreciated is how <em>exact</em> the correspondence is. This is literally the same algorithm with a change of variable names: keys $k_t$ play the role of inputs $x$, values $v_t$ play the role of targets $y$, and the memory $S_t$ plays the role of the weight matrix $W$ (with normalized keys and learning rate $\eta = 1$). The algebra is identical; only the <em>axis of computation</em> changes &mdash; from training examples to tokens.</p>
 
 <div class="callout">
   <strong>Same algorithm, different axis.</strong>
   This turns out to be the tip of an iceberg. The same pattern &mdash; one operation appearing independently along different axes &mdash; repeats across a surprising range of techniques.
 </div>
 
-<p>This post is about that structure. Large language models perform iterative state updates along three axes of computation &mdash; sequence, depth, and data &mdash; that were studied largely in isolation as separate topics: sequence modeling, deep network design, and optimization. Strikingly similar techniques were developed independently along each axis, without the shared structure being recognized. We argue that a single operation, viewed as a state update, an attention mechanism, or a gradient step on a cost function, unifies them all.</p>
+<p>This post is about that structure. Large language models perform iterative state updates along three axes of computation &mdash; sequence, depth, and data &mdash; that were studied largely in isolation as separate topics: sequence modeling, deep network design, and optimization. Strikingly similar techniques were developed independently along each axis, without the full extent of the shared structure being recognized. We argue that a single operation, viewed as a state update, an attention mechanism, or a gradient step on a cost function, unifies them all.</p>
 
 
 <h2 id="axes">Three axes of computation</h2>
@@ -224,7 +224,7 @@ $$S_t \leftarrow S_{t-1} + (v_t - S_{t-1} k_t)\, k_t^\top$$
 
 $$s_t = a_t \cdot s_{t-1} + b_t$$
 
-<p>where $a_t$ is a retention factor (scalar or diagonal) and $b_t$ is the new input. This covers RNNs, SSMs, residual networks, and momentum buffers.</p>
+<p>where $a_t$ is a retention factor (scalar, diagonal, or matrix) and $b_t$ is the new input. This covers RNNs, SSMs, residual networks, and momentum buffers.</p>
 
 <p>When the state stores <em>associations</em> between keys and values, it becomes a <strong>matrix</strong> $S \in \mathbb{R}^{d_v \times d_k}$, and each write is a rank-one outer product:</p>
 
@@ -232,7 +232,7 @@ $$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
 
 <p>where $A_t$ controls element-wise forgetting, $k_t$ is a key, and $v_t$ is a value. Retrieval for a query $q$ is simply $y = S_t\, q$. This covers linear attention (sequence axis) and weight matrices updated by gradient descent (data axis). A vector state is the special case $d_k = 1$: there is no key, just a value being accumulated.</p>
 
-<p>Both forms appear across many domains:</p>
+<p>Both forms appear across many domains. The key insight is that the index $t$ is not always the same thing &mdash; it runs along three different <em>axes of computation</em>:</p>
 
 <div class="table-wrap">
 <table>
@@ -250,8 +250,6 @@ $$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
 </table>
 </div>
 
-<p>The key insight is that the index $t$ is not always the same thing. It runs along three different <em>axes of computation</em>:</p>
-
 <ul style="margin-bottom: 1rem;">
   <li><strong>Sequence axis</strong> ($t$ = token): the KV cache accumulates information about past tokens. This is <em>working memory</em>.</li>
   <li><strong>Depth axis</strong> ($\ell$ = layer): the residual stream is refined by each layer. This is <em>processing memory</em>.</li>
@@ -260,16 +258,14 @@ $$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
 
 <p>These three axes were not always distinct. In early RNNs, the sequence and data axes were conflated: each element in the input sequence was itself a training example (online learning from a stream of patterns). The two axes only became fully decoupled with batched training over sequences of tokens, where a single training sample contains an entire sequence. This gradual separation helps explain why similar techniques were developed independently along each axis.</p>
 
-<p>Feed-forward network (FFN) layers are themselves associative memories <a href="#ref3">[3]</a>: the weight matrices store key-value associations learned during training, and a forward pass through the FFN is a retrieval operation. Training &mdash; updating $W$ via gradient descent &mdash; is precisely the state update applied along the data axis.</p>
-
 
 <h2 id="memory">The associative memory lens</h2>
 
-<p>The state update is really a <em>memory operation</em>: information is written into a state and later retrieved using a query. This perspective reveals a fundamental tradeoff that governs all three axes.</p>
+<p>The state update is really a <em>memory operation</em>: information is written into a state and later retrieved using a query. This perspective reveals a fundamental tradeoff that governs all three axes. Feed-forward network (FFN) layers are themselves associative memories <a href="#ref3">[3]</a>: the weight matrices store key-value associations learned during training, and a forward pass through the FFN is a retrieval operation. Training &mdash; updating $W$ via gradient descent &mdash; is precisely the state update applied along the data axis.</p>
 
 <h3>Two extremes: attention vs. state update</h3>
 
-<p><strong>Attention (store everything).</strong> Keep all key-value pairs explicitly: the memory is the list $\{(k_1, v_1), \ldots, (k_T, v_T)\}$. Retrieval computes similarities with all stored items: $y = \sum_j w(q, k_j)\, v_j$. This is lossless &mdash; no information is discarded &mdash; but costs $O(Td)$ memory and computation per query, growing linearly with the number of stored items.</p>
+<p><strong>Attention (store everything).</strong> Keep all key-value pairs explicitly: the memory is the list $(k_1, v_1), \ldots, (k_T, v_T)$. Retrieval computes similarities with all stored items: $y = \sum_j w(q, k_j)\, v_j$. This is lossless &mdash; no information is discarded &mdash; but costs $O(Td)$ memory and computation per query, growing linearly with the number of stored items.</p>
 
 <p><strong>State update (compress).</strong> Maintain a fixed-size matrix $S \in \mathbb{R}^{d_v \times d_k}$ that accumulates information via rank-one writes: $S_t = A_t \circ S_{t-1} + v_t k_t^\top$. Retrieval is $y = S_t\, q$, costing $O(d^2)$ regardless of how many items have been stored. But compression is lossy: patterns interfere with each other.</p>
 
@@ -277,13 +273,7 @@ $$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
 
 <h3>The delta rule: error-corrective writing</h3>
 
-<p>Between the two extremes lies a spectrum of write strategies. The simplest write is <em>additive</em> (Hebbian): $S_t = S_{t-1} + v_t k_t^\top$, which ignores what is already stored. A better strategy corrects for what the memory already knows:</p>
-
-$$S_t = S_{t-1} + (v_t - S_{t-1} k_t)\, k_t^\top$$
-
-<p>The term $(v_t - S_{t-1} k_t)$ is the prediction error. The update writes only the error, avoiding redundant storage. This is DeltaNet on the sequence axis, and Widrow&ndash;Hoff on the data axis &mdash; the same algorithm.</p>
-
-<p>The delta rule sits in a hierarchy of increasingly sophisticated write strategies:</p>
+<p>Between the two extremes lies a spectrum of write strategies. The simplest write is <em>additive</em> (Hebbian): $S_t = S_{t-1} + v_t k_t^\top$, which ignores what is already stored. The delta rule introduced above improves on this by writing only the prediction error $(v_t - S_{t-1} k_t)$, avoiding redundant storage. More generally, we can arrange write strategies in a hierarchy of increasing sophistication:</p>
 
 <div class="table-wrap">
 <table>
@@ -329,9 +319,11 @@ $$\mathrm{SNR}_{\text{softmax}} \sim \frac{e^{O(d)}}{N} \quad\Longrightarrow\qua
 </table>
 </div>
 
-<p>An important subtlety: keeping all $N$ key-value pairs does not by itself guarantee exact retrieval. The capacity is determined by the <em>kernel</em>, not the storage. With a linear kernel, full attention computes $\sum_j (k_j^\top q)\, v_j = Sq$ where $S = \sum_j v_j k_j^\top$ &mdash; the same output as the compressed form. Storing all pairs is wasteful because the linear readout cannot exploit them. Softmax is different: its exponential kernel gives capacity $e^{O(d)} \gg N$ for typical sequence lengths, so it <em>can</em> exploit the stored pairs. But it cannot be compressed into finite state without approximation, so it inherently requires $O(Nd)$ storage. Chunked attention interpolates: within each chunk, use full attention; between chunks, compress into $O(d^2)$ state.</p>
+<p>An important subtlety: keeping all $N$ key-value pairs does not by itself guarantee exact retrieval. The capacity is determined by the <em>kernel</em>, not the storage strategy. With a linear kernel, full attention computes $\sum_j (k_j^\top q)\, v_j = Sq$ where $S = \sum_j v_j k_j^\top$ &mdash; the same output as the compressed form. Storing all pairs is wasteful because the linear readout cannot exploit them individually.</p>
 
-<p>This tradeoff is universal: it governs the sequence axis (linear attention vs. softmax attention), the data axis (SGD vs. second-order methods), and everything in between.</p>
+<p>Softmax is different: its exponential kernel gives capacity $e^{O(d)} \gg N$ for typical sequence lengths, so it <em>can</em> exploit the stored pairs. But it cannot be compressed into finite state without approximation, so it inherently requires $O(Nd)$ storage. Chunked attention interpolates: within each chunk, use full attention; between chunks, compress into $O(d^2)$ state.</p>
+
+<p>This tradeoff is universal: it governs the sequence axis (linear vs. exponential kernel) and the data axis (MSE vs. cross-entropy loss). As we will see, the <em>cost function</em> determines the kernel, and hence the capacity.</p>
 
 <h3>Multi-head structure: block-diagonal memory</h3>
 
@@ -370,7 +362,7 @@ $$\mathrm{SNR}_{\text{softmax}} \sim \frac{e^{O(d)}}{N} \quad\Longrightarrow\qua
   </thead>
   <tbody>
     <tr><td>Sequence</td><td>RNN / SSM</td><td>Softmax / linear attention</td><td>Chunked attention</td></tr>
-    <tr><td>Depth</td><td>Layer-by-layer forward pass</td><td>Depth-wise attention</td><td>Stage-wise groups</td></tr>
+    <tr><td>Depth</td><td>Layer-by-layer forward pass</td><td>Residual stream duality <a href="#ref10">[10]</a></td><td>Stage-wise groups</td></tr>
     <tr><td>Data</td><td>Online SGD</td><td>Batch gradient / pseudoinverse</td><td>Mini-batch SGD</td></tr>
   </tbody>
 </table>
@@ -406,7 +398,7 @@ $$\mathrm{SNR}_{\text{softmax}} \sim \frac{e^{O(d)}}{N} \quad\Longrightarrow\qua
 
 $$\mathcal{L} \;\xrightarrow{\;\nabla\;}\; \text{update rule} \;\xrightarrow{\;\nabla^2\;}\; \text{local metric} \;\xrightarrow{\;\text{Mercer}\;}\; \text{kernel} \;\xrightarrow{\;\text{capacity}\;}\; \text{SNR}$$
 
-<p>The gradient gives the update rule. The Hessian gives the local metric (preconditioning by the Hessian inverse = natural gradient). The metric induces a kernel. The kernel determines the memory capacity and retrieval SNR. Choosing the cost fixes all of these simultaneously.</p>
+<p>The gradient gives the update rule. The Hessian gives the local metric (preconditioning by the Hessian inverse = natural gradient). The metric induces a kernel: for instance, the Fisher information matrix of cross-entropy defines a kernel where nearby points (in probability space) are those the model finds hard to distinguish, concentrating updates on difficult examples. The kernel determines the memory capacity and retrieval SNR. Choosing the cost fixes all of these simultaneously.</p>
 
 
 <h2 id="pe">Positional encoding = forget gate</h2>
@@ -430,7 +422,7 @@ $$\mathcal{L} \;\xrightarrow{\;\nabla\;}\; \text{update rule} \;\xrightarrow{\;\
 </table>
 </div>
 
-<p>This extends to the data axis. SGD with weight decay has a forget gate $(1 - \lambda\eta_n)I$. The learning rate schedule $\eta(s)$ determines the metric geometry of training time &mdash; it is the positional encoding of the data axis:</p>
+<p>This extends to the data axis. SGD with weight decay has a forget gate $(1 - \lambda\eta_n)I$. The learning rate schedule $\eta(s)$ controls how much influence past gradients retain at the current step &mdash; exactly the role of positional encoding on the sequence axis. In this sense, the learning rate schedule <em>is</em> the positional encoding of the data axis:</p>
 
 <div class="table-wrap">
 <table>
@@ -447,8 +439,6 @@ $$\mathcal{L} \;\xrightarrow{\;\nabla\;}\; \text{update rule} \;\xrightarrow{\;\
 </div>
 
 <p>Concretely: with $\lambda = 0.1$ and $\eta_0 = 10^{-3}$, gradients have a half-life of about 7,000 steps. Adam's bias correction $\hat{m}_n = m_n / (1 - \beta_1^n)$ is an explicitly position-dependent rescaling &mdash; a schedule-free warmup built into the optimizer.</p>
-
-<p><strong>A note on normalization.</strong> The same cross-axis pattern extends to normalization: softmax projects attention weights onto the probability simplex, RMSNorm projects the residual stream onto the sphere, and Muon's polar decomposition projects weights onto the Stiefel manifold. Each is a metric projection onto a compact manifold that keeps the memory well-conditioned. Normalization breaks the semiseparable structure underlying the SSD duality, which is why it is applied <em>between</em> recurrent steps (between layers, at read time) rather than inside the recurrence.</p>
 
 
 <h2 id="depth">Depth as inner loop</h2>
@@ -479,7 +469,7 @@ $$\Delta W^{(\ell)} = \sum_n \underbrace{\delta_n^{(\ell)}}_{\text{backprop thro
 
 <p>The depth axis is the shared computational substrate through which both outer axes operate. This explains why the residual stream is ephemeral (it belongs to an inner loop), why there's no persistent depth-axis memory (only the outer axes carry persistent state), and why backpropagation is fundamentally a depth&times;data operation rather than a pure data-axis operation.</p>
 
-<p>Recent work has enriched the depth axis with structure that connects to our framework. Hyper-connections <a href="#ref9">[9]</a> generalize residual connections with learnable mixing matrices &mdash; exactly the state update with a non-trivial transition operator. Mak and Flanigan <a href="#ref7">[7]</a> replaced the residual stream with an outer-product memory matrix, making the depth axis structurally identical to the sequence axis: both maintain a matrix-valued state updated via rank-one writes.</p>
+<p>Recent work has enriched the depth axis with richer state-update structure. As discussed in the multi-head section above, hyper-connections <a href="#ref9">[9]</a> generalize residual connections with learnable mixing matrices (a non-trivial transition operator), and residual matrix transformers <a href="#ref7">[7]</a> replace the residual stream with a matrix-valued state, making the depth axis structurally identical to the sequence axis.</p>
 
 
 <h2 id="transfer">Cross-axis transfer</h2>
@@ -501,6 +491,10 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
 <h3>Cross-entropy as exponential-capacity optimizer</h3>
 
 <p>The cost hierarchy predicts that natural gradient on cross-entropy should achieve exponentially better gradient SNR compared to SGD on MSE, just as softmax achieves exponentially better retrieval SNR compared to linear attention. The mechanism: cross-entropy's Fisher information concentrates on hard examples (where the model is uncertain), ignoring easy ones. This "attention to difficulty" is the data-axis analogue of softmax's exponential pattern separation.</p>
+
+<h3>Normalization as manifold projection</h3>
+
+<p>The same cross-axis pattern extends to normalization: softmax projects attention weights onto the probability simplex, RMSNorm projects the residual stream onto the sphere, and Muon's polar decomposition projects weights onto the Stiefel manifold. Each is a metric projection onto a compact manifold that keeps the memory well-conditioned. Normalization breaks the semiseparable structure underlying the SSD duality, which is why it is applied <em>between</em> recurrent steps (between layers, at read time) rather than inside the recurrence.</p>
 
 <h3>New design principles</h3>
 
@@ -555,7 +549,7 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
     <li id="ref7">Mak, B. and Flanigan, J. (2025). Residual matrix transformers. <em>ICML</em>. arXiv:2506.22696.</li>
     <li id="ref8">McCandlish, S., Kaplan, J., Amodei, D., and OpenAI Dota Team (2018). An empirical model of large-batch training. <em>arXiv:1812.06162</em>.</li>
     <li id="ref9">Zhu, D. et al. (2024). Hyper-connections. <em>arXiv:2409.19606</em>.</li>
-    <li id="ref10">Zhang, Y. (2026). Residual stream analysis via depth-wise attention. <em>arXiv</em>.</li>
+    <li id="ref10">Zhang, Y. (2026). Residual stream duality in modern transformer architectures. <em>arXiv:2603.16039</em>.</li>
   </ol>
 </div>
 
