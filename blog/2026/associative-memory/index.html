@@ -180,6 +180,11 @@
 <h1 class="post-title">Associative Memory, States, Attention, Optimization:<br>A Unifying Perspective</h1>
 <div class="post-meta">March 2026 &nbsp;&middot;&nbsp; Olivier Bousquet</div>
 
+<div class="callout" style="border-left-color: #e67e22; background: #fef9f3;">
+  <strong>Work in progress.</strong>
+  This post is an early draft. Some claims may be imprecise or incomplete, and the structure is still evolving. Corrections and feedback are welcome.
+</div>
+
 <div class="toc">
   <strong>Contents</strong>
   <ol>
@@ -278,15 +283,15 @@ $$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
 <div class="table-wrap">
 <table>
   <thead>
-    <tr><th>Method</th><th>Sequence axis</th><th>Data axis</th></tr>
+    <tr><th>Method</th><th>Sequence axis</th><th>Depth axis</th><th>Data axis</th></tr>
   </thead>
   <tbody>
-    <tr><td>Additive</td><td>Linear attention</td><td>Hebbian learning</td></tr>
-    <tr><td>Error-corrective</td><td>DeltaNet</td><td>Widrow&ndash;Hoff / SGD</td></tr>
-    <tr><td>Normalized</td><td>Normalized DeltaNet</td><td>NLMS</td></tr>
-    <tr><td>Spectral</td><td>&mdash;</td><td>Muon optimizer</td></tr>
-    <tr><td>Full curvature</td><td>&mdash;</td><td>Natural gradient / Newton</td></tr>
-    <tr><td>Batch optimal</td><td>&mdash;</td><td>Pseudoinverse $VK^+$</td></tr>
+    <tr><td>Additive</td><td>Linear attention</td><td>Residual connection</td><td>Hebbian learning</td></tr>
+    <tr><td>Error-corrective</td><td>DeltaNet</td><td>Hyper-connections</td><td>Widrow&ndash;Hoff / SGD</td></tr>
+    <tr><td>Normalized</td><td>Normalized DeltaNet</td><td>Pre-Norm (RMSNorm)</td><td>NLMS</td></tr>
+    <tr><td>Spectral</td><td>&mdash;</td><td>&mdash;</td><td>Muon optimizer</td></tr>
+    <tr><td>Full curvature</td><td>&mdash;</td><td>&mdash;</td><td>Natural gradient / Newton</td></tr>
+    <tr><td>Batch optimal</td><td>&mdash;</td><td>&mdash;</td><td>Pseudoinverse $VK^+$</td></tr>
   </tbody>
 </table>
 </div>
