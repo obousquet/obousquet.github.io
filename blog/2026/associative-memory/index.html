@@ -183,7 +183,7 @@
 <div class="toc">
   <strong>Contents</strong>
   <ol>
-    <li><a href="#hook">The 60-year coincidence</a></li>
+    <li><a href="#hook">The same algorithm, three axes</a></li>
     <li><a href="#axes">Three axes of computation</a></li>
     <li><a href="#memory">The associative memory lens</a></li>
     <li><a href="#views">Three equivalent views</a></li>
@@ -196,23 +196,23 @@
 </div>
 
 
-<h2 id="hook">The 60-year coincidence</h2>
+<h2 id="hook">The same algorithm, three axes</h2>
 
-<p>In 1960, Widrow and Hoff published what they called the <em>delta rule</em> <a href="#ref1">[1]</a>: an adaptive algorithm for learning linear filters. Given a target output $y$ and input $x$, update the weight matrix by:</p>
+<p>In 1960, Widrow and Hoff introduced the <em>delta rule</em> <a href="#ref1">[1]</a>: given a target $y$ and input $x$, update a weight matrix by the error-corrective rule</p>
 
 $$W \leftarrow W + \eta\,(y - Wx)\,x^\top$$
 
-<p>The name "delta rule" refers to the error $\delta = y - Wx$ that drives the update. This is stochastic gradient descent on the squared loss $\frac{1}{2}\|y - Wx\|^2$, known under several names: LMS algorithm, Widrow&ndash;Hoff rule, adaline update.</p>
+<p>This is gradient descent on the squared loss $\frac{1}{2}\|y - Wx\|^2$, applied once per training example. Over six decades it became a cornerstone of adaptive filtering and online learning, known as the LMS or Widrow&ndash;Hoff rule.</p>
 
-<p>In 2024, Yang et al. introduced DeltaNet <a href="#ref2">[2]</a>, a new sequence modeling architecture. Its memory update rule, applied token by token, is:</p>
+<p>In 2024, Yang et al. introduced DeltaNet <a href="#ref2">[2]</a>, a sequence model that updates a memory matrix once per token:</p>
 
 $$S_t \leftarrow S_{t-1} + (v_t - S_{t-1} k_t)\, k_t^\top$$
 
-<p>where $S_t$ is a key-value memory matrix, $k_t$ is the new key, and $v_t$ is the value to store. They named it the "delta rule" because of its error-corrective structure. The correspondence to Widrow&ndash;Hoff is exact &mdash; it is the same algorithm applied to tokens instead of training examples, with keys playing the role of inputs and values playing the role of targets &mdash; yet this connection went largely unnoticed.</p>
+<p>DeltaNet knowingly borrows the delta rule &mdash; the paper cites Widrow and Hoff. But what has not been fully appreciated is how <em>exact</em> the correspondence is. This is literally the same algorithm with a change of variable names: keys $k_t$ play the role of inputs $x$, values $v_t$ play the role of targets $y$, and the memory $S_t$ plays the role of the weight matrix $W$. The algebra is identical; only the <em>axis of computation</em> changes &mdash; from training examples to tokens.</p>
 
 <div class="callout">
-  <strong>The same algorithm, rediscovered 64 years later.</strong>
-  This is not an isolated coincidence. Once you see the structure, it appears everywhere.
+  <strong>Same algorithm, different axis.</strong>
+  This turns out to be the tip of an iceberg. The same pattern &mdash; one operation appearing independently along different axes &mdash; repeats across a surprising range of techniques.
 </div>
 
 <p>This post is about that structure. Large language models perform iterative state updates along three axes of computation &mdash; sequence, depth, and data &mdash; that were studied largely in isolation as separate topics: sequence modeling, deep network design, and optimization. Strikingly similar techniques were developed independently along each axis, without the shared structure being recognized. We argue that a single operation, viewed as a state update, an attention mechanism, or a gradient step on a cost function, unifies them all.</p>
@@ -330,7 +330,7 @@ $$\mathrm{SNR}_{\text{softmax}} \sim \frac{e^{O(d)}}{N} \quad\Longrightarrow\qua
 
 <h3>State Space Duality</h3>
 
-<p>Dao and Gu <a href="#ref4">[4]</a> showed that state space models and attention are dual decompositions of a structured semiseparable matrix. In the recurrent view, tokens are processed sequentially; in the attention view, the same result is computed in parallel via pairwise interactions. These are not approximations &mdash; they are mathematically identical.</p>
+<p>The observation that a recurrent computation can also be expressed as a parallel matrix multiply (with a causal mask) is not new &mdash; it appears in DeltaNet <a href="#ref2">[2]</a> and in earlier work on linear attention. What Dao and Gu <a href="#ref4">[4]</a> added with the <em>State Space Duality</em> (SSD) framework is the identification of the algebraic structure that makes this work: the input-output map of a linear recurrence is a <em>semiseparable matrix</em>, and the recurrent and attention views are two different factorizations of this matrix. This structure is what enables efficient chunked algorithms and makes precise which recurrences admit an exact attention dual.</p>
 
 <div class="table-wrap">
 <table>
