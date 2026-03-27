@@ -235,7 +235,7 @@ $$s_t = a_t \cdot s_{t-1} + b_t$$
 
 $$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
 
-<p>where $A_t$ controls element-wise forgetting, $k_t$ is a key, and $v_t$ is a value. Retrieval for a query $q$ is simply $y = S_t\, q$. This covers linear attention (sequence axis) and weight matrices updated by gradient descent (data axis). A vector state is the special case $d_k = 1$: there is no key, just a value being accumulated.</p>
+<p>where $A_t$ controls element-wise forgetting, $k_t$ is a key, and $v_t$ is a value. Retrieval for a query $q$ is simply $y = S_t\, q$. This covers linear attention (sequence axis) and weight matrices updated by gradient descent (data axis). A vector state is the special case $d_k = 1$: there is no key, just a value being accumulated. Recent work on matrix-valued RNNs <a href="#ref19">[19]</a> confirms that upgrading from vector to matrix hidden states improves capacity, consistent with this view.</p>
 
 <p>Both forms appear across many domains. The key insight is that the index $t$ is not always the same thing &mdash; it runs along three different <em>axes of computation</em>:</p>
 
@@ -287,7 +287,7 @@ $$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
   </thead>
   <tbody>
     <tr><td>Additive</td><td>Linear attention</td><td>Residual connection</td><td>Hebbian learning</td></tr>
-    <tr><td>Error-corrective</td><td>DeltaNet</td><td>Hyper-connections</td><td>Widrow&ndash;Hoff / SGD</td></tr>
+    <tr><td>Error-corrective</td><td>DeltaNet / Gated DeltaNet <a href="#ref15">[15]</a></td><td>Hyper-connections</td><td>Widrow&ndash;Hoff / SGD</td></tr>
     <tr><td>Normalized</td><td>Normalized DeltaNet</td><td>Pre-Norm (RMSNorm)</td><td>NLMS</td></tr>
     <tr><td>Spectral</td><td>&mdash;</td><td>&mdash;</td><td>Muon optimizer</td></tr>
     <tr><td>Full curvature</td><td>&mdash;</td><td>&mdash;</td><td>Natural gradient / Newton</td></tr>
@@ -300,7 +300,7 @@ $$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
 
 <p>This means the classical associative memory community independently discovered the same progression of write strategies &mdash; from Hebbian to error-corrective (Storkey) to exponential-kernel (modern Hopfield) &mdash; before it appeared on the sequence axis (linear attention &rarr; DeltaNet &rarr; softmax attention). The capacity jumps at each step are the same: $O(d/\log d) \to O(d) \to e^{O(d)}$.</p>
 
-<p>The table is also asymmetric across axes: the data axis has richer methods (Muon, natural gradient) that have no current sequence-axis counterparts. This points to unexplored architectures: what would a "Muon-style" sequence model look like?</p>
+<p>The table is also asymmetric across axes: the data axis has richer methods (Muon, natural gradient) that have no current sequence-axis counterparts. Bernstein and Newhouse <a href="#ref23">[23]</a> show that Adam, Shampoo, and Muon are all steepest descent under different norms, reinforcing the view that these represent different points in the hierarchy. LUCID <a href="#ref24">[24]</a> applies preconditioning to the sequence-axis readout, achieving gains analogous to how natural gradient preconditions data-axis updates. This points to unexplored architectures: what would a "Muon-style" sequence model look like?</p>
 
 <h3>Capacity and the SNR</h3>
 
@@ -379,7 +379,7 @@ $$\mathrm{SNR}_{\text{softmax}} \sim \frac{e^{O(d)}}{N} \quad\Longrightarrow\qua
 
 <h3>The cost-update duality</h3>
 
-<p>There is a deeper question: <em>why</em> does the state update have this particular form? In most cases, it arises as a gradient step on a cost function. The <em>form</em> of the cost determines the update rule, the kernel, and the capacity. The same cost form applied to different axes gives corresponding systems:</p>
+<p>There is a deeper question: <em>why</em> does the state update have this particular form? In most cases, it arises as a gradient step on a cost function <a href="#ref14">[14]</a>. The <em>form</em> of the cost determines the update rule, the kernel, and the capacity. The same cost form applied to different axes gives corresponding systems:</p>
 
 <div class="table-wrap">
 <table>
@@ -412,7 +412,7 @@ $$\mathcal{L} \;\xrightarrow{\;\nabla\;}\; \text{update rule} \;\xrightarrow{\;\
 
 <h2 id="pe">Positional encoding = forget gate</h2>
 
-<p>One of the most striking consequences of this framework is a complete unification of positional encodings and recurrent forget gates, established by Afzal <a href="#ref5">[5]</a>.</p>
+<p>One of the most striking consequences of this framework is a complete unification of positional encodings and recurrent forget gates, established by Afzal <a href="#ref5">[5]</a>. This is directly validated by FoX <a href="#ref16">[16]</a>, which replaces positional encoding in softmax attention with a data-dependent forget gate, and by PaTH <a href="#ref17">[17]</a>, which implements PE via accumulated Householder reflections.</p>
 
 <p>In the recurrent view, the contribution of input at position $j$ to the state at position $t$ is attenuated by the cumulative product of transition matrices: $P_{j \to t} = \prod_{s=j+1}^{t} A_s$. This product defines an asymmetric distance between positions: $d(j,t) = -\log \|P_{j \to t}\|$. The algebraic structure (monoid) of the transition matrices determines both the recurrent decay and the equivalent positional encoding:</p>
 
@@ -424,9 +424,9 @@ $$\mathcal{L} \;\xrightarrow{\;\nabla\;}\; \text{update rule} \;\xrightarrow{\;\
   <tbody>
     <tr><td>$\{I\}$ (trivial)</td><td>Linear attention</td><td>NoPE</td></tr>
     <tr><td>$\mathbb{R}_{>0}$ (scalars)</td><td>RetNet</td><td>ALiBi</td></tr>
-    <tr><td>Diagonal matrices</td><td>Mamba2 / GLA</td><td>FoX</td></tr>
-    <tr><td>$\mathrm{SO}(2)$ (rotations)</td><td>Complex-valued gates</td><td>RoPE</td></tr>
-    <tr><td>Householder reflections</td><td>DeltaNet</td><td>PaTH</td></tr>
+    <tr><td>Diagonal matrices</td><td>Mamba2 / GLA</td><td>FoX <a href="#ref16">[16]</a></td></tr>
+    <tr><td>$\mathrm{SO}(2)$ (rotations)</td><td>Complex-valued gates (Mamba-3 <a href="#ref18">[18]</a>)</td><td>RoPE</td></tr>
+    <tr><td>Householder reflections</td><td>DeltaNet</td><td>PaTH <a href="#ref17">[17]</a></td></tr>
   </tbody>
 </table>
 </div>
@@ -478,7 +478,7 @@ $$\Delta W^{(\ell)} = \sum_n \underbrace{\delta_n^{(\ell)}}_{\text{backprop thro
 
 <p>The depth axis is the shared computational substrate through which both outer axes operate. This explains why the residual stream is ephemeral (it belongs to an inner loop), why there's no persistent depth-axis memory (only the outer axes carry persistent state), and why backpropagation is fundamentally a depth&times;data operation rather than a pure data-axis operation.</p>
 
-<p>Recent work has enriched the depth axis with richer state-update structure. As discussed in the multi-head section above, hyper-connections <a href="#ref9">[9]</a> generalize residual connections with learnable mixing matrices (a non-trivial transition operator), and residual matrix transformers <a href="#ref7">[7]</a> replace the residual stream with a matrix-valued state, making the depth axis structurally identical to the sequence axis.</p>
+<p>Recent work has enriched the depth axis with richer state-update structure. As discussed in the multi-head section above, hyper-connections <a href="#ref9">[9]</a> generalize residual connections with learnable mixing matrices (a non-trivial transition operator), and residual matrix transformers <a href="#ref7">[7]</a> replace the residual stream with a matrix-valued state, making the depth axis structurally identical to the sequence axis. Attention Residuals <a href="#ref20">[20]</a> go further, replacing fixed residual accumulation with softmax attention over the depth axis, explicitly motivated by depth-time duality, and achieving ${\sim}1.25\times$ compute-equivalent improvement.</p>
 
 
 <h2 id="transfer">Cross-axis transfer</h2>
@@ -527,7 +527,7 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
 
 <p><strong>Depth has no independent cost.</strong> On the sequence and data axes, the state update minimizes a cost along that axis. The depth axis has no independent local cost &mdash; the forward pass is inference, not optimization. The cost that shapes it is the global training loss, propagated backward through backprop. This is why depth mixes with the data axis during training.</p>
 
-<p><strong>Nonlinearity complicates transfer.</strong> The linear framework transfers cleanly. But practical systems use nonlinearities (softmax, activation functions, adaptive optimizers) that break the semiseparable structure. The cost-centric view helps (different costs yield different nonlinearities), and feature map lifting &mdash; rewriting a nonlinear kernel as linear attention in a higher-dimensional space &mdash; can restore the linear framework approximately. But these are approximations rather than exact dualities.</p>
+<p><strong>Nonlinearity complicates transfer.</strong> The linear framework transfers cleanly. But practical systems use nonlinearities (softmax, activation functions, adaptive optimizers) that break the semiseparable structure. Hu et al. <a href="#ref22">[22]</a> make this precise: extending SSD from scalar to diagonal SSMs works, but the duality <em>fails</em> for softmax attention due to rank explosion. M&sup2;RNN <a href="#ref19">[19]</a> and COFFEE <a href="#ref25">[25]</a> similarly introduce nonlinearities (matrix-valued and state-dependent updates) that break semiseparable structure but improve expressiveness. The cost-centric view helps (different costs yield different nonlinearities), and feature map lifting &mdash; rewriting a nonlinear kernel as linear attention in a higher-dimensional space &mdash; can restore the linear framework approximately. But these are approximations rather than exact dualities.</p>
 
 
 <h2 id="open">Open questions</h2>
@@ -543,6 +543,8 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
 
   <li><strong>An RLS-Net.</strong> DeltaNet approximates the pseudoinverse in a single pass. RLS achieves it exactly by also maintaining the inverse key-correlation matrix. Can this be implemented efficiently as a recurrent architecture?</li>
 </ul>
+
+<p>Two concurrent works pursue related unifications: Behrouz et al. <a href="#ref12">[12]</a> view sequence architectures as associative memories with four design axes (memory architecture, attentional bias, retention gate, learning algorithm), though focused on the sequence axis only; Wang et al. <a href="#ref13">[13]</a> frame associative recall as a two-step regression problem. Our contributions beyond these are the three-axis view (including depth and data), the cost-update duality, the PE = forget gate unification, and cross-axis transfer predictions.</p>
 
 <p>The unified view doesn't just explain existing systems &mdash; it maps out a design space. Many combinations of (axis, monoid, cost, normalization) have not been explored. The framework suggests that ideas proven effective on one axis should have natural counterparts on the other axes waiting to be discovered.</p>
 
@@ -560,6 +562,20 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
     <li id="ref9">Zhu, D. et al. (2024). Hyper-connections. <em>arXiv:2409.19606</em>.</li>
     <li id="ref10">Zhang, Y. (2026). Residual stream duality in modern transformer architectures. <em>arXiv:2603.16039</em>.</li>
     <li id="ref11">Storkey, A. J. (1997). Increasing the capacity of a Hopfield network without sacrificing functionality. <em>ICANN</em>.</li>
+    <li id="ref12">Behrouz, A., Razaviyayn, M., Zhong, P., and Mirrokni, V. (2025). It's all connected: A journey through test-time memorization, attention, state space models, and recurrent neural networks. <em>arXiv:2504.13173</em>.</li>
+    <li id="ref13">Wang, K. A., Shi, J., and Fox, E. B. (2025). Test-time regression: A unifying framework. <em>arXiv:2501.12352</em>.</li>
+    <li id="ref14">von Oswald, J. et al. (2023). Transformers learn in-context by gradient descent. <em>arXiv:2212.07677</em>.</li>
+    <li id="ref15">Yang, S., Kautz, J., and Hatamizadeh, A. (2025). Gated Delta Networks. <em>ICLR</em>. arXiv:2412.06464.</li>
+    <li id="ref16">Lin, Z., Nikishin, E., He, X. O., and Courville, A. (2025). FoX: Forgetting Transformer. <em>ICLR</em>. arXiv:2503.02130.</li>
+    <li id="ref17">Yang, S. et al. (2025). PaTH: Positional encodings via accumulated Householder transformations. <em>NeurIPS</em>. arXiv:2505.16381.</li>
+    <li id="ref18">Lahoti, A. et al. (2026). Mamba-3. <em>ICLR</em>. arXiv:2603.15569.</li>
+    <li id="ref19">Mishra, M., Tan, S., Stoica, I., Gonzalez, J., and Dao, T. (2026). M&sup2;RNN: Matrix-valued recurrent neural networks for scalable language modeling. <em>arXiv:2603.14360</em>.</li>
+    <li id="ref20">Chen, G. et al. (2026). Attention Residuals. <em>arXiv:2603.15031</em>.</li>
+    <li id="ref21">Guo, H. et al. (2025). Log-linear attention. <em>ICLR 2026</em>. arXiv:2506.04761.</li>
+    <li id="ref22">Hu, J. Y.-C. et al. (2025). On structured state-space duality. <em>arXiv:2510.04944</em>.</li>
+    <li id="ref23">Bernstein, J. and Newhouse, L. (2024). Old optimizer, new norm: An anthology. <em>arXiv:2409.20325</em>.</li>
+    <li id="ref24">Duvvuri, S. S. et al. (2026). LUCID: Attention with preconditioned representations. <em>arXiv:2602.10410</em>.</li>
+    <li id="ref25">Zattra, R. et al. (2025). Context-selective state space models: Feedback is all you need. <em>arXiv:2510.14027</em>.</li>
   </ol>
 </div>
 
