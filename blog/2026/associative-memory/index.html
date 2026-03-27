@@ -252,6 +252,8 @@ $$S_t = A_t \cdot S_{t-1} + B_t \cdot x_t$$
   <li><strong>Data axis</strong> ($n$ = example): the weight matrix is updated by each gradient step. This is <em>long-term memory</em>.</li>
 </ul>
 
+<p>These three axes were not always distinct. In early RNNs, the sequence and data axes were conflated: each element in the input sequence was itself a training example (online learning from a stream of patterns). The two axes only became fully decoupled with batched training over sequences of tokens, where a single training sample contains an entire sequence. This gradual separation helps explain why similar techniques were developed independently along each axis.</p>
+
 <p>Feed-forward network (FFN) layers are themselves associative memories <a href="#ref3">[3]</a>: the weight matrices store key-value associations learned during training, and a forward pass through the FFN is a retrieval operation. Training &mdash; updating $W$ via gradient descent &mdash; is precisely the state update applied along the data axis.</p>
 
 
@@ -310,18 +312,41 @@ $$\mathrm{SNR}_{\text{softmax}} \sim \frac{e^{O(d)}}{N} \quad\Longrightarrow\qua
 <div class="table-wrap">
 <table>
   <thead>
-    <tr><th>Kernel</th><th>State size</th><th>Capacity</th><th>Compute/step</th></tr>
+    <tr><th>Method</th><th>Kernel</th><th>State size</th><th>Capacity</th><th>Compute/query</th></tr>
   </thead>
   <tbody>
-    <tr><td>Linear $q^\top k$</td><td>$O(d^2)$</td><td>$O(d)$</td><td>$O(d^2)$</td></tr>
-    <tr><td>Polynomial $(q^\top k)^p$</td><td>$O(d^{2p})$</td><td>$O(d^p)$</td><td>$O(d^{2p})$</td></tr>
-    <tr><td>Random features (dim $D$)</td><td>$O(Dd)$</td><td>$O(D)$</td><td>$O(Dd)$</td></tr>
-    <tr><td>Softmax $\exp(q^\top k)$</td><td>$O(Nd)$</td><td>$e^{O(d)}$</td><td>$O(Nd)$</td></tr>
+    <tr><td>Full softmax attn</td><td>$\exp(q^\top k)$</td><td>$O(Nd)$</td><td>$e^{O(d)}$</td><td>$O(Nd)$</td></tr>
+    <tr><td>Linear (compressed)</td><td>$q^\top k$</td><td>$O(d^2)$</td><td>$O(d)$</td><td>$O(d^2)$</td></tr>
+    <tr><td>Polynomial</td><td>$(q^\top k)^p$</td><td>$O(d^{2p})$</td><td>$O(d^p)$</td><td>$O(d^{2p})$</td></tr>
+    <tr><td>Random features</td><td>$\approx\exp(q^\top k)$</td><td>$O(Dd)$</td><td>$O(D)$</td><td>$O(Dd)$</td></tr>
   </tbody>
 </table>
 </div>
 
+<p>An important subtlety: keeping all $N$ key-value pairs does not by itself guarantee exact retrieval. The capacity is determined by the <em>kernel</em>, not the storage. With a linear kernel, full attention computes $\sum_j (k_j^\top q)\, v_j = Sq$ where $S = \sum_j v_j k_j^\top$ &mdash; the same output as the compressed form. Storing all pairs is wasteful because the linear readout cannot exploit them. Softmax is different: its exponential kernel gives capacity $e^{O(d)} \gg N$ for typical sequence lengths, so it <em>can</em> exploit the stored pairs. But it cannot be compressed into finite state without approximation, so it inherently requires $O(Nd)$ storage. Chunked attention interpolates: within each chunk, use full attention; between chunks, compress into $O(d^2)$ state.</p>
+
 <p>This tradeoff is universal: it governs the sequence axis (linear attention vs. softmax attention), the data axis (SGD vs. second-order methods), and everything in between.</p>
+
+<h3>Multi-head structure: block-diagonal memory</h3>
+
+<p>Multi-head attention splits the $d$-dimensional space into $H$ independent heads of dimension $d_h = d/H$. In the state view, this means the memory matrix is <em>block-diagonal</em>: $S = \mathrm{diag}(S^{(1)}, \ldots, S^{(H)})$, where each $S^{(h)} \in \mathbb{R}^{d_v \times d_h}$ is an independent memory with capacity $O(d_h)$. Different heads can specialize in different types of patterns.</p>
+
+<p>This structure transfers to both other axes. On the <strong>depth axis</strong>, hyper-connections <a href="#ref9">[9]</a> maintain $n$ parallel residual streams &mdash; exactly $n$ independent depth-axis memories. The residual matrix transformer <a href="#ref7">[7]</a> goes further: its matrix-valued residual state can be viewed as multiple independent rank-one "heads" accumulated across layers. Standard residual networks correspond to $H = 1$: a single stream with no block structure.</p>
+
+<p>On the <strong>data axis</strong>, a block-diagonal weight matrix means each block is an "expert" that sees only a slice of the feature space. This is a <strong>dense mixture of experts (MoE) without routing</strong>, where the partitioning is along the feature dimension. Standard MoE with routing is different: each expert has <em>full-rank</em> weights, but a learned gating function directs different tokens to different experts &mdash; the data-axis analogue of input-dependent head selection on the sequence axis. Grouped-query attention (GQA), where multiple query heads share fewer KV heads, corresponds to fewer experts with multiple ways of reading from each.</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Pattern</th><th>Sequence axis</th><th>Depth axis</th><th>Data axis</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Block-diagonal memory</td><td>Multi-head attention</td><td>Hyper-conn. streams</td><td>Dense MoE (feature-part.)</td></tr>
+    <tr><td>Input-dep. routing</td><td>Head selection</td><td>Adaptive depth</td><td>Sparse MoE with routing</td></tr>
+    <tr><td>Asymmetric sharing</td><td>GQA</td><td>&mdash;</td><td>Fewer experts, multi-read</td></tr>
+  </tbody>
+</table>
+</div>
 
 
 <h2 id="views">Three equivalent views</h2>
