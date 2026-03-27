@@ -296,7 +296,11 @@ $$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
 </table>
 </div>
 
-<p>The table is asymmetric: the data axis has richer methods (Muon, natural gradient) that have no current sequence-axis counterparts. This points to unexplored architectures: what would a "Muon-style" sequence model look like?</p>
+<p>The table above is formulated in the general asymmetric case (keys $\neq$ values), which is the most relevant for LLMs. In the symmetric case ($k = v$), the memory must satisfy $S = S^\top$, and the delta rule must be adapted to preserve this constraint. This is precisely what the <em>Storkey learning rule</em> <a href="#ref11">[11]</a> does: it adds a second correction term $-v_t(S^\top v_t)^\top$ that accounts for reverse-direction crosstalk, ensuring the update remains symmetric. In the asymmetric case, this second term is unnecessary (we never read from $S^\top$), so the Storkey rule reduces to the standard delta rule.</p>
+
+<p>This means the classical associative memory community independently discovered the same progression of write strategies &mdash; from Hebbian to error-corrective (Storkey) to exponential-kernel (modern Hopfield) &mdash; before it appeared on the sequence axis (linear attention &rarr; DeltaNet &rarr; softmax attention). The capacity jumps at each step are the same: $O(d/\log d) \to O(d) \to e^{O(d)}$.</p>
+
+<p>The table is also asymmetric across axes: the data axis has richer methods (Muon, natural gradient) that have no current sequence-axis counterparts. This points to unexplored architectures: what would a "Muon-style" sequence model look like?</p>
 
 <h3>Capacity and the SNR</h3>
 
@@ -555,6 +559,7 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
     <li id="ref8">McCandlish, S., Kaplan, J., Amodei, D., and OpenAI Dota Team (2018). An empirical model of large-batch training. <em>arXiv:1812.06162</em>.</li>
     <li id="ref9">Zhu, D. et al. (2024). Hyper-connections. <em>arXiv:2409.19606</em>.</li>
     <li id="ref10">Zhang, Y. (2026). Residual stream duality in modern transformer architectures. <em>arXiv:2603.16039</em>.</li>
+    <li id="ref11">Storkey, A. J. (1997). Increasing the capacity of a Hopfield network without sacrificing functionality. <em>ICANN</em>.</li>
   </ol>
 </div>
 
