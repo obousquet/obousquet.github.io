@@ -408,6 +408,80 @@ $$\mathcal{L} \;\xrightarrow{\;\nabla\;}\; \text{update rule} \;\xrightarrow{\;h
 
 <p>The full specification of a memory system is the tuple $(\mathcal{L}, h, \mathcal{M}, \mathcal{H})$: cost, generating function, monoid, and memory space. From these, the write rule, retention, normalization, and read operation all follow. Every instance across all three axes is a specific choice of this tuple.</p>
 
+<h3>Taxonomy: models as tuples</h3>
+
+<p>The tables below classify existing models on each axis as instantiations of the $(\mathcal{L}, h, \mathcal{M})$ tuple, extending the taxonomies of Yang et al. [2] and Behrouz et al. [12] with the generating function and monoid columns.</p>
+
+<p><strong>Sequence axis.</strong> Models above the line use matrix memory ($S \in \mathbb{R}^{d_v \times d_k}$); those below use MLP memory.</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Model</th><th>Cost $\mathcal{L}$</th><th>$h$</th><th>Monoid $\mathcal{M}$</th><th>Alg.</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Linear Attn</td><td>Alignment</td><td>Eucl.</td><td>$\{I\}$</td><td>1-step</td></tr>
+    <tr><td>RetNet</td><td>Dot-prod.</td><td>Eucl.</td><td>Scalar</td><td>GD</td></tr>
+    <tr><td>Mamba / Mamba2</td><td>Dot-prod.</td><td>Eucl.</td><td>Diagonal</td><td>GD</td></tr>
+    <tr><td>GLA</td><td>Dot-prod.</td><td>Eucl.</td><td>Diagonal</td><td>GD</td></tr>
+    <tr><td>Mamba-3</td><td>Dot-prod.</td><td>Eucl.</td><td>SO(2)</td><td>GD</td></tr>
+    <tr><td>DeltaNet</td><td>MSE</td><td>Eucl.</td><td>Householder</td><td>GD</td></tr>
+    <tr><td>Gated DeltaNet</td><td>MSE</td><td>Eucl.</td><td>HH &times; scalar</td><td>GD</td></tr>
+    <tr><td>RWKV-7</td><td>MSE</td><td>Eucl.</td><td>Diag &times; HH</td><td>GD</td></tr>
+    <tr><td>Longhorn</td><td>MSE</td><td>Eucl.</td><td>&mdash;</td><td>Newton</td></tr>
+    <tr><td>Moneta</td><td>$\ell_p$</td><td>$\ell_q$</td><td>&mdash;</td><td>GD</td></tr>
+    <tr><td>Yaad</td><td>Huber</td><td>Eucl.</td><td>&mdash;</td><td>GD</td></tr>
+    <tr><td>Memora</td><td>MSE</td><td>Entropic</td><td>&mdash;</td><td>GD</td></tr>
+    <tr><td>FoX</td><td>Log-sum-exp</td><td>&mdash;</td><td>Diagonal</td><td>FTRL</td></tr>
+    <tr><td>Softmax Attn</td><td>Log-sum-exp</td><td>&mdash;</td><td>&mdash;</td><td>FTRL</td></tr>
+    <tr style="border-top: 2px solid var(--border);"><td>TTT-Linear</td><td>MSE</td><td>Eucl.</td><td>&mdash;</td><td>GD</td></tr>
+    <tr><td>TTT-MLP</td><td>MSE</td><td>Eucl.</td><td>&mdash;</td><td>GD</td></tr>
+    <tr><td>Titans</td><td>MSE</td><td>Eucl.</td><td>Scalar</td><td>GD+mom.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><strong>Depth axis.</strong> No model on the depth axis has an independent per-step cost.</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Model</th><th>$h$ (Norm.)</th><th>Monoid $\mathcal{M}$</th><th>Memory</th><th>Update rule</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Residual connection</td><td>&mdash;</td><td>$\{I\}$</td><td>$\mathbb{R}^d$</td><td>$x + f(x)$</td></tr>
+    <tr><td>Pre-Norm</td><td>Eucl. (RMSNorm)</td><td>$\{I\}$</td><td>$\mathbb{R}^d$</td><td>$x + f(\text{Norm}(x))$</td></tr>
+    <tr><td>Hyper-connections</td><td>Eucl.</td><td>Learned matrix</td><td>$\mathbb{R}^{n \times d}$</td><td>Learnable mixing</td></tr>
+    <tr><td>Manifold HC</td><td>Spectral (polar)</td><td>Stiefel</td><td>$\mathbb{R}^{n \times d}$</td><td>Constrained mixing</td></tr>
+    <tr><td>Res. Matrix Transf.</td><td>Eucl.</td><td>Learned</td><td>$\mathbb{R}^{p \times q}$</td><td>$AM + vk^\top$</td></tr>
+    <tr><td>Attention Residuals</td><td>Entropic (softmax)</td><td>&mdash;</td><td>$\mathbb{R}^{p \times q}$</td><td>$\sum_\ell w_\ell x^{(\ell)}$</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><strong>Data axis.</strong> Optimizers as instantiations of the regularized cost.</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Optimizer</th><th>Cost $\mathcal{L}$</th><th>$h$ (Norm.)</th><th>Monoid $\mathcal{M}$</th><th>Alg.</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Hebbian</td><td>Alignment</td><td>Eucl.</td><td>$\{I\}$</td><td>1-step</td></tr>
+    <tr><td>SGD</td><td>MSE</td><td>Eucl.</td><td>Scalar</td><td>GD</td></tr>
+    <tr><td>SGD + wd</td><td>MSE</td><td>Eucl. ($L^2$ ball)</td><td>Scalar</td><td>GD</td></tr>
+    <tr><td>Adam</td><td>Any</td><td>Eucl. (diag.)</td><td>Diagonal</td><td>GD+mom.</td></tr>
+    <tr><td>Shampoo</td><td>Any</td><td>Kronecker</td><td>&mdash;</td><td>Newton</td></tr>
+    <tr><td>Muon</td><td>Any</td><td>Spectral (polar)</td><td>&mdash;</td><td>GD</td></tr>
+    <tr><td>Natural gradient</td><td>Any</td><td>Fisher</td><td>&mdash;</td><td>Newton</td></tr>
+    <tr><td>CE + nat. grad</td><td>Log-sum-exp</td><td>Fisher</td><td>&mdash;</td><td>Newton</td></tr>
+    <tr><td>Batch GD / ERM</td><td>Any</td><td>Eucl.</td><td>&mdash;</td><td>FTRL</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The key insight from these tables: models with the same cost and algorithm but different $h$ (e.g., DeltaNet vs. Memora &mdash; both MSE/GD, but Euclidean vs. entropic $h$) produce qualitatively different retention and normalization behavior. The $h$ column reveals structure invisible in the write rule alone.</p>
+
 
 <!-- ================================================================ -->
 <h2 id="depth">The depth axis</h2>
