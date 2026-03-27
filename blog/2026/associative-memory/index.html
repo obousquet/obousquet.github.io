@@ -220,26 +220,32 @@ $$S_t \leftarrow S_{t-1} + (v_t - S_{t-1} k_t)\, k_t^\top$$
 
 <h2 id="axes">Three axes of computation</h2>
 
-<p>The common pattern can be abstracted to a single recurrence:</p>
+<p>The common pattern is a <em>state update</em>: retain part of the old state and add new information. In its simplest form, the state is a <strong>vector</strong>:</p>
 
-$$S_t = A_t \cdot S_{t-1} + B_t \cdot x_t$$
+$$s_t = a_t \cdot s_{t-1} + b_t$$
 
-<p>where $S_t$ is a state (vector or matrix), $A_t$ controls how much of the old state to retain (forgetting), $B_t$ is an input operator, and $x_t$ is new information arriving at step $t$.</p>
+<p>where $a_t$ is a retention factor (scalar or diagonal) and $b_t$ is the new input. This covers RNNs, SSMs, residual networks, and momentum buffers.</p>
 
-<p>This recurrence appears across many domains under different names:</p>
+<p>When the state stores <em>associations</em> between keys and values, it becomes a <strong>matrix</strong> $S \in \mathbb{R}^{d_v \times d_k}$, and each write is a rank-one outer product:</p>
+
+$$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
+
+<p>where $A_t$ controls element-wise forgetting, $k_t$ is a key, and $v_t$ is a value. Retrieval for a query $q$ is simply $y = S_t\, q$. This covers linear attention (sequence axis) and weight matrices updated by gradient descent (data axis). A vector state is the special case $d_k = 1$: there is no key, just a value being accumulated.</p>
+
+<p>Both forms appear across many domains:</p>
 
 <div class="table-wrap">
 <table>
   <thead>
-    <tr><th>System</th><th>State $S$</th><th>Transition $A$</th><th>Input $B \cdot x$</th><th>Index</th></tr>
+    <tr><th>System</th><th>State</th><th>Shape</th><th>Retention</th><th>Write term</th><th>Index</th></tr>
   </thead>
   <tbody>
-    <tr><td>RNN</td><td>Hidden state $h_t$</td><td>Recurrent matrix</td><td>$W_x x_t$</td><td>Time $t$</td></tr>
-    <tr><td>SSM (S4, Mamba)</td><td>Latent state $s_t$</td><td>State matrix</td><td>$B u_t$</td><td>Time $t$</td></tr>
-    <tr><td>Linear attention</td><td>KV memory $\sum v_j k_j^\top$</td><td>$I$ (no forget)</td><td>$v_t k_t^\top$</td><td>Token $t$</td></tr>
-    <tr><td>Residual network</td><td>Representation $x^{(\ell)}$</td><td>$I$ (identity)</td><td>$f(x^{(\ell-1)})$</td><td>Layer $\ell$</td></tr>
-    <tr><td>SGD + weight decay</td><td>Weight matrix $W$</td><td>$(1{-}\lambda\eta)I$</td><td>$\eta g_n$</td><td>Step $n$</td></tr>
-    <tr><td>Momentum</td><td>Buffer $m$</td><td>$\beta I$</td><td>$(1-\beta)g_n$</td><td>Step $n$</td></tr>
+    <tr><td>RNN</td><td>Hidden $h_t$</td><td>vector</td><td>$W_h$ (weight matrix)</td><td>$W_x x_t$</td><td>Time $t$</td></tr>
+    <tr><td>SSM (S4, Mamba)</td><td>Latent $s_t$</td><td>vector</td><td>$\bar{A}$ (dynamics, diagonal)</td><td>$\bar{B} u_t$</td><td>Time $t$</td></tr>
+    <tr><td>Residual network</td><td>$x^{(\ell)}$</td><td>vector</td><td>$I$ (identity)</td><td>$f(x^{(\ell-1)})$</td><td>Layer $\ell$</td></tr>
+    <tr><td>Momentum</td><td>Buffer $m$</td><td>vector</td><td>$\beta I$</td><td>$(1-\beta)g_n$</td><td>Step $n$</td></tr>
+    <tr><td>Linear attention</td><td>KV memory $S_t$</td><td>matrix</td><td>$I$ (no forget)</td><td>$v_t k_t^\top$</td><td>Token $t$</td></tr>
+    <tr><td>SGD + weight decay</td><td>Weights $W$</td><td>matrix</td><td>$(1{-}\lambda\eta)I$</td><td>$\eta\, g_n$</td><td>Step $n$</td></tr>
   </tbody>
 </table>
 </div>
