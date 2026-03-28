@@ -502,6 +502,52 @@ $$\mathcal{L} \;\xrightarrow{\;\nabla\;}\; \text{update rule} \;\xrightarrow{\;h
 
 <p>The key insight from these tables: models with the same cost and algorithm but different $h$ (e.g., DeltaNet vs. Memora &mdash; both MSE/GD, but Euclidean vs. entropic $h$) produce qualitatively different retention and normalization behavior. The $h$ column reveals structure invisible in the write rule alone.</p>
 
+<h3>Costs and update equations</h3>
+
+<p>The taxonomy tables above classify models by <em>which</em> design choices they make. The tables below spell out the <em>exact</em> cost functions and update equations, making the cross-axis correspondences precise. (See the paper for the full list of 20+ models.)</p>
+
+<p><strong>Sequence axis (selected models).</strong> State $S_t \in \mathbb{R}^{d_v \times d_k}$; keys $k_t$, values $v_t$, queries $q_t$. All read-outs are $o_t = S_t q_t$ unless noted.</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Model</th><th>Per-step cost $\ell_t$</th><th>State update $S_t$</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Linear Attn</td><td>$-\langle v_t, S k_t \rangle$</td><td>$S_{t-1} + v_t k_t^\top$</td></tr>
+    <tr><td>RetNet</td><td>$-\langle v_t, S k_t \rangle$</td><td>$\gamma S_{t-1} + v_t k_t^\top$</td></tr>
+    <tr><td>Mamba / GLA</td><td>$-\langle v_t, S k_t \rangle$</td><td>$S_{t-1} \text{Diag}(\alpha_t) + v_t k_t^\top$</td></tr>
+    <tr><td>DeltaNet</td><td>$\frac{1}{2}\|v_t - Sk_t\|^2$</td><td>$S_{t-1}(I - \beta_t k_t k_t^\top) + \beta_t v_t k_t^\top$</td></tr>
+    <tr><td>Gated DeltaNet</td><td>$\frac{1}{2}\|v_t - Sk_t\|^2$</td><td>$\alpha_t S_{t-1}(I - \beta_t k_t k_t^\top) + \beta_t v_t k_t^\top$</td></tr>
+    <tr><td>Longhorn</td><td>$\frac{1}{2}\|v_t - Sk_t\|^2$</td><td>$S_{t-1}(I - \frac{\beta_t k_t k_t^\top}{1 + \beta_t \|k_t\|^2}) + \frac{\beta_t v_t k_t^\top}{1 + \beta_t \|k_t\|^2}$</td></tr>
+    <tr><td>Memora</td><td>$\frac{1}{2}\|v_t - Sk_t\|^2$</td><td>$\text{softmax}(\log S_{t-1} - \eta(S_{t-1}k_t - v_t) k_t^\top)$</td></tr>
+    <tr><td>Softmax Attn</td><td>$-\log\sum_j e^{k_j^\top q}$</td><td>All $(k_j, v_j)$ stored</td></tr>
+    <tr style="border-top: 2px solid var(--border);"><td>Titans</td><td>$\frac{1}{2}\|v_t - Mk_t\|^2$</td><td>$M_t = \alpha M_{t-1} - \eta \mathcal{S}_t$; &ensp; $\mathcal{S}_t = \beta \mathcal{S}_{t-1} + (1-\beta) \nabla_M \ell_t$</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><strong>Data axis (optimizers).</strong> Weights $W_n$; input $x_n$, target $y_n$; gradient $g_n = \nabla_W \ell_n$.</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Optimizer</th><th>Per-step cost $\ell_n$</th><th>Update $W_n$</th><th>Seq. analogue</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Hebbian</td><td>$-\langle y_n, Wx_n \rangle$</td><td>$W_{n-1} + y_n x_n^\top$</td><td>Linear attention</td></tr>
+    <tr><td>SGD</td><td>$\frac{1}{2}\|y_n - Wx_n\|^2$</td><td>$W_{n-1} + \eta(y_n - W_{n-1}x_n) x_n^\top$</td><td>DeltaNet</td></tr>
+    <tr><td>SGD + wd</td><td>$\frac{1}{2}\|y - Wx\|^2 + \frac{\lambda}{2}\|W\|_F^2$</td><td>$(1 - \lambda\eta) W_{n-1} - \eta \nabla\ell_n$</td><td>Gated DeltaNet</td></tr>
+    <tr><td>Adam</td><td>any $\ell_n$</td><td>$m_n = \beta_1 m_{n-1} + (1-\beta_1) g_n$; &ensp; $W_n = W_{n-1} - \eta \hat{m}_n / \sqrt{\hat{v}_n}$</td><td>Titans</td></tr>
+    <tr><td>Muon</td><td>any $\ell_n$</td><td>$m_n = \beta m_{n-1} + (1-\beta) g_n$; &ensp; $W_n = W_{n-1} - \eta\, \text{polar}(m_n)$</td><td>&mdash;</td></tr>
+    <tr><td>Natural grad.</td><td>any $\ell_n$</td><td>$W_n = W_{n-1} - \eta F_n^{-1} g_n$</td><td>Longhorn</td></tr>
+    <tr><td>CE + softmax</td><td>$-\log\frac{e^{w_{y_n}^\top x_n}}{\sum_c e^{w_c^\top x_n}}$</td><td>$W_n = W_{n-1} - \eta (p_n - e_{y_n}) x_n^\top$</td><td>Softmax attn</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Reading across the last column makes the correspondences concrete: SGD <em>is</em> DeltaNet on the data axis; Adam <em>is</em> Titans with momentum; natural gradient <em>is</em> the Newton step (Longhorn). The cost form determines the update shape, and the same cost produces the same algorithmic structure on both axes.</p>
+
 
 <!-- ================================================================ -->
 <h2 id="depth">The depth axis</h2>
