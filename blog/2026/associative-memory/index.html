@@ -585,6 +585,19 @@ $$\mathcal{L} \;\xrightarrow{\;\nabla\;}\; \text{update rule} \;\xrightarrow{\;h
 
 <p>The data axis is where the framework originates most naturally: optimization <em>is</em> the state update, and the training loss <em>is</em> the cost. What makes the data axis different is multiple epochs, the possibility of convergence, and the typically large scale of $N$.</p>
 
+<h3>Every gradient is an outer product</h3>
+
+<p>The correspondence between optimizers and sequence models is not merely an analogy &mdash; it is a structural identity. For <em>any</em> layer in a neural network, the gradient is an outer product:</p>
+
+$$\nabla_{W^{(\ell)}} \mathcal{L} = \underbrace{\delta^{(\ell)}}_{\text{value (backprop error)}} \underbrace{(h^{(\ell-1)})^\top}_{\text{key (input activation)}}$$
+
+<p>Every weight matrix is therefore literally an associative memory, updated by outer products of (backpropagated errors, input activations) &mdash; exactly the $v_t k_t^\top$ write of the sequence axis. After $N$ gradient steps, $W_N = \sum_n \eta_n \delta_n (h_n)^\top$ is a sum of outer products. Feature learning means the keys evolve to improve storage and retrieval.</p>
+
+<div class="callout">
+  <strong>What optimizers do to outer products.</strong>
+  Each optimizer manipulates these outer products differently. Hebbian learning sums them raw (= linear attention). SGD corrects errors before writing (= DeltaNet). Weight decay adds scalar forgetting (= Gated DeltaNet). Momentum maintains a running average (= Titans). Adam adds element-wise normalization (= diagonal bilateral whitening). Muon applies polar decomposition (= spectral normalization). A mini-batch of $B$ examples produces a rank-$B$ sum of outer products, exactly like a chunk of $C$ tokens in chunked linear attention.
+</div>
+
 <h3>Learning rate schedules = positional encoding</h3>
 
 <p>SGD with weight decay has a forget gate $(1 - \lambda\eta_n)I$. Unrolling from initialization, the influence of gradient $g_j$ on the current weights decays as $\rho(j,N) = \prod_{s=j+1}^{N}(1-\lambda\eta_s)$. In the log domain, the <em>data-positional distance</em> is $d(j,N) \approx \lambda \int_j^N \eta(s)\,ds$.</p>
@@ -630,7 +643,27 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
 
 <h3>Adam as multi-state recurrence</h3>
 
-<p>Adam maintains two auxiliary states: momentum $m_n = \beta_1 m_{n-1} + (1-\beta_1)g_n$ and second moment $v_n = \beta_2 v_{n-1} + (1-\beta_2)g_n^2$. Each is a linear recurrence with its own forget gate. The effective update $m_n / \sqrt{v_n}$ is a nonlinear combination of two linear states, analogous to how attention combines KV states nonlinearly via softmax. The influence of gradient $g_j$ passes through two cascaded decay processes: momentum ($\beta_1^{n-j}$) and weight decay ($\prod_s (1 - \lambda\eta_s)$).</p>
+<p>Adam maintains two auxiliary states: momentum $m_n = \beta_1 m_{n-1} + (1-\beta_1)g_n$ and second moment $v_n = \beta_2 v_{n-1} + (1-\beta_2)g_n^2$. Each is a linear recurrence with its own forget gate. The effective update $m_n / \sqrt{v_n}$ is a nonlinear combination of two linear states, analogous to how attention combines KV states nonlinearly via softmax.</p>
+
+<p><strong>Adam as diagonal Shampoo.</strong> Since each gradient is an outer product $g_n = -e_n x_n^\top$, Adam's second moment accumulates element-wise squares: $(v_n)_{ij} \approx \mathbb{E}[(e_n)_i^2] \cdot \mathbb{E}[(x_n)_j^2]$. Dividing by $\sqrt{v_n}$ normalizes both the value (error) and key (input) dimensions, but only per component. Compare with Shampoo, which uses full correlation matrices $L^{-1/2} g\, R^{-1/2}$. Adam is the diagonal approximation to Shampoo &mdash; and on the sequence axis, diagonal gating (GLA, Mamba) is the diagonal approximation to full-matrix transitions (DeltaNet). This parallel extends to a normalization hierarchy:</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Normalization</th><th>Seq. axis</th><th>Data axis</th><th>Structure</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>None</td><td>Linear attention</td><td>Hebbian</td><td>Raw outer product</td></tr>
+    <tr><td>Diagonal</td><td>GLA / Mamba</td><td>Adam ($1/\sqrt{v}$)</td><td>Per-component</td></tr>
+    <tr><td>Rank-1 (Householder)</td><td>DeltaNet</td><td>SGD on MSE</td><td>Per-sample key</td></tr>
+    <tr><td>Full key-side</td><td>RLS (if existed)</td><td>Shampoo ($R^{-1/2}$)</td><td>Key whitening</td></tr>
+    <tr><td>Bilateral</td><td>&mdash;</td><td>Shampoo ($L, R$)</td><td>Both-side whitening</td></tr>
+    <tr><td>Spectral</td><td>&mdash;</td><td>Muon (polar)</td><td>Stiefel projection</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The missing entries in the sequence-axis column are predictions: "Shampoo-Net" (bilateral whitening of the state), "Muon-Net" (polar decomposition of the state), and "Adam-Net" (Titans + element-wise normalization by key/value statistics).</p>
 
 
 <!-- ================================================================ -->
@@ -669,7 +702,9 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
 <ul style="margin-bottom: 1rem;">
   <li>The rich positional encoding literature (RoPE, ALiBi, FoX) should directly inspire learning rate schedule design.</li>
   <li>An "RLS-Net" that maintains the inverse key-correlation matrix as additional recurrent state could achieve optimal single-pass learning.</li>
-  <li>Spectral normalization methods (Muon-style) applied to sequence-axis memory updates could improve capacity.</li>
+  <li><strong>"Muon-Net"</strong>: apply polar decomposition to the state matrix $S_t$ after each update, projecting onto the Stiefel manifold &mdash; transferring Muon's spectral normalization to the sequence axis.</li>
+  <li><strong>"Shampoo-Net"</strong>: decorrelate both key and value spaces using accumulated correlations $L_t = \sum \beta^{T-t} v_t v_t^\top$ and $R_t = \sum \beta^{T-t} k_t k_t^\top$ &mdash; bilateral whitening, generalizing DeltaNet's key-only Householder.</li>
+  <li><strong>"Adam-Net"</strong>: combine Titans-style momentum with per-component normalization by accumulated key/value statistics &mdash; the sequence-axis transfer of Adam's adaptive learning rate.</li>
   <li>Finding optimizers with rotational or reflective decay structure would complete the analogy with RoPE and PaTH on the sequence axis.</li>
   <li>Entropic retention on the data axis (KL-regularized training with softmax-normalized weights) is an unexplored combination.</li>
 </ul>
