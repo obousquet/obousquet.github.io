@@ -451,8 +451,9 @@ $$\mathcal{L} \;\xrightarrow{\;\nabla\;}\; \text{update rule} \;\xrightarrow{\;h
   <tbody>
     <tr><td>Residual connection</td><td>&mdash;</td><td>$\{I\}$</td><td>$\mathbb{R}^d$</td><td>$x + f(x)$</td></tr>
     <tr><td>Pre-Norm</td><td>Eucl. (RMSNorm)</td><td>$\{I\}$</td><td>$\mathbb{R}^d$</td><td>$x + f(\text{Norm}(x))$</td></tr>
-    <tr><td>Hyper-connections</td><td>Eucl.</td><td>Learned matrix</td><td>$\mathbb{R}^{n \times d}$</td><td>Learnable mixing</td></tr>
-    <tr><td>Manifold HC</td><td>Spectral (polar)</td><td>Stiefel</td><td>$\mathbb{R}^{n \times d}$</td><td>Constrained mixing</td></tr>
+    <tr><td>Hyper-connections</td><td>Eucl.</td><td>$\text{GL}(n)$</td><td>$\mathbb{R}^{n \times d}$</td><td>Learnable mixing</td></tr>
+    <tr><td>mHC (Sinkhorn)</td><td>Entropic</td><td>Birkhoff $\mathcal{B}_n$</td><td>$\mathbb{R}^{n \times d}$</td><td>Sinkhorn-projected mixing</td></tr>
+    <tr><td>JPmHC (Cayley)</td><td>Spectral (polar)</td><td>$O(n)$ (Stiefel)</td><td>$\mathbb{R}^{n \times d}$</td><td>Cayley-projected mixing</td></tr>
     <tr><td>Res. Matrix Transf.</td><td>Eucl.</td><td>Learned</td><td>$\mathbb{R}^{p \times q}$</td><td>$AM + vk^\top$</td></tr>
     <tr><td>Attention Residuals</td><td>Entropic (softmax)</td><td>&mdash;</td><td>$\mathbb{R}^{p \times q}$</td><td>$\sum_\ell w_\ell x^{(\ell)}$</td></tr>
   </tbody>
@@ -490,7 +491,16 @@ $$\mathcal{L} \;\xrightarrow{\;\nabla\;}\; \text{update rule} \;\xrightarrow{\;h
 
 <p>At inference, each token triggers a complete forward pass through all layers. The residual stream $x^{(\ell)}$ is ephemeral &mdash; it exists only during this traversal. The persistent state lives on the sequence axis (KV cache). At training, the persistent state lives on the data axis (weights). The depth axis is the shared computational substrate through which both outer axes operate.</p>
 
-<p>Recent work has enriched the depth axis with richer state-update structure. Hyper-connections <a href="#ref9">[9]</a> generalize residual connections with learnable mixing matrices (a non-trivial transition operator on the depth axis). Sengupta et al. constrain these to manifolds (Stiefel, bistochastic) for stability &mdash; the same manifolds that appear in our Bregman framework. Residual matrix transformers <a href="#ref7">[7]</a> replace the residual stream with a matrix-valued state $M^{(\ell)} \in \mathbb{R}^{p \times q}$ updated via rank-one writes &mdash; making the depth axis structurally identical to the sequence axis. Attention Residuals <a href="#ref20">[20]</a> go further, replacing fixed residual accumulation with softmax attention over the depth axis, achieving ${\sim}1.25\times$ compute-equivalent improvement.</p>
+<p>Recent work has enriched the depth axis with richer state-update structure. Hyper-connections <a href="#ref9">[9]</a> generalize residual connections with learnable mixing matrices &mdash; a full matrix-valued transition operator $A_n \in \mathbb{R}^{n \times n}$ on the depth axis, acting via matrix product on $n$ parallel streams (not element-wise as on the sequence axis).</p>
+
+<p>The manifold constraint on this transition operator fits directly into the Bregman framework. Bistochastic (Sinkhorn) mixing projects $A_n$ onto the Birkhoff polytope via alternating Bregman projections with <em>entropic</em> $h$ &mdash; the same $h$ that gives softmax normalization on the sequence axis. Orthogonal (Cayley) mixing <a href="#ref29">[29]</a> projects onto $O(n)$ via <em>spectral</em> $h$ &mdash; the same $h$ that gives Muon's polar decomposition on the data axis.</p>
+
+<div class="callout">
+  <strong>Why orthogonal beats bistochastic on the depth axis.</strong>
+  A doubly stochastic matrix has Perron eigenvalue 1, but generically $|\lambda_i| < 1$ for $i \geq 2$. Deep composition drives $|\lambda_i|^L \to 0$: the transition operator <em>forgets</em> early layers. On the sequence axis, such contraction is desirable (recency bias). On the depth axis, it is harmful &mdash; every layer should contribute to the output. Orthogonal matrices have $|\lambda| = 1$ for all eigenvalues, preserving information perfectly. Moreover, $O(n)$ is a <em>group</em> (invertible), while the Birkhoff polytope is only a <em>monoid</em>. The design principle: axes that need forgetting use monoids; axes that need preservation use groups.
+</div>
+
+<p>Residual matrix transformers <a href="#ref7">[7]</a> replace the residual stream with a matrix-valued state $M^{(\ell)} \in \mathbb{R}^{p \times q}$ updated via rank-one writes &mdash; making the depth axis structurally identical to the sequence axis. Attention Residuals <a href="#ref20">[20]</a> go further, replacing fixed residual accumulation with softmax attention over the depth axis, achieving ${\sim}1.25\times$ compute-equivalent improvement.</p>
 
 <div class="table-wrap">
 <table>
@@ -629,6 +639,7 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
     <li id="ref26">Gu, A. (2025). On the tradeoffs of SSMs and Transformers. <a href="https://goombalab.github.io/blog/2025/tradeoffs/">goombalab.github.io</a>.</li>
     <li id="ref27">Hwang, S., Lahoti, A., Dao, T., and Gu, A. (2024). Hydra: Bidirectional state space models through generalized matrix mixers. <em>arXiv:2407.09941</em>.</li>
     <li id="ref28">Kaczmarz, S. (1937). Angen&auml;herte Aufl&ouml;sung von Systemen linearer Gleichungen. <em>Bull. Int. Acad. Pol. Sci. Lett.</em></li>
+    <li id="ref29">Sengupta, B., Wang, J., and Brunswic, L. (2025). JPmHC: Dynamical isometry via orthogonal hyper-connections. <em>arXiv:2602.18308</em>.</li>
   </ol>
 </div>
 
