@@ -571,7 +571,35 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
 <!-- ================================================================ -->
 <h2 id="transfer">Cross-axis transfer</h2>
 
-<p>The framework suggests several unexplored combinations in the design space parameterized by $(\mathcal{L}, h, \mathcal{M}, \mathcal{H})$:</p>
+<h3>Which aspects matter where</h3>
+
+<p>Although the tuple $(\mathcal{L}, h, \mathcal{M}, \mathcal{H})$ applies on every axis, the different framework dimensions are not equally important on all three:</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Aspect</th><th>Sequence</th><th>Depth</th><th>Data</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>PE / monoid</td><td>Central (RoPE, ALiBi)</td><td>Unexplored</td><td>Not applicable (i.i.d.)</td></tr>
+    <tr><td>Forgetting</td><td>Important (recency)</td><td>Harmful (want isometry)</td><td>Important (weight decay, LR)</td></tr>
+    <tr><td>Normalization</td><td>Relevant (softmax)</td><td>Crucial (RMSNorm every layer)</td><td>Relevant (Adam, Muon)</td></tr>
+    <tr><td>Cost $\mathcal{L}$</td><td>Implicit (optim. view)</td><td>None (inner loop)</td><td>Explicit (training loss)</td></tr>
+    <tr><td>Multi-head</td><td>Well studied (MHA, GQA)</td><td>Emerging ($n$ streams)</td><td>MoE, sharding</td></tr>
+    <tr><td>Capacity / SNR</td><td>Well studied</td><td>Less clear</td><td>Critical batch size</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><strong>Positional encoding</strong> is central on the sequence axis, where token order is fundamental. On the data axis, training examples are typically i.i.d., so ordering is a free choice rather than a constraint &mdash; curriculum learning being the exception. On the depth axis, positional encoding corresponds to inter-layer mixing geometry (hyper-connections), but this has barely been explored as a design dimension.</p>
+
+<p><strong>Forgetting</strong> shows the starkest asymmetry: desirable on the sequence axis (recency bias, finite capacity) and the data axis (plasticity via weight decay), but harmful on the depth axis (every layer should contribute). This is why the depth axis naturally favors group-valued transitions (orthogonal, isometric) while the outer axes use contractive monoids.</p>
+
+<p><strong>Normalization</strong> is ubiquitous but most critical on the depth axis, where it appears after every layer. On the sequence axis it appears as softmax in attention; on the data axis as gradient preconditioning. All three are Bregman projections under the appropriate $h$, but their <em>frequency</em> differs: once per layer vs. once per token vs. once per training step.</p>
+
+<h3>Unexplored combinations</h3>
+
+<p>The relevance map highlights that many natural combinations remain unexplored:</p>
 
 <ul style="margin-bottom: 1rem;">
   <li>The rich positional encoding literature (RoPE, ALiBi, FoX) should directly inspire learning rate schedule design.</li>
