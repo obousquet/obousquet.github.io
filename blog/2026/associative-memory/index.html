@@ -190,9 +190,13 @@
   <ol>
     <li><a href="#hook">The same algorithm, three axes</a></li>
     <li><a href="#sequence">The sequence axis as associative memory</a></li>
-    <li><a href="#framework">The general framework</a></li>
+    <li><a href="#framework">The general framework</a>
+      <br>&emsp; Regularized cost &middot; Generating function $h$ &middot; Cost hierarchy &middot; Write strategies &middot; Monoid &amp; PE &middot; Key geometry &middot; Taxonomy &middot; Equation tables
+    </li>
     <li><a href="#depth">The depth axis</a></li>
-    <li><a href="#data">The data axis</a></li>
+    <li><a href="#data">The data axis</a>
+      <br>&emsp; Every gradient is an outer product &middot; LR = PE &middot; Critical batch size &middot; Adam as diagonal Shampoo
+    </li>
     <li><a href="#transfer">Cross-axis transfer</a></li>
     <li><a href="#limits">Where the analogy breaks</a></li>
     <li><a href="#open">Open questions</a></li>
@@ -589,9 +593,9 @@ $$\mathcal{L} \;\xrightarrow{\;\nabla\;}\; \text{update rule} \;\xrightarrow{\;h
 
 <p>The correspondence between optimizers and sequence models is not merely an analogy &mdash; it is a structural identity. For <em>any</em> layer in a neural network, the gradient is an outer product:</p>
 
-$$\nabla_{W^{(\ell)}} \mathcal{L} = \underbrace{\delta^{(\ell)}}_{\text{value (backprop error)}} \underbrace{(h^{(\ell-1)})^\top}_{\text{key (input activation)}}$$
+$$\nabla_{W^{(\ell)}} \mathcal{L} = \underbrace{\delta^{(\ell)}}_{\text{value (backprop error)}} \underbrace{(z^{(\ell-1)})^\top}_{\text{key (input activation)}}$$
 
-<p>Every weight matrix is therefore literally an associative memory, updated by outer products of (backpropagated errors, input activations) &mdash; exactly the $v_t k_t^\top$ write of the sequence axis. After $N$ gradient steps, $W_N = \sum_n \eta_n \delta_n (h_n)^\top$ is a sum of outer products. Feature learning means the keys evolve to improve storage and retrieval.</p>
+<p>where $\delta^{(\ell)}$ is the error backpropagated to layer $\ell$ and $z^{(\ell-1)}$ is the input activation. Every weight matrix is therefore literally an associative memory, updated by outer products of (backpropagated errors, input activations) &mdash; exactly the $v_t k_t^\top$ write of the sequence axis. After $N$ gradient steps, $W_N = \sum_n \eta_n \delta_n (z_n)^\top$ is a sum of outer products. Feature learning means the keys evolve to improve storage and retrieval.</p>
 
 <div class="callout">
   <strong>What optimizers do to outer products.</strong>
@@ -656,7 +660,7 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
     <tr><td>None</td><td>Linear attention</td><td>Hebbian</td><td>Raw outer product</td></tr>
     <tr><td>Diagonal</td><td>GLA / Mamba</td><td>Adam ($1/\sqrt{v}$)</td><td>Per-component</td></tr>
     <tr><td>Rank-1 (Householder)</td><td>DeltaNet</td><td>SGD on MSE</td><td>Per-sample key</td></tr>
-    <tr><td>Full key-side</td><td>RLS (if existed)</td><td>Shampoo ($R^{-1/2}$)</td><td>Key whitening</td></tr>
+    <tr><td>Full key-side</td><td>RLS-Net (predicted)</td><td>Shampoo ($R^{-1/2}$)</td><td>Key whitening</td></tr>
     <tr><td>Bilateral</td><td>&mdash;</td><td>Shampoo ($L, R$)</td><td>Both-side whitening</td></tr>
     <tr><td>Spectral</td><td>&mdash;</td><td>Muon (polar)</td><td>Stiefel projection</td></tr>
   </tbody>
@@ -718,6 +722,8 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
 <p><strong>Single-pass vs. iterated.</strong> On the sequence axis, the model makes a single pass. On the data axis, multiple epochs allow convergence to solutions that a single pass can only approximate.</p>
 
 <p><strong>Depth has no independent cost.</strong> The depth axis has no per-step cost. The forward pass is inference, not optimization. The cost that shapes it is the global training loss, propagated backward through backprop.</p>
+
+<p><strong>Forgetting is asymmetric across axes.</strong> On the sequence and data axes, controlled forgetting is desirable (recency bias, plasticity). On the depth axis, forgetting is <em>harmful</em> &mdash; every layer should contribute. This is why bistochastic transitions ($|\lambda_i| < 1$) cause "spectral stalling" on the depth axis, while orthogonal transitions ($|\lambda| = 1$) preserve dynamical isometry. The framework's tuple applies on all axes, but the <em>optimal choice</em> of monoid differs: contractive monoids for the outer axes, isometric groups for the inner axis.</p>
 
 <p><strong>MLP memories go beyond matrix state.</strong> Titans <a href="#ref12">[12]</a> and TTT use multi-layer MLPs as the memory. The optimization-based update still applies, but the semiseparable structure and SNR capacity analysis break.</p>
 
