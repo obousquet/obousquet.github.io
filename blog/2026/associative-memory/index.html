@@ -270,13 +270,15 @@ $$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
 
 <h3>The delta rule: error-corrective writing</h3>
 
-<p>The simplest write is <em>additive</em> (Hebbian): $S_t = S_{t-1} + v_t k_t^\top$. The delta rule improves on this by writing only the prediction error $(v_t - S_{t-1} k_t)$, avoiding redundant storage. When iterated over a fixed set of key-value pairs, it converges to the pseudoinverse $S^* = VK^+$ (the Kaczmarz method <a href="#ref28">[28]</a>).</p>
+<p>The simplest write is <em>additive</em> (Hebbian): $S_t = S_{t-1} + v_t k_t^\top$. The delta rule improves on this by writing only the prediction error $(v_t - S_{t-1} k_t)$, avoiding redundant storage. Rewriting as $S_t = S_{t-1}(I - \beta_t k_t k_t^\top) + \beta_t v_t k_t^\top$ reveals that the transition $(I - \beta_t k_t k_t^\top)$ is a Householder reflection acting on the <em>key space</em> by right-multiplication. It projects out the component of each stored key in the direction $k_t$. Unrolling the recurrence, each stored key is transformed by an accumulated product of Householder reflections &mdash; an <em>online Gram-Schmidt</em> process that systematically orthogonalizes the effective keys. This is why the delta rule converges to the pseudoinverse $S^* = VK^+$ (the Kaczmarz method <a href="#ref28">[28]</a>).</p>
 
 <p>The classical associative memory community independently discovered the same progression of write strategies &mdash; from Hebbian to error-corrective (Storkey <a href="#ref11">[11]</a>) to exponential-kernel (modern Hopfield <a href="#ref6">[6]</a>) &mdash; before it appeared on the sequence axis (linear attention &rarr; DeltaNet &rarr; softmax attention). The capacity jumps at each step are the same: $O(d/\log d) \to O(d) \to e^{O(d)}$.</p>
 
 <h3>Capacity and the SNR</h3>
 
 <p>For a linear outer-product memory with $N$ random patterns of dimension $d$, the retrieval signal-to-noise ratio is $\mathrm{SNR}_{\text{linear}} = d/N$. The memory saturates at $N_{\max} \sim d$ patterns. For softmax attention (modern Hopfield networks <a href="#ref6">[6]</a>), the exponential kernel yields exponential capacity: $N_{\max} \sim e^{O(d)}$.</p>
+
+<p>The $\text{SNR} = d/N$ bound assumes random (approximately orthogonal) keys. When keys are correlated, the effective capacity depends on the condition number of the key matrix $K$: the pseudoinverse $VK^+$ amplifies noise by $1/\sigma_{\min}(K)$. For nearly collinear keys, regularization (retention $\alpha < 1$) is more appropriate than exact orthogonalization.</p>
 
 <p>The kernel choice determines the capacity-computation tradeoff. This tradeoff is universal <a href="#ref26">[26]</a>: fixed-size state (SSM, capacity $O(d)$) vs. growing token cache (Transformer, capacity $O(N)$). Log-linear attention <a href="#ref21">[21]</a> interpolates with logarithmically growing state.</p>
 
@@ -399,6 +401,23 @@ $$D_h(W, W') = h(W) - h(W') - \langle \nabla h(W'),\, W - W' \rangle$$
 </div>
 
 <p>The monoid and the generating function $h$ are complementary: the monoid determines the <em>algebraic structure</em> of the transitions (scalar, diagonal, orthogonal), while $h$ determines the <em>geometry</em> of the retention (Euclidean, entropic, spectral). Together they fully specify how the memory forgets.</p>
+
+<p>A crucial distinction within the same monoid: <em>data-independent</em> transitions (RoPE's rotation, RetNet's scalar decay) preserve the Gram matrix of stored keys &mdash; they encode position by rotating the key space but don't change its correlation structure. <em>Data-dependent</em> transitions (DeltaNet's Householder $I - \beta k_t k_t^\top$, Mamba's input-dependent gate) actively reshape key geometry &mdash; DeltaNet orthogonalizes keys, Mamba selectively attenuates dimensions. This determines whether the monoid serves as a positional encoding (data-independent) or as active memory management (data-dependent).</p>
+
+<h3>Key geometry and the role of retention</h3>
+
+<p>The write strategy and retention jointly shape the <em>effective Gram matrix</em> $G_{ij} = \langle \tilde{k}_i, \tilde{k}_j \rangle$ of stored keys, which determines retrieval capacity. The optimal key geometry depends on the task:</p>
+
+<p><strong>Lookup</strong> (independent associations): orthogonal keys give zero cross-talk, maximum capacity $N_{\max} = d_k$. The delta rule drives $G \to I$ via online Gram-Schmidt.</p>
+
+<p><strong>Regression</strong> (correlated keys, smooth values): when similar keys should retrieve similar values (e.g., in-context learning), orthogonalization is counterproductive &mdash; it destroys the correlation structure needed for generalization. The pseudoinverse becomes ill-conditioned for nearly collinear keys. The right approach is <em>regularized regression</em>: $S^* = VK^\top(KK^\top + \lambda I)^{-1}$.</p>
+
+<div class="callout">
+  <strong>Retention = implicit regularization.</strong>
+  Scalar retention $\alpha < 1$ implements ridge regression with $\lambda \sim 1 - \alpha^2$. The retention parameter controls the bias-variance tradeoff: $\alpha \to 1$ gives the pseudoinverse (exact but fragile); $\alpha \to 0$ gives strong regularization (robust but forgetful). This explains input-dependent gating in Mamba/GLA: the model learns to forget more when keys are correlated (regularize) and less when keys are orthogonal (maximize capacity). DeltaNet can use $\alpha = 1$ because the Householder <em>is</em> the regularizer.
+</div>
+
+<p><strong>Hierarchical keys</strong> (group structure): block-diagonal Gram matrix &mdash; correlated within groups, orthogonal across. This is exactly multi-head attention: each head is an independent subspace. On the data axis: weight decay is the retention, and block-diagonal structure is MoE.</p>
 
 <h3>The chain from cost to capacity</h3>
 
