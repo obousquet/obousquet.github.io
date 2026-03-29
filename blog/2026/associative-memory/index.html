@@ -330,12 +330,12 @@ $$D_h(W, W') = h(W) - h(W') - \langle \nabla h(W'),\, W - W' \rangle$$
   <tbody>
     <tr><td>$\frac{1}{2}\|W\|_F^2$</td><td>Scalar forget gate</td><td>RMSNorm</td><td>Sphere</td><td>Depth</td></tr>
     <tr><td>$\sum w \log w$</td><td>Entropic (KL)</td><td>Softmax</td><td>Simplex</td><td>Sequence</td></tr>
-    <tr><td>Spectral function</td><td>Spectral decay</td><td>Polar decomp.</td><td>Stiefel</td><td>Data</td></tr>
+    <tr><td>$\frac{1}{2}\|W\|_F^2$ (Euclidean)</td><td>Weight decay</td><td>Polar decomp.</td><td>Stiefel</td><td>Data</td></tr>
   </tbody>
 </table>
 </div>
 
-<p>The solution is computed via <em>mirror descent</em>: $W_t = \nabla h^*(\nabla h(W_{t-1}) - \eta_t \nabla \ell_t)$, where $\nabla h^*$ is the link function. For entropic $h$, $\nabla h^* = \mathrm{softmax}$, so the update <em>is</em> softmax normalization &mdash; this is exactly Memora <a href="#ref12">[12]</a>. For quadratic $h$, mirror descent reduces to standard GD, and projection onto the sphere gives RMSNorm. For spectral $h$, the projection is Muon's polar decomposition.</p>
+<p>The solution is computed via <em>mirror descent</em>: $W_t = \nabla h^*(\nabla h(W_{t-1}) - \eta_t \nabla \ell_t)$, where $\nabla h^*$ is the link function. For entropic $h$, $\nabla h^* = \mathrm{softmax}$, so the update <em>is</em> softmax normalization &mdash; this is exactly Memora <a href="#ref12">[12]</a>. For quadratic $h$, mirror descent reduces to standard GD, and projection onto the sphere gives RMSNorm. For Euclidean $h$ with a Stiefel manifold constraint, the projection is Muon's polar decomposition &mdash; same $h$ as RMSNorm, different manifold.</p>
 
 <div class="callout">
   <strong>Retention and normalization are dual aspects of the same object.</strong>
@@ -376,7 +376,7 @@ $$D_h(W, W') = h(W) - h(W') - \langle \nabla h(W'),\, W - W' \rangle$$
     <tr><td>Additive</td><td>1 step</td><td>Linear attention</td><td>Hebbian</td></tr>
     <tr><td>Error-corrective</td><td>GD</td><td>DeltaNet / Gated DeltaNet <a href="#ref15">[15]</a></td><td>Widrow&ndash;Hoff / SGD</td></tr>
     <tr><td>+ momentum</td><td>GD+mom.</td><td>Titans <a href="#ref12">[12]</a></td><td>Adam</td></tr>
-    <tr><td>Spectral</td><td>GD</td><td>&mdash;</td><td>Muon</td></tr>
+    <tr><td>Stiefel proj.</td><td>GD</td><td>&mdash;</td><td>Muon</td></tr>
     <tr><td>Full curvature</td><td>Newton</td><td>Longhorn</td><td>Natural gradient</td></tr>
     <tr><td>Batch optimal</td><td>FTRL</td><td>Softmax attention</td><td>Pseudoinverse</td></tr>
   </tbody>
@@ -404,7 +404,7 @@ $$D_h(W, W') = h(W) - h(W') - \langle \nabla h(W'),\, W - W' \rangle$$
 </table>
 </div>
 
-<p>The monoid and the generating function $h$ are complementary: the monoid determines the <em>algebraic structure</em> of the transitions (scalar, diagonal, orthogonal), while $h$ determines the <em>geometry</em> of the retention (Euclidean, entropic, spectral). Together they fully specify how the memory forgets.</p>
+<p>The monoid and the generating function $h$ are complementary: the monoid determines the <em>algebraic structure</em> of the transitions (scalar, diagonal, orthogonal), while $h$ determines the <em>geometry</em> of the retention (Euclidean, entropic). Together they fully specify how the memory forgets.</p>
 
 <p>A crucial distinction within the same monoid: <em>data-independent</em> transitions (RoPE's rotation, RetNet's scalar decay) preserve the Gram matrix of stored keys &mdash; they encode position by rotating the key space but don't change its correlation structure. <em>Data-dependent</em> transitions (DeltaNet's Householder $I - \beta k_t k_t^\top$, Mamba's input-dependent gate) actively reshape key geometry &mdash; DeltaNet orthogonalizes keys, Mamba selectively attenuates dimensions. This determines whether the monoid serves as a positional encoding (data-independent) or as active memory management (data-dependent).</p>
 
@@ -476,7 +476,7 @@ $$\mathcal{L} \;\xrightarrow{\;\nabla\;}\; \text{update rule} \;\xrightarrow{\;h
     <tr><td>Pre-Norm</td><td>Eucl. (RMSNorm)</td><td>$\{I\}$</td><td>$\mathbb{R}^d$</td><td>$x + f(\text{Norm}(x))$</td></tr>
     <tr><td>Hyper-connections</td><td>Eucl.</td><td>$\text{GL}(n)$</td><td>$\mathbb{R}^{n \times d}$</td><td>Learnable mixing</td></tr>
     <tr><td>mHC (Sinkhorn)</td><td>Entropic</td><td>Birkhoff $\mathcal{B}_n$</td><td>$\mathbb{R}^{n \times d}$</td><td>Sinkhorn-projected mixing</td></tr>
-    <tr><td>JPmHC (Cayley)</td><td>Spectral (polar)</td><td>$O(n)$ (Stiefel)</td><td>$\mathbb{R}^{n \times d}$</td><td>Cayley-projected mixing</td></tr>
+    <tr><td>JPmHC (Cayley)</td><td>Eucl. (Stiefel)</td><td>$O(n)$</td><td>$\mathbb{R}^{n \times d}$</td><td>Cayley-projected mixing</td></tr>
     <tr><td>Res. Matrix Transf.</td><td>Eucl.</td><td>Learned</td><td>$\mathbb{R}^{p \times q}$</td><td>$AM + vk^\top$</td></tr>
     <tr><td>Attention Residuals</td><td>Entropic (softmax)</td><td>&mdash;</td><td>$\mathbb{R}^{p \times q}$</td><td>$\sum_\ell w_\ell x^{(\ell)}$</td></tr>
   </tbody>
@@ -496,7 +496,7 @@ $$\mathcal{L} \;\xrightarrow{\;\nabla\;}\; \text{update rule} \;\xrightarrow{\;h
     <tr><td>SGD + wd</td><td>MSE</td><td>Eucl. ($L^2$ ball)</td><td>Scalar</td><td>GD</td></tr>
     <tr><td>Adam</td><td>Any</td><td>Eucl. (diag.)</td><td>Scalar</td><td>GD+mom.</td></tr>
     <tr><td>Shampoo</td><td>Any</td><td>Kronecker</td><td>&mdash;</td><td>Newton</td></tr>
-    <tr><td>Muon</td><td>Any</td><td>Spectral (polar)</td><td>&mdash;</td><td>GD</td></tr>
+    <tr><td>Muon</td><td>Any</td><td>Eucl. (Stiefel)</td><td>&mdash;</td><td>GD</td></tr>
     <tr><td>Natural gradient</td><td>Any</td><td>Fisher</td><td>&mdash;</td><td>Newton</td></tr>
     <tr><td>CE + nat. grad</td><td>Log-sum-exp</td><td>Fisher</td><td>&mdash;</td><td>Newton</td></tr>
     <tr><td>Batch GD / ERM</td><td>Any</td><td>Eucl.</td><td>&mdash;</td><td>FTRL</td></tr>
@@ -562,7 +562,7 @@ $$\mathcal{L} \;\xrightarrow{\;\nabla\;}\; \text{update rule} \;\xrightarrow{\;h
 
 <p>Recent work has enriched the depth axis with richer state-update structure. Hyper-connections <a href="#ref9">[9]</a> generalize residual connections with learnable mixing matrices &mdash; a full matrix-valued transition operator $A_n \in \mathbb{R}^{n \times n}$ on the depth axis, acting via matrix product on $n$ parallel streams (not element-wise as on the sequence axis).</p>
 
-<p>The manifold constraint on this transition operator fits directly into the Bregman framework. Bistochastic (Sinkhorn) mixing projects $A_n$ onto the Birkhoff polytope via alternating Bregman projections with <em>entropic</em> $h$ &mdash; the same $h$ that gives softmax normalization on the sequence axis. Orthogonal (Cayley) mixing <a href="#ref29">[29]</a> projects onto $O(n)$ via <em>spectral</em> $h$ &mdash; the same $h$ that gives Muon's polar decomposition on the data axis.</p>
+<p>The manifold constraint on this transition operator fits directly into the Bregman framework. Bistochastic (Sinkhorn) mixing projects $A_n$ onto the Birkhoff polytope via alternating Bregman projections with <em>entropic</em> $h$ &mdash; the same $h$ that gives softmax normalization on the sequence axis. Orthogonal (Cayley) mixing <a href="#ref29">[29]</a> projects onto $O(n)$ via Euclidean $h$ with a Stiefel manifold constraint &mdash; the same $(h, \mathcal{M})$ pair that gives Muon's polar decomposition on the data axis.</p>
 
 <div class="callout">
   <strong>Why orthogonal beats bistochastic on the depth axis.</strong>
@@ -599,7 +599,7 @@ $$\nabla_{W^{(\ell)}} \mathcal{L} = \underbrace{\delta^{(\ell)}}_{\text{value (b
 
 <div class="callout">
   <strong>What optimizers do to outer products.</strong>
-  Each optimizer manipulates these outer products differently. Hebbian learning sums them raw (= linear attention). SGD corrects errors before writing (= DeltaNet). Weight decay adds scalar forgetting (= Gated DeltaNet). Momentum maintains a running average (= Titans). Adam adds element-wise normalization (= diagonal bilateral whitening). Muon applies polar decomposition (= spectral normalization). A mini-batch of $B$ examples produces a rank-$B$ sum of outer products, exactly like a chunk of $C$ tokens in chunked linear attention.
+  Each optimizer manipulates these outer products differently. Hebbian learning sums them raw (= linear attention). SGD corrects errors before writing (= DeltaNet). Weight decay adds scalar forgetting (= Gated DeltaNet). Momentum maintains a running average (= Titans). Adam adds element-wise normalization (= diagonal bilateral whitening). Muon applies polar decomposition (= Stiefel projection). A mini-batch of $B$ examples produces a rank-$B$ sum of outer products, exactly like a chunk of $C$ tokens in chunked linear attention.
 </div>
 
 <h3>Learning rate schedules = positional encoding</h3>
@@ -662,7 +662,7 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
     <tr><td>Rank-1 (Householder)</td><td>DeltaNet</td><td>SGD on MSE</td><td>Per-sample key</td></tr>
     <tr><td>Full key-side</td><td>RLS-Net (predicted)</td><td>Shampoo ($R^{-1/2}$)</td><td>Key whitening</td></tr>
     <tr><td>Bilateral</td><td>&mdash;</td><td>Shampoo ($L, R$)</td><td>Both-side whitening</td></tr>
-    <tr><td>Spectral</td><td>&mdash;</td><td>Muon (polar)</td><td>Stiefel projection</td></tr>
+    <tr><td>Stiefel proj.</td><td>&mdash;</td><td>Muon (polar)</td><td>Isometry constraint</td></tr>
   </tbody>
 </table>
 </div>
@@ -706,7 +706,7 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
 <ul style="margin-bottom: 1rem;">
   <li>The rich positional encoding literature (RoPE, ALiBi, FoX) should directly inspire learning rate schedule design.</li>
   <li>An "RLS-Net" that maintains the inverse key-correlation matrix as additional recurrent state could achieve optimal single-pass learning.</li>
-  <li><strong>"Muon-Net"</strong>: apply polar decomposition to the state matrix $S_t$ after each update, projecting onto the Stiefel manifold &mdash; transferring Muon's spectral normalization to the sequence axis.</li>
+  <li><strong>"Muon-Net"</strong>: apply polar decomposition to the state matrix $S_t$ after each update, projecting onto the Stiefel manifold &mdash; transferring Muon's Stiefel projection to the sequence axis.</li>
   <li><strong>"Shampoo-Net"</strong>: decorrelate both key and value spaces using accumulated correlations $L_t = \sum \beta^{T-t} v_t v_t^\top$ and $R_t = \sum \beta^{T-t} k_t k_t^\top$ &mdash; bilateral whitening, generalizing DeltaNet's key-only Householder.</li>
   <li><strong>"Adam-Net"</strong>: combine Titans-style momentum with per-component normalization by accumulated key/value statistics &mdash; the sequence-axis transfer of Adam's adaptive learning rate.</li>
   <li>Finding optimizers with rotational or reflective decay structure would complete the analogy with RoPE and PaTH on the sequence axis.</li>
