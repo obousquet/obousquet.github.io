@@ -494,7 +494,7 @@ $$\mathcal{L} \;\xrightarrow{\;\nabla\;}\; \text{update rule} \;\xrightarrow{\;h
     <tr><td>Hebbian</td><td>Alignment</td><td>Eucl.</td><td>$\{I\}$</td><td>1-step</td></tr>
     <tr><td>SGD</td><td>MSE</td><td>Eucl.</td><td>Scalar</td><td>GD</td></tr>
     <tr><td>SGD + wd</td><td>MSE</td><td>Eucl. ($L^2$ ball)</td><td>Scalar</td><td>GD</td></tr>
-    <tr><td>Adam</td><td>Any</td><td>Eucl. (diag.)</td><td>Diagonal</td><td>GD+mom.</td></tr>
+    <tr><td>Adam</td><td>Any</td><td>Eucl. (diag.)</td><td>Scalar</td><td>GD+mom.</td></tr>
     <tr><td>Shampoo</td><td>Any</td><td>Kronecker</td><td>&mdash;</td><td>Newton</td></tr>
     <tr><td>Muon</td><td>Any</td><td>Spectral (polar)</td><td>&mdash;</td><td>GD</td></tr>
     <tr><td>Natural gradient</td><td>Any</td><td>Fisher</td><td>&mdash;</td><td>Newton</td></tr>
@@ -615,7 +615,7 @@ $$\nabla_{W^{(\ell)}} \mathcal{L} = \underbrace{\delta^{(\ell)}}_{\text{value (b
   </thead>
   <tbody>
     <tr><td>Constant $\eta_0$</td><td>Uniform exponential decay</td><td>ALiBi / RetNet</td></tr>
-    <tr><td>Adam (per-parameter)</td><td>Diagonal adaptive decay</td><td>FoX / Mamba2</td></tr>
+    <tr><td>Per-param weight decay</td><td>Diagonal adaptive decay</td><td>FoX / Mamba2</td></tr>
     <tr><td>Cosine annealing</td><td>Linear + sinusoidal</td><td>Sinusoidal PE</td></tr>
     <tr><td>Curriculum learning</td><td>Input-dependent gating</td><td>Mamba / FoX</td></tr>
   </tbody>
