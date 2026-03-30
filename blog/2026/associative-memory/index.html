@@ -650,6 +650,8 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
 
 <p>The optimal batch size $B^* \sim B_{\text{crit}}$ corresponds to the optimal chunk size $C^* \sim d$ in chunked attention: both are where switching from parallel to recurrent mode becomes worthwhile. Natural gradient reduces the effective $B_{\text{crit}}$ &mdash; the data-axis analogue of softmax sharpening retrieval.</p>
 
+<p><strong>Gradient transmission bottleneck.</strong> Beyond gradient <em>estimation</em> noise, gradient <em>transmission</em> through low-rank layers is itself a capacity limit. The LM head $W \in \mathbb{R}^{V \times D}$ with $D \ll V$ compresses the $V$-dimensional logit gradient to rank at most $D$ during backpropagation. Godey and Artzi <a href="#ref-godey2026">[G&A 2026]</a> show that 95&ndash;99% of the gradient norm is destroyed by this projection, yielding update directions fundamentally misaligned with the optimum. This is a <em>hard</em> bottleneck analogous to $N_{\max} \sim d_k$ on the sequence axis: just as a rank-$d_k$ memory matrix cannot faithfully store more than $d_k$ patterns, the rank-$D$ LM head cannot transmit more than $D$ directions of supervision signal per step. The ratio $D/V$ plays the role of $d_k / N$.</p>
+
 <h3>Cross-entropy as data-axis softmax attention</h3>
 
 <div class="callout">
@@ -792,6 +794,7 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
     <li id="ref27">Hwang, S., Lahoti, A., Dao, T., and Gu, A. (2024). Hydra: Bidirectional state space models through generalized matrix mixers. <em>arXiv:2407.09941</em>.</li>
     <li id="ref28">Kaczmarz, S. (1937). Angen&auml;herte Aufl&ouml;sung von Systemen linearer Gleichungen. <em>Bull. Int. Acad. Pol. Sci. Lett.</em></li>
     <li id="ref29">Sengupta, B., Wang, J., and Brunswic, L. (2025). JPmHC: Dynamical isometry via orthogonal hyper-connections. <em>arXiv:2602.18308</em>.</li>
+    <li id="ref-godey2026">Godey, N. and Artzi, Y. (2026). Lost in Backpropagation: The LM Head is a Gradient Bottleneck. <em>arXiv:2603.10145</em>.</li>
   </ol>
 </div>
 
