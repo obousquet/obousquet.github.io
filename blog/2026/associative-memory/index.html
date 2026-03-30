@@ -294,7 +294,7 @@ $$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
 
 <h3>Retention and forgetting</h3>
 
-<p>The retention operator $A_t$ controls how old information decays. Afzal <a href="#ref5">[5]</a> established a fundamental duality: forget gates in linear recurrences <em>are</em> positional encodings in softmax transformers. The cumulative product $P_{j \to t} = \prod_{s=j+1}^{t} A_s$ defines a distance between positions, and the <em>monoid</em> of transition matrices determines the geometry:</p>
+<p>The retention operator $A_t$ controls how old information decays. Afzal <a href="#ref5">[5]</a> established a fundamental duality: forget gates in linear recurrences <em>are</em> positional encodings in softmax transformers. The cumulative product $P_{j \to t} = \prod_{s=j+1}^{t} A_s$ defines a distance $d(j,t) = -\log\|P_{j \to t}\| = \sum_{s=j+1}^t D_s$ between positions. This distance satisfies non-negativity ($d(j,t) \geq 0$), identity ($d(t,t) = 0$), and the chain rule $d(j,t) = d(j,s) + d(s,t)$ for $j < s < t$ &mdash; a strengthened triangle inequality. It is in general <em>asymmetric</em> ($d(j,t) \neq d(t,j)$), appropriate for causal modeling. The <em>monoid</em> of transition matrices determines the geometry:</p>
 
 <div class="table-wrap">
 <table>
@@ -311,15 +311,38 @@ $$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
 </table>
 </div>
 
+<p>The monoid structure induces a classification of PEs into <em>additive</em> and <em>multiplicative</em> forms. Scalar and diagonal monoids act on attention logits as additive biases: $\mathrm{Att}_{t,j} = q_t^\top k_j + d(j,t)$ (ALiBi, FoX). Rotation and Householder monoids act multiplicatively on keys: $\mathrm{Att}_{t,j} = q_t^\top P_{j \to t}\, k_j$ (RoPE, PaTH). Commutative monoids with $\|A_s\| < 1$ contribute additively in the log domain; orthogonal monoids ($\|A_s\| = 1$) preserve norms and act multiplicatively on the key-query inner product.</p>
+
 <p>A crucial distinction: <em>data-independent</em> transitions (RoPE's rotation, RetNet's scalar decay) preserve the Gram matrix of stored keys &mdash; they encode position without changing correlation structure. <em>Data-dependent</em> transitions (DeltaNet's Householder, Mamba's diagonal gate) actively reshape key geometry &mdash; DeltaNet orthogonalizes keys, Mamba selectively attenuates dimensions. This determines whether the monoid serves as a positional encoding (data-independent) or active memory management (data-dependent).</p>
 
 <h3>Capacity and the SNR</h3>
 
-<p>For a linear outer-product memory with $N$ random patterns of dimension $d$, the retrieval signal-to-noise ratio is $\mathrm{SNR}_{\text{linear}} = d/N$. The memory saturates at $N_{\max} \sim d$ patterns. For softmax attention (modern Hopfield networks <a href="#ref6">[6]</a>), the exponential kernel yields $N_{\max} \sim e^{O(d)}$.</p>
+<p>For a linear outer-product memory with $N$ random patterns of dimension $d$, the retrieval signal-to-noise ratio is $\mathrm{SNR}_{\text{linear}} = d/N$. The memory saturates at $N_{\max} \sim d$ patterns.</p>
+
+<p><strong>Softmax attention SNR.</strong> For softmax attention with temperature $\tau$, querying with $q = k_*$ gives weight ratio $w_j / w_* = \exp(-\Delta_j / \tau)$ where $\Delta_j = \|k_*\|^2 - k_*^\top k_j$ is the logit gap. The SNR becomes:</p>
+
+$$\mathrm{SNR}_{\text{softmax}} \gtrsim \frac{d_v \exp\!\bigl(2(d - c\sqrt{d \log N})/\tau\bigr)}{N}$$
+
+<p>The <em>temperature $\tau$ is critical</em>. Standard transformers use $\tau = \sqrt{d_k}$; the Hopfield setting <a href="#ref6">[6]</a> uses $\tau = O(1)$:</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Setting</th><th>Temperature $\tau$</th><th>Capacity $N_{\max}$</th><th>SNR amplification</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Linear attention</td><td>$\tau \to \infty$ (flat kernel)</td><td>$O(d_k)$</td><td>$\times 1$</td></tr>
+    <tr><td>Standard transformer</td><td>$\sqrt{d_k}$</td><td>$\exp(O(\sqrt{d_k}))$</td><td>$\times \exp(2\sqrt{d_k})$</td></tr>
+    <tr><td>Unscaled / Hopfield</td><td>$O(1)$</td><td>$\exp(O(d_k))$</td><td>$\times \exp(2d_k)$</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The often-cited $N_{\max} \sim \exp(O(d))$ assumes $\tau = O(1)$. Standard transformers achieve $\exp(O(\sqrt{d_k}))$ &mdash; still super-polynomial, but a different exponent. In practice, even $\exp(\sqrt{d_k})$ is enormous: for $d_k = 128$, $\exp(2\sqrt{128}) \approx 4 \times 10^9$, far exceeding any practical sequence length. The capacity of softmax attention is never the bottleneck; the quadratic compute cost hits first.</p>
 
 <p>The $\text{SNR} = d/N$ bound assumes random keys. When keys are correlated, the pseudoinverse $VK^+$ amplifies noise by $1/\sigma_{\min}(K)$. For nearly collinear keys, regularization (retention $\alpha < 1$) is more appropriate than exact orthogonalization.</p>
 
-<p>The kernel choice determines the capacity-computation tradeoff. This tradeoff is universal <a href="#ref26">[26]</a>: fixed-size state (SSM, capacity $O(d)$) vs. growing token cache (Transformer, capacity $O(N)$). Log-linear attention <a href="#ref21">[21]</a> interpolates with logarithmically growing state.</p>
+<p>The kernel choice determines the capacity-computation tradeoff. This tradeoff is universal <a href="#ref26">[26]</a>: fixed-size state (SSM, capacity $O(d)$) vs. growing token cache (Transformer, capacity $\exp(O(d/\tau))$). Log-linear attention <a href="#ref21">[21]</a> interpolates with logarithmically growing state.</p>
 
 <h3>Duality: recurrent and attention views</h3>
 
