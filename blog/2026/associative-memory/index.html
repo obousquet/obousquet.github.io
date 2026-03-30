@@ -351,7 +351,35 @@ $$W_t = \arg\min_W \; \ell_t(W; k_t, v_t) + \frac{1}{\eta_t}\, D_h(W, W_{t-1})$$
 
 $$D_h(W, W') = h(W) - h(W') - \langle \nabla h(W'),\, W - W' \rangle$$
 
-<p>The Bregman term penalizes deviation from the previous state &mdash; it <em>is</em> the retention mechanism. Our state update $S_t = A_t \circ S_{t-1} + v_t k_t^\top$ is the one-step gradient approximation when $h(W) = \frac{1}{2}\|W\|_F^2$ (Euclidean case).</p>
+<p>The Bregman term penalizes deviation from the previous state &mdash; it <em>is</em> the retention mechanism. To connect this cost to concrete state updates, we derive the update rules by solving or approximating the optimization problem.</p>
+
+<p><strong>Euclidean case.</strong> When $h(W) = \frac{1}{2}\|W\|_F^2$, the Bregman divergence is $D_h = \frac{1}{2}\|W - W'\|_F^2$. Setting the gradient of the cost to zero gives the <em>implicit</em> (proximal) update:</p>
+
+$$W_t = W_{t-1} - \eta_t\, \nabla \ell_t(W_t)$$
+
+<p>This is implicit because $W_t$ appears on both sides. The <em>explicit</em> (one-step gradient) approximation replaces $\nabla \ell_t(W_t)$ by $\nabla \ell_t(W_{t-1})$, recovering the state update $W_t \approx W_{t-1} - \eta_t\, \nabla \ell_t(W_{t-1}) = A_t \circ W_{t-1} + \psi(v_t, k_t)$. On the data axis this is SGD; on the sequence axis it is DeltaNet&rsquo;s delta rule.</p>
+
+<p>For the quadratic cost $\ell_t(W) = \frac{1}{2}\|v_t - Wk_t\|^2$, the implicit equation can be solved in closed form:</p>
+
+$$W_t = W_{t-1} + \frac{\eta_t}{1 + \eta_t \|k_t\|^2}(v_t - W_{t-1} k_t)\, k_t^\top$$
+
+<p>This is Longhorn: the <em>exact</em> minimizer of the per-step regularized cost. When $\|k_t\| = 1$ and $\eta_t \to \infty$, it reduces to the normalized delta rule (NLMS on the data axis). So DeltaNet (explicit GD) and Longhorn (exact/Newton) are two approximation levels of the same cost.</p>
+
+<p><strong>General case (mirror descent).</strong> For general $h$, the explicit approximation gives the mirror descent update:</p>
+
+$$W_t = \nabla h^*\!\bigl(\nabla h(W_{t-1}) - \eta_t\, \nabla \ell_t(W_{t-1})\bigr)$$
+
+<p>where $\nabla h^*$ is the <em>link function</em> mapping from dual to primal space: identity for Euclidean $h$ (standard GD), softmax for entropic $h$ (Memora), polar decomposition for Stiefel-constrained Euclidean (Muon).</p>
+
+<p><strong>Constrained dual (Frank-Wolfe).</strong> By Lagrangian duality, the regularized cost is equivalent to a hard constraint: minimize $\ell_t(W)$ subject to $W \in \mathcal{C}$, where the constraint radius is dual to $1/\eta_t$. The Frank-Wolfe (conditional gradient) algorithm solves this via:</p>
+
+$$s_t = \arg\min_{S \in \mathcal{C}} \langle \nabla \ell_t(W_{t-1}),\, S \rangle, \qquad W_t = (1 - \gamma_t)\, W_{t-1} + \gamma_t\, s_t$$
+
+<p>This is a state update with <em>scalar</em> retention $(1-\gamma_t)$ and a write term $\gamma_t s_t$ where the linear minimization oracle (LMO) returns a point on the <em>boundary</em> of $\mathcal{C}$. The LMO plays the same structural role as $\nabla h^*$: both map a gradient signal to a feasible update. The most general formulation subsumes both:</p>
+
+$$W_t = \arg\min_{W \in \mathcal{C}} \left\{\ell_t(W) + \frac{1}{\eta_t}\, D_h(W, W_{t-1})\right\}$$
+
+<p>where mirror descent is the unconstrained case ($\mathcal{C} = \mathbb{R}^{d \times d}$) and Frank-Wolfe operates when the hard constraint dominates the Bregman penalty. The framework&rsquo;s pair $(h, \mathcal{M}_{\text{norm}})$ parameterizes both: $h$ determines the Bregman geometry, $\mathcal{M}_{\text{norm}}$ determines the constraint set.</p>
 
 <h3>The cost hierarchy</h3>
 
@@ -394,7 +422,17 @@ $$D_h(W, W') = h(W) - h(W') - \langle \nabla h(W'),\, W - W' \rangle$$
 </table>
 </div>
 
-<p>GD with momentum on the sequence axis gives Titans <a href="#ref12">[12]</a>, which maintains two state matrices (memory + momentum) &mdash; exactly as Adam maintains $(m_t, v_t)$ on the data axis. FTRL recovers full attention on the sequence axis and batch optimization on the data axis. Bernstein and Newhouse <a href="#ref23">[23]</a> show that Adam, Shampoo, and Muon are all steepest descent under different norms. LUCID <a href="#ref24">[24]</a> applies preconditioning to the sequence-axis readout, achieving gains analogous to natural gradient on the data axis.</p>
+<p>GD with momentum on the sequence axis gives Titans <a href="#ref12">[12]</a>, which maintains two state matrices (memory + momentum) &mdash; exactly as Adam maintains $(m_t, v_t)$ on the data axis. FTRL recovers full attention on the sequence axis and batch optimization on the data axis. Bernstein and Newhouse <a href="#ref23">[23]</a> show that Adam, Shampoo, and Muon are all steepest descent under different norms: Adam under the diagonal Mahalanobis norm, Lion <a href="#ref-lion">[Lion]</a> under $\ell_\infty$ (giving sign of momentum), and Muon under the spectral norm (giving polar decomposition). Each norm corresponds to a different generating function $h$ and hence a different normalization manifold. LUCID <a href="#ref24">[24]</a> applies preconditioning to the sequence-axis readout, achieving gains analogous to natural gradient on the data axis.</p>
+
+<p>The choice of $h$ shapes not just convergence geometry but the <em>implicit bias</em> of the solution found: Muon&rsquo;s Stiefel projection removes the simplicity bias (preference for low-rank solutions) that SGD and Adam preserve <a href="#ref-dragutinovic">[D&amp;R 2025]</a>.</p>
+
+<p>The constrained dual introduced above is already established on the data axis <a href="#ref-lionmuon">[LM 2026]</a>: Lion and Muon are stochastic Frank-Wolfe on norm-ball constraints &mdash; $\ell_\infty$ for Lion, spectral for Muon &mdash; with weight decay $\lambda$ setting the constraint radius $1/\lambda$ and providing scalar retention $(1-\lambda\eta)$. On the <em>sequence</em> axis, the same construction applies. For the quadratic cost, the gradient $g_t = -(v_t - S_{t-1}k_t)\,k_t^\top$ is rank-1. The LMO over a spectral- or nuclear-norm ball returns a <em>normalized</em> rank-1 matrix, and the Frank-Wolfe update becomes:</p>
+
+$$S_t = (1-\gamma_t)\, S_{t-1} + \gamma_t R \cdot \hat{e}_t\, \hat{k}_t^\top$$
+
+<p>a <em>normalized delta rule with scalar forgetting</em>: it writes a normalized error-key outer product while uniformly decaying the entire memory. This combines error correction (like DeltaNet), scalar forgetting (like weight decay), and normalized writes (like Muon) &mdash; a combination not present in any current sequence model. The key structural difference from mirror descent is the forgetting mechanism: Frank-Wolfe always gives scalar retention $(1-\gamma_t)$, while mirror descent inherits richer structure from the cost &mdash; rank-1 for DeltaNet, diagonal for Mamba.</p>
+
+<p>Recent work also explores meta-modifications that sit <em>on top of</em> any base optimizer. Cautious optimizers <a href="#ref-cautious">[Liang 2024]</a> mask update components whose sign disagrees with the current gradient &mdash; an <em>input-dependent gate</em> on the write operation, the data-axis analogue of input-dependent forget gates (Mamba, FoX) on the sequence axis. Where Mamba gates <em>retention</em>, cautious optimizers gate the <em>write</em>: both suppress components that the current input does not support.</p>
 
 <p>The classical associative memory community independently discovered the same progression &mdash; from Hebbian to error-corrective (Storkey <a href="#ref11">[11]</a>) to exponential-kernel (modern Hopfield <a href="#ref6">[6]</a>) &mdash; before it appeared on the sequence axis. The capacity jumps at each step are the same: $O(d/\log d) \to O(d) \to e^{O(d)}$.</p>
 
@@ -511,6 +549,9 @@ $$\mathcal{L} \;\xrightarrow{\;\nabla\;}\; \text{update rule} \;\xrightarrow{\;h
     <tr><td>Adam</td><td>Any</td><td>Eucl. (diag.)</td><td>Scalar</td><td>GD+mom.</td></tr>
     <tr><td>Shampoo</td><td>Any</td><td>Kronecker</td><td>&mdash;</td><td>Newton</td></tr>
     <tr><td>Muon</td><td>Any</td><td>Eucl. (Stiefel)</td><td>&mdash;</td><td>GD</td></tr>
+    <tr><td>Lion</td><td>Any</td><td>Sign ($\ell_\infty$)</td><td>Scalar</td><td>GD+mom.</td></tr>
+    <tr><td>Shampoo / SOAP</td><td>Any</td><td>Kronecker</td><td>&mdash;</td><td>Newton</td></tr>
+    <tr><td>Kron (PSGD)</td><td>Any</td><td>Kronecker</td><td>&mdash;</td><td>Newton</td></tr>
     <tr><td>Natural gradient</td><td>Any</td><td>Fisher</td><td>&mdash;</td><td>Newton</td></tr>
     <tr><td>CE + nat. grad</td><td>Log-sum-exp</td><td>Fisher</td><td>&mdash;</td><td>Newton</td></tr>
     <tr><td>Batch GD / ERM</td><td>Any</td><td>Eucl.</td><td>&mdash;</td><td>FTRL</td></tr>
@@ -558,6 +599,7 @@ $$\mathcal{L} \;\xrightarrow{\;\nabla\;}\; \text{update rule} \;\xrightarrow{\;h
     <tr><td>SGD + wd</td><td>$\frac{1}{2}\|y - Wx\|^2 + \frac{\lambda}{2}\|W\|_F^2$</td><td>$(1 - \lambda\eta) W_{n-1} - \eta \nabla\ell_n$</td><td>Gated DeltaNet</td></tr>
     <tr><td>Adam</td><td>any $\ell_n$</td><td>$m_n = \beta_1 m_{n-1} + (1-\beta_1) g_n$; &ensp; $W_n = W_{n-1} - \eta \hat{m}_n / \sqrt{\hat{v}_n}$</td><td>Titans</td></tr>
     <tr><td>Muon</td><td>any $\ell_n$</td><td>$m_n = \beta m_{n-1} + (1-\beta) g_n$; &ensp; $W_n = W_{n-1} - \eta\, \text{polar}(m_n)$</td><td>&mdash;</td></tr>
+    <tr><td>Lion</td><td>any $\ell_n$</td><td>$c_n = \beta_1 m_{n-1} + (1-\beta_1) g_n$; &ensp; $W_n = (1-\lambda\eta)W_{n-1} - \eta\, \text{sign}(c_n)$; &ensp; $m_n = \beta_2 m_{n-1} + (1-\beta_2) g_n$</td><td>&mdash;</td></tr>
     <tr><td>Natural grad.</td><td>any $\ell_n$</td><td>$W_n = W_{n-1} - \eta F_n^{-1} g_n$</td><td>Longhorn</td></tr>
     <tr><td>CE + softmax</td><td>$-\log\frac{e^{w_{y_n}^\top x_n}}{\sum_c e^{w_c^\top x_n}}$</td><td>$W_n = W_{n-1} - \eta (p_n - e_{y_n}) x_n^\top$</td><td>Softmax attn</td></tr>
   </tbody>
@@ -613,7 +655,7 @@ $$\nabla_{W^{(\ell)}} \mathcal{L} = \underbrace{\delta^{(\ell)}}_{\text{value (b
 
 <div class="callout">
   <strong>What optimizers do to outer products.</strong>
-  Each optimizer manipulates these outer products differently. Hebbian learning sums them raw (= linear attention). SGD corrects errors before writing (= DeltaNet). Weight decay adds scalar forgetting (= Gated DeltaNet). Momentum maintains a running average (= Titans). Adam adds element-wise normalization (= diagonal bilateral whitening). Muon applies polar decomposition (= Stiefel projection). A mini-batch of $B$ examples produces a rank-$B$ sum of outer products, exactly like a chunk of $C$ tokens in chunked linear attention.
+  Each optimizer manipulates these outer products differently. Hebbian learning sums them raw (= linear attention). SGD corrects errors before writing (= DeltaNet). Weight decay adds scalar forgetting (= Gated DeltaNet). Momentum maintains a running average (= Titans). Adam adds element-wise normalization (= diagonal bilateral whitening). Muon applies polar decomposition (= Stiefel projection). Lion takes the sign of momentum (= $\ell_\infty$ steepest descent). A mini-batch of $B$ examples produces a rank-$B$ sum of outer products, exactly like a chunk of $C$ tokens in chunked linear attention.
 </div>
 
 <h3>Learning rate schedules = positional encoding</h3>
@@ -678,6 +720,7 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
     <tr><td>Rank-1 (Householder)</td><td>DeltaNet</td><td>SGD on MSE</td><td>Per-sample key</td></tr>
     <tr><td>Full key-side</td><td>RLS-Net (predicted)</td><td>Shampoo ($R^{-1/2}$)</td><td>Key whitening</td></tr>
     <tr><td>Bilateral</td><td>&mdash;</td><td>Shampoo ($L, R$)</td><td>Both-side whitening</td></tr>
+    <tr><td>Sign ($\ell_\infty$)</td><td>&mdash;</td><td>Lion (sign)</td><td>Entry-wise uniform step</td></tr>
     <tr><td>Stiefel proj.</td><td>&mdash;</td><td>Muon (polar)</td><td>Isometry constraint</td></tr>
   </tbody>
 </table>
@@ -745,7 +788,11 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
 
 <p><strong>Weight sharing is asymmetric.</strong> On the sequence and data axes, each step applies the same shared rule &mdash; model weights (sequence) or update procedure (data) &mdash; to a varying input. This step homogeneity is what makes the computation a recurrence and PE / LR schedules meaningful as symmetry breakers. The depth axis breaks this pattern: each layer has distinct parameters $W^{(\ell)}$, making the forward pass a composition of $L$ different functions. Because $L$ is finite and fixed, distinct per-layer weights are feasible &mdash; unlike the sequence axis (unbounded $T$) or data axis (unbounded $N$) where sharing is forced. This explains why depth PE is only natural in weight-sharing architectures where the layer index is not already encoded in the parameters.</p>
 
-<p><strong>MLP memories go beyond matrix state.</strong> Titans <a href="#ref12">[12]</a> and TTT use multi-layer MLPs as the memory. The optimization-based update still applies, but the semiseparable structure and SNR capacity analysis break.</p>
+<p><strong>MLP memories go beyond matrix state.</strong> Titans <a href="#ref12">[12]</a> and TTT use multi-layer MLPs as the memory, updated by backpropagation on each token. The connection is direct: a matrix memory $S$ is a single-layer linear network $f_S(q) = Sq$. An MLP memory $f_\theta(q)$ generalizes this to a deeper, nonlinear function class.</p>
+
+<p>The <em>write operation is identical</em> in both cases: gradient descent on the per-step cost, $\theta_t = \theta_{t-1} - \eta_t \nabla_\theta \ell_t$. What changes is the gradient structure. For a linear memory, $\nabla_S \ell_t = -(v_t - Sk_t)\,k_t^\top$ is a rank-1 outer product &mdash; the clean algebraic structure that gives monoids and parallel scans. For an MLP, the gradient involves the chain rule through activations, breaking this rank-1 structure.</p>
+
+<p><em>What&rsquo;s preserved:</em> the regularized cost framework and the $(\ell, h, \mathcal{M}_{\text{norm}})$ triple apply unchanged &mdash; they are orthogonal to the function class. Forgetting acts on $\theta$ via weight decay: scalar retention, the same structure that Frank-Wolfe gives. <em>What breaks:</em> the semiseparable structure (nonlinear transition), the SNR capacity bound ($O(p/d_v)$ for $p$ parameters instead of $O(d_k)$), and the linear read operation. The MLP case illustrates a general principle: the optimization-based write framework transfers to <em>any</em> parameterized function class; the algebraic structure is specific to the linear case.</p>
 
 <p><strong>Nonlinearity complicates transfer.</strong> Hu et al. <a href="#ref22">[22]</a> show that SSD fails for softmax attention due to rank explosion. M&sup2;RNN <a href="#ref19">[19]</a> and COFFEE <a href="#ref25">[25]</a> introduce nonlinearities that break semiseparable structure but improve expressiveness.</p>
 
@@ -795,6 +842,10 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
     <li id="ref28">Kaczmarz, S. (1937). Angen&auml;herte Aufl&ouml;sung von Systemen linearer Gleichungen. <em>Bull. Int. Acad. Pol. Sci. Lett.</em></li>
     <li id="ref29">Sengupta, B., Wang, J., and Brunswic, L. (2025). JPmHC: Dynamical isometry via orthogonal hyper-connections. <em>arXiv:2602.18308</em>.</li>
     <li id="ref-godey2026">Godey, N. and Artzi, Y. (2026). Lost in Backpropagation: The LM Head is a Gradient Bottleneck. <em>arXiv:2603.10145</em>.</li>
+    <li id="ref-lion">Chen, X. et al. (2024). Symbolic discovery of optimization algorithms. <em>NeurIPS</em>.</li>
+    <li id="ref-cautious">Liang, K. et al. (2024). Cautious optimizers. <em>arXiv:2411.16085</em>.</li>
+    <li id="ref-dragutinovic">Dragutinović, S. and Ranganath, R. (2025). To Use or not to Use Muon: How Simplicity Bias in Optimizers Matters. <em>arXiv:2603.00742</em>.</li>
+    <li id="ref-lionmuon">Anonymous (2026). Lions and Muons: Optimization via Stochastic Frank-Wolfe. <em>Under review at ICLR 2026</em>.</li>
   </ol>
 </div>
 
