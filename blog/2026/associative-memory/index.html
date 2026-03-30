@@ -699,6 +699,8 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
 
 <p><strong>Normalization</strong> is ubiquitous but most critical on the depth axis, where it appears after every layer. On the sequence axis it appears as softmax in attention; on the data axis as gradient preconditioning. All three are Bregman projections under the appropriate $h$, but their <em>frequency</em> differs: once per layer vs. once per token vs. once per training step.</p>
 
+<p><strong>Step homogeneity</strong> reveals another fundamental asymmetry. On the sequence axis, the same model weights $W$ are applied at every step &mdash; this is what makes the computation a recurrence &mdash; and positional encoding breaks the resulting translation symmetry. On the data axis, the model weights $W_n$ are the <em>state</em> being updated; the shared element is the update rule (optimizer, loss function), and the LR schedule breaks that symmetry. On the depth axis, each layer has distinct parameters $W^{(\ell)}$: neither weights nor rule are shared, making depth a <em>composition</em> of distinct transformations rather than a recurrence. Weight-sharing architectures (Universal Transformers, ALBERT, Neural ODEs) make the depth axis structurally parallel to the others, turning composition into recurrence and making depth PE meaningful.</p>
+
 <h3>Unexplored combinations</h3>
 
 <p>The relevance map highlights that many natural combinations remain unexplored:</p>
@@ -724,6 +726,8 @@ $$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
 <p><strong>Depth has no independent cost.</strong> The depth axis has no per-step cost. The forward pass is inference, not optimization. The cost that shapes it is the global training loss, propagated backward through backprop.</p>
 
 <p><strong>Forgetting is asymmetric across axes.</strong> On the sequence and data axes, controlled forgetting is desirable (recency bias, plasticity). On the depth axis, forgetting is <em>harmful</em> &mdash; every layer should contribute. This is why bistochastic transitions ($|\lambda_i| < 1$) cause "spectral stalling" on the depth axis, while orthogonal transitions ($|\lambda| = 1$) preserve dynamical isometry. The framework's tuple applies on all axes, but the <em>optimal choice</em> of monoid differs: contractive monoids for the outer axes, isometric groups for the inner axis.</p>
+
+<p><strong>Weight sharing is asymmetric.</strong> On the sequence and data axes, each step applies the same shared rule &mdash; model weights (sequence) or update procedure (data) &mdash; to a varying input. This step homogeneity is what makes the computation a recurrence and PE / LR schedules meaningful as symmetry breakers. The depth axis breaks this pattern: each layer has distinct parameters $W^{(\ell)}$, making the forward pass a composition of $L$ different functions. Because $L$ is finite and fixed, distinct per-layer weights are feasible &mdash; unlike the sequence axis (unbounded $T$) or data axis (unbounded $N$) where sharing is forced. This explains why depth PE is only natural in weight-sharing architectures where the layer index is not already encoded in the parameters.</p>
 
 <p><strong>MLP memories go beyond matrix state.</strong> Titans <a href="#ref12">[12]</a> and TTT use multi-layer MLPs as the memory. The optimization-based update still applies, but the semiseparable structure and SNR capacity analysis break.</p>
 
