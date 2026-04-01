@@ -238,7 +238,7 @@ $$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
     <tr><th>System</th><th>State</th><th>Shape</th><th>Retention</th><th>Write term</th><th>Index</th></tr>
   </thead>
   <tbody>
-    <tr><td>RNN</td><td>Hidden $h_t$</td><td>vector</td><td>$W_h$ (weight matrix)</td><td>$W_x x_t$</td><td>Time $t$</td></tr>
+    <tr><td>GRU<sup>&dagger;</sup></td><td>Hidden $h_t$</td><td>vector</td><td>$\text{diag}(1-z_t)$ (gate)</td><td>$z_t \odot \tilde{h}_t$</td><td>Time $t$</td></tr>
     <tr><td>SSM (S4, Mamba)</td><td>Latent $s_t$</td><td>vector</td><td>$\bar{A}$ (dynamics, diagonal)</td><td>$\bar{B} u_t$</td><td>Time $t$</td></tr>
     <tr><td>Residual network</td><td>$x^{(\ell)}$</td><td>vector</td><td>$I$ (identity)</td><td>$f(x^{(\ell-1)})$</td><td>Layer $\ell$</td></tr>
     <tr><td>Momentum</td><td>Buffer $m$</td><td>vector</td><td>$\beta I$</td><td>$(1-\beta)g_n$</td><td>Step $n$</td></tr>
@@ -246,6 +246,12 @@ $$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
     <tr><td>SGD + weight decay</td><td>Weights $W$</td><td>matrix</td><td>$(1{-}\lambda\eta)I$</td><td>$\eta\, g_n$</td><td>Step $n$</td></tr>
   </tbody>
 </table>
+<p style="font-size: 0.9em; color: #555; margin-top: 0.3em;">
+  <sup>&dagger;</sup> A vanilla RNN uses $h_t = \sigma(W_h h_{t-1} + W_x x_t)$,
+  which does not cleanly separate retention from writing since $W_h$ is a full
+  learned matrix and the nonlinearity wraps both terms. The GRU isolates
+  retention via a diagonal gate $\text{diag}(1-z_t)$.
+</p>
 </div>
 
 <p>But this shared form hides a deeper unity: as we will show, all of these are special cases of a single <em>regularized optimization</em> framework.</p>
@@ -264,6 +270,8 @@ $$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
 
 <p>We develop the framework first on the sequence axis, where the connection to associative memory is most direct. Each subsection introduces one dimension of the memory system &mdash; state, cost, algorithm, retention, capacity, duality, structure &mdash; which the <a href="#framework">general framework</a> then generalizes to all three axes.</p>
 
+<p><strong>Notation.</strong> Keys $k_t \in \mathbb{R}^{d_k}$, values $v_t \in \mathbb{R}^{d_v}$, queries $q \in \mathbb{R}^{d_k}$. The memory state is a matrix $S_t \in \mathbb{R}^{d_v \times d_k}$ (or a vector when $d_k = 1$). The sequence length is $N$ and the number of attention heads is $H$. For $N$ key-value pairs, $K = [k_1, \ldots, k_N]^\top \in \mathbb{R}^{N \times d_k}$ and $V = [v_1, \ldots, v_N]^\top \in \mathbb{R}^{N \times d_v}$.</p>
+
 <h3>Write, read, and the key-value abstraction</h3>
 
 <p>An associative memory stores key-value pairs $(k_i, v_i)$ and retrieves values given a query $q$. The memory state is a matrix $S \in \mathbb{R}^{d_v \times d_k}$ updated via rank-one writes:</p>
@@ -276,17 +284,32 @@ $$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
 
 <p>Different write rules correspond to different <em>cost functions</em> that the write operation implicitly minimizes. This cost-update duality provides the deeper "why" for the shared structure across axes.</p>
 
-<p><strong>Additive (Hebbian).</strong> $S_t = S_{t-1} + v_t k_t^\top$ ignores what is already stored. The corresponding cost is a linear alignment: $\ell_t = -\langle v_t, S k_t \rangle$.</p>
+<p><strong>Additive (Hebbian).</strong> $S_t = S_{t-1} + v_t k_t^\top$ ignores what is already stored. The corresponding cost is a linear alignment: $\ell_t(S) = -\langle v_t, S k_t \rangle$. Its gradient with respect to $S$ is $\nabla_S \ell_t = -v_t k_t^\top$, so a single gradient descent step with unit step size gives $S_t = S_{t-1} - \nabla_S \ell_t = S_{t-1} + v_t k_t^\top$, recovering the Hebbian update. Over $N$ steps from $S_0 = 0$: $S_N = \sum_{i=1}^{N} v_i k_i^\top = V^\top K$, which is the unnormalized linear attention memory.</p>
 
 <p><strong>Error-corrective (delta rule).</strong> $S_t = S_{t-1} + (v_t - S_{t-1} k_t) k_t^\top$ writes only the prediction error. The corresponding cost is MSE: $\ell_t = \frac{1}{2}\|v_t - S k_t\|^2$. On the data axis, this is exactly the Widrow&ndash;Hoff / LMS rule <a href="#ref28">[28]</a>.</p>
 
-<p><strong>Log-sum-exp (softmax attention).</strong> Ramsauer et al. <a href="#ref6">[6]</a> showed that softmax attention is equivalent to one retrieval step in a modern Hopfield network with energy $E(q) = -\log \sum_i \exp(k_i^\top q) + \frac{1}{2}\|q\|^2$. On the data axis, the log-sum-exp cost is cross-entropy. Both achieve exponential capacity through the exponential nonlinearity.</p>
+<p><strong>Log-sum-exp (softmax attention).</strong> The connection to attention can be made precise through <em>energy functions</em> in the Hopfield framework. A Hopfield network stores $N$ patterns (keys $k_1, \ldots, k_N$) and retrieves by minimizing an energy $E(q)$ over the query. The retrieval rule is $q^* = -\nabla_q E(q)$ at a fixed point. Different energies yield different retrieval mechanisms:</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Model</th><th>Energy $E(q)$</th><th>Retrieval $-\nabla_q E$</th><th>Capacity</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Classical Hopfield</td><td>$-\frac{1}{2}\|Kq\|^2$</td><td>$K^\top K\, q$ &rarr; sign</td><td>$O(d)$</td></tr>
+    <tr><td>Linear attention</td><td>$-\mathbf{1}^\top K q$</td><td>$\sum_i k_i$</td><td>$O(1)$</td></tr>
+    <tr><td>Softmax attention</td><td>$-\log \sum_i e^{k_i^\top q}$</td><td>$\sum_i \text{softmax}(Kq)_i\, k_i$</td><td>$e^{O(d)}$</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The key insight is how per-pattern similarities $k_i^\top q$ are aggregated: summing their squares (classical Hopfield) gives polynomial capacity; the log-sum-exp aggregation (modern Hopfield) gives exponential capacity because it is dominated by the largest similarity. Ramsauer et al. <a href="#ref6">[6]</a> showed that softmax attention is exactly one retrieval step of this modern Hopfield network: with values attached to keys, the output is $y = \sum_i \text{softmax}(Kq)_i\, v_i$, the standard attention formula. On the data axis, the loss function <em>is</em> the energy and gradient descent <em>is</em> the retrieval; the log-sum-exp cost is cross-entropy with softmax outputs.</p>
 
 <p>A striking pattern: the <em>form</em> of the cost determines the capacity. Linear &rarr; $O(1)$/step. Quadratic (MSE) &rarr; $O(d)$. Log-sum-exp &rarr; $e^{O(d)}$. The same cost forms appear on all three axes.</p>
 
 <h3>How to write: the optimization algorithm</h3>
 
-<p>The cost determines <em>what</em> to optimize; the optimization algorithm determines <em>how</em>. Rewriting the delta rule as $S_t = S_{t-1}(I - \beta_t k_t k_t^\top) + \beta_t v_t k_t^\top$ reveals that the transition $(I - \beta_t k_t k_t^\top)$ is a Householder reflection acting on the <em>key space</em> by right-multiplication. Unrolling the recurrence, each stored key is transformed by an accumulated product of Householder reflections &mdash; an <em>online Gram-Schmidt</em> process that orthogonalizes the effective keys, which is why the delta rule achieves higher capacity than additive writes.</p>
+<p>The cost determines <em>what</em> to optimize; the optimization algorithm determines <em>how</em>. Rewriting the delta rule as $S_t = S_{t-1}(I - \beta_t k_t k_t^\top) + \beta_t v_t k_t^\top$ with $\beta_t = 1/\|k_t\|^2$ reveals that the transition $(I - \beta_t k_t k_t^\top)$ acts on the <em>key space</em> by right-multiplication. With unit-norm keys ($\beta_t = 1$), this is an orthogonal projection onto $k_t^\perp$ that removes the component in direction $k_t$. (With $\beta_t = 2/\|k_t\|^2$ it would be a Householder reflection.) Unrolling the recurrence, each stored key is transformed by an accumulated product of projections &mdash; an <em>online Gram-Schmidt</em> process that orthogonalizes the effective keys, which is why the delta rule achieves higher capacity than additive writes.</p>
 
 <p>When iterated over a fixed set of key-value pairs (multiple epochs on the data axis), the delta rule converges to the pseudoinverse $S^* = VK^+$ &mdash; this is the Kaczmarz method <a href="#ref28">[28]</a>. On the sequence axis, a single pass only approximates it.</p>
 
@@ -317,7 +340,7 @@ $$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
 
 <h3>Capacity and the SNR</h3>
 
-<p>For a linear outer-product memory with $N$ random patterns of dimension $d$, the retrieval signal-to-noise ratio is $\mathrm{SNR}_{\text{linear}} = d/N$. The memory saturates at $N_{\max} \sim d$ patterns.</p>
+<p>When retrieving from $M = \sum_i v_i k_i^\top$ with query $q = k_*$ (the target pattern), the output decomposes into signal $(k_*^\top q) v_*$ plus interference from other stored associations. For $N$ random patterns of dimension $d$, the retrieval signal-to-noise ratio is $\mathrm{SNR}_{\text{linear}} = d/N$. The memory saturates at $N_{\max} \sim d$ patterns.</p>
 
 <p><strong>Softmax attention SNR.</strong> For softmax attention with temperature $\tau$, querying with $q = k_*$ gives weight ratio $w_j / w_* = \exp(-\Delta_j / \tau)$ where $\Delta_j = \|k_*\|^2 - k_*^\top k_j$ is the logit gap. The SNR becomes:</p>
 
@@ -342,13 +365,21 @@ $$\mathrm{SNR}_{\text{softmax}} \gtrsim \frac{d_v \exp\!\bigl(2(d - c\sqrt{d \lo
 
 <p>The $\text{SNR} = d/N$ bound assumes random keys. When keys are correlated, the pseudoinverse $VK^+$ amplifies noise by $1/\sigma_{\min}(K)$. For nearly collinear keys, regularization (retention $\alpha < 1$) is more appropriate than exact orthogonalization.</p>
 
-<p>The kernel choice determines the capacity-computation tradeoff. This tradeoff is universal <a href="#ref26">[26]</a>: fixed-size state (SSM, capacity $O(d)$) vs. growing token cache (Transformer, capacity $\exp(O(d/\tau))$). Log-linear attention <a href="#ref21">[21]</a> interpolates with logarithmically growing state.</p>
+<p>The kernel choice determines the capacity-computation tradeoff. This tradeoff is universal <a href="#ref26">[26]</a>: fixed-size state (SSM, capacity $O(d)$) vs. growing token cache (Transformer, capacity $\exp(O(d/\tau))$).</p>
+
+<p>Log-linear attention <a href="#ref21">[21]</a> provides a principled interpolation. Guo et al. observe that all efficient attention variants share the form $\mathbf{O} = (\mathbf{A} \odot \mathbf{M})\,\mathbf{V}$, where $\mathbf{A}$ is the attention-like matrix and $\mathbf{M}$ is a causal mask whose <em>structure</em> determines scaling: lower-triangular (linear attention, $O(1)$ decode), semiseparable (Mamba-2, $O(1)$ decode), or hierarchical (log-linear, $O(\log N)$ decode). The key idea is to replace the fixed-size state with $L = O(\log N)$ states $S_t^{(\ell)} \in \mathbb{R}^{d_v \times d_k}$, one per level of a Fenwick tree over the prefix $[0, t]$. The output is:</p>
+
+$$o_t = \sum_{\ell=0}^{L-1} \lambda_t^{(\ell)}\, q_t^\top S_t^{(\ell)}$$
+
+<p>where $\lambda_t^{(\ell)}$ are data-dependent weights for different temporal scales. When all $\lambda_t^{(\ell)}$ are equal, this reduces to ordinary linear attention. Any linear attention variant can be "lifted" to a log-linear variant by composing its mask with the hierarchical mask &mdash; Guo et al. demonstrate this for Mamba-2 and Gated DeltaNet.</p>
 
 <h3>Duality: recurrent and attention views</h3>
 
 <p><strong>Attention (store everything).</strong> Keep all key-value pairs explicitly: $y = \sum_j w(q, k_j)\, v_j$. Lossless but costs $O(Td)$ per query.</p>
 
 <p><strong>State update (compress).</strong> Maintain a fixed-size matrix $S$ via rank-one writes. Retrieval is $O(d^2)$ regardless of stored items, but compression is lossy.</p>
+
+<p>Even DeltaNet's nonlinear (delta-rule) update admits a parallel form. Yang et al. <a href="#ref2">[2]</a> showed that the recurrence $S_t = S_{t-1}(I - k_t k_t^\top) + v_t k_t^\top$ can be rewritten as $\mathbf{O} = \mathbf{A}\,\mathbf{V}$ with $\mathbf{A} = (QK^\top \odot L)(I + KK^\top \odot (L - I))^{-1} \odot \mathbf{M}$, where $L$ is the lower-triangular matrix of ones. The term $(I + KK^\top \odot (L - I))^{-1}$ captures the error-correction: it inverts out key correlations that a Hebbian write would ignore.</p>
 
 <p>Dao and Gu <a href="#ref4">[4]</a> showed that the input-output map of a linear recurrence is a <em>semiseparable matrix</em>, and the recurrent and attention views are its two factorizations. The matrix mixer framework <a href="#ref27">[27]</a> generalizes this: all sequence models are $Y = MX$ where $M$ is a structured matrix. This duality extends to all three axes: Zhang <a href="#ref10">[10]</a> proved an exact depth-axis duality; the data-axis duality (online SGD vs. batch gradient) is a structural analogy.</p>
 
