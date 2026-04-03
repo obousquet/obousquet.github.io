@@ -278,7 +278,40 @@ $$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
 
 $$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
 
-<p>where $A_t$ controls forgetting and retrieval is $y = S_t\, q$.</p>
+<p>where $A_t$ controls forgetting and retrieval is $y = S_t\, q$. A vector state is the special case $d_k = 1$: there is no key, just a value being accumulated.</p>
+
+<p><strong>How the state interfaces with the network.</strong> When the state is a vector $s \in \mathbb{R}^d$, the network interacts with it through general linear maps: reading is $y = W_r\, s$ and writing is $\Delta s = W_w\, z$, both unconstrained matrix multiplies.</p>
+
+<p>When the state is a matrix $S \in \mathbb{R}^{d_v \times d_k}$, the interface is more structured. Reading with a query $q$ gives $y = Sq = \sum_j q_j\, S_{:,j}$. In terms of the flattened state $\mathrm{vec}(S) \in \mathbb{R}^{d_v d_k}$:</p>
+
+$$y = (q^\top \otimes I_{d_v})\,\mathrm{vec}(S)$$
+
+<p>This is a matrix with $d_k$ blocks, each being $q_j I_{d_v}$&mdash;a scalar times the identity. Unlike a general linear map from $\mathbb{R}^{d_v d_k}$ to $\mathbb{R}^{d_v}$ (which would require $d_v^2 d_k$ parameters), the read is parameterized by just $d_k$ values. Within each key dimension, all $d_v$ value components are treated identically.</p>
+
+<p>The write is similarly structured: $\Delta S = v\, k^\top$, i.e., $\mathrm{vec}(\Delta S) = k \otimes v$&mdash;a Kronecker product. When key and value are linear projections of the input $x$, the write becomes $\mathrm{vec}(\Delta S) = (W_K x) \otimes (W_V x)$, a <em>quadratic</em> feature of the input, in contrast to the <em>linear</em> $\Delta s = W\, x$ for a vector state.</p>
+
+<p>The matrix state trades generality for capacity: its Kronecker-structured read/write cannot express arbitrary linear transformations of the flattened state, but it can store $O(d_k)$ associations instead of $O(1)$. The output projection $W_O$ applied after retrieval provides the unconstrained mixing that the structured read alone cannot.</p>
+
+<p><strong>The projection spectrum.</strong> More broadly, the linear map from state to attention inputs (queries, keys, values) is always a <em>structured</em> matrix. Different architectures choose different points on a spectrum from dense to maximally constrained:</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Structure</th><th>Params</th><th>Example</th><th>Map</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Dense</td><td>$O(d \cdot d_k)$</td><td>Standard transformer</td><td>$k = W_K\, x$</td></tr>
+    <tr><td>Low-rank</td><td>$O(d \cdot d_c)$</td><td>MLA (DeepSeek-V2)</td><td>$k = W_K^U(W_{DKV}\, x)$</td></tr>
+    <tr><td>Block-diagonal</td><td>$O(d \cdot d_h)$</td><td>Multi-head attn</td><td>Per-head $k^{(h)} = W_K^{(h)} x^{(h)}$</td></tr>
+    <tr><td>Coarse block-diag.</td><td>$O(d \cdot d_h/g)$</td><td>GQA</td><td>Fewer KV heads, shared across $g$ query heads</td></tr>
+    <tr><td>Kronecker</td><td>$O(d_k + d_v)$</td><td>Matrix state read</td><td>$y = (q^\top \otimes I_{d_v})\,\mathrm{vec}(S)$</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>At the dense end, a standard transformer uses unconstrained $W_K, W_V \in \mathbb{R}^{d_k \times d}$ to project the residual stream into key-value space. Multi-head Latent Attention (MLA) compresses the residual stream into a shared low-rank latent $c_t = W_{DKV}\, x_t \in \mathbb{R}^{d_c}$, from which per-head keys and values are recovered: $k_t^{(h)} = W_{K,h}^U\, c_t$. The combined map $k_t^{(h)} = W_{K,h}^U W_{DKV}\, x_t$ is a low-rank factorization of $W_K$, reducing the KV cache from $O(H d_h)$ to $O(d_c)$ per token. Multi-head attention uses a block-diagonal projection: each head has its own $W_K^{(h)}$ acting on a disjoint slice of the residual stream. GQA coarsens this: $g$ query heads share each KV head, so the KV projection has $H/g$ blocks&mdash;interpolating between full multi-head ($g = 1$) and multi-query attention ($g = H$, a single shared KV head). At the Kronecker end, the matrix-state read is parameterized by just $d_k$ values.</p>
+
+<p>The same spectrum appears on the <strong>depth axis</strong>. When the residual state is a matrix $M \in \mathbb{R}^{p \times q}$ (as in residual matrix transformers), the projections that produce attention inputs from this state inherit Kronecker structure. A low-rank projection from the matrix state (compressing $M$ to a vector before projecting) would be the depth-axis analogue of MLA. With multi-head attention, the structure is <em>doubly</em> constrained: block-diagonal across heads, and Kronecker-structured within each head.</p>
 
 <h3>What to write: the cost</h3>
 
