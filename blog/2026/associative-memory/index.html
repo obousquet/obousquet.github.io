@@ -313,6 +313,27 @@ $$y = (q^\top \otimes I_{d_v})\,\mathrm{vec}(S)$$
 
 <p>The same spectrum appears on the <strong>depth axis</strong>. When the residual state is a matrix $M \in \mathbb{R}^{p \times q}$ (as in residual matrix transformers), the projections that produce attention inputs from this state inherit Kronecker structure. A low-rank projection from the matrix state (compressing $M$ to a vector before projecting) would be the depth-axis analogue of MLA. With multi-head attention, the structure is <em>doubly</em> constrained: block-diagonal across heads, and Kronecker-structured within each head.</p>
 
+<h3>State shape: vectors, matrices, and Kronecker transitions</h3>
+
+<p>When analyzing state-update models, the shape of the memory state &mdash; whether it is a vector, a matrix, or a higher-order tensor &mdash; inherently restricts the expressivity and parameter count of its transition operators. By "flattening" the state into a vector, we can directly compare these operators under a unified framework.</p>
+
+<p><strong>Vector states.</strong> For a vector state $h_t \in \mathbb{R}^d$, a linear recurrence takes the form $h_t = T_t h_{t-1} + \Delta_t$. The transition matrix $T_t \in \mathbb{R}^{d \times d}$ can be dense (unconstrained cross-talk between all dimensions, costing $O(d^2)$ parameters and compute) or diagonal ($T_t = \text{diag}(\alpha_t)$, costing $O(d)$). Models like Mamba and GLA use input-dependent diagonal transitions to balance expressivity and efficiency.</p>
+
+<p><strong>Matrix states and Kronecker transitions.</strong> When the memory is a matrix $S_t \in \mathbb{R}^{d_v \times d_k}$, the flattened state $\mathrm{vec}(S_t)$ exists in $\mathbb{R}^{d_v d_k}$. A dense transition matrix acting on this flattened state would require $O(d_v^2 d_k^2)$ operations per step, which is computationally prohibitive. However, matrix-valued updates naturally factorize into highly structured operators.</p>
+
+<p>Consider a right-multiplying transition that acts on the key space (e.g., the $(I - \beta_t k_t k_t^\top)$ operator in DeltaNet):</p>
+
+$$ S_t = S_{t-1} A_t + \dots $$
+
+<p>Applying the Kronecker product identity $\mathrm{vec}(XA) = (A^\top \otimes I_{d_v}) \mathrm{vec}(X)$, the flattened transition matrix is exactly $T_t = A_t^\top \otimes I_{d_v}$. If we reorder the dimensions (flattening row-by-row instead of column-by-column), $T_t$ becomes a <em>block-diagonal</em> matrix consisting of $d_v$ identical blocks of $A_t^\top$.</p>
+
+<div class="callout">
+  <strong>The matrix-state intuition.</strong>
+  A matrix memory update is structurally equivalent to running $d_v$ parallel, independent vector SSMs (of state dimension $d_k$), each tracking one coordinate of the value space, but constrained to share the exact same transition dynamics.
+</div>
+
+<p>Conversely, a left-multiplying transition $S_t = B_t S_{t-1}$ (acting on the value space) yields $T_t = I_{d_k} \otimes B_t$, meaning computation across key dimensions is decoupled. Element-wise scaling $S_t = C_t \circ S_{t-1}$ corresponds trivially to a diagonal matrix in the flattened space. Upgrading from vectors to matrices multiplies the storage capacity, while the Kronecker structure limits the parameter and compute blowup.</p>
+
 <h3>What to write: the cost</h3>
 
 <p>Different write rules correspond to different <em>cost functions</em> that the write operation implicitly minimizes. This cost-update duality provides the deeper "why" for the shared structure across axes.</p>
