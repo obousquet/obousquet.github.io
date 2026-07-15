@@ -1,0 +1,4 @@
+interface:
+  display_name: "Alon Method"
+  short_description: "Import external mathematical techniques into a hard problem."
+  default_prompt: "Use the alon-method skill to attack the current obstruction by building dictionaries to probabilistic, polynomial, topological, spectral, geometric, algebraic, or algorithmic methods, then identify the smallest missing transfer lemma."

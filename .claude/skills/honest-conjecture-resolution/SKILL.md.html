@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Markdown preview: .claude/skills/honest-conjecture-resolution/SKILL.md</title>
+
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f6f8fb;
+    --panel: #ffffff;
+    --text: #17212b;
+    --muted: #516173;
+    --line: #d8e0ea;
+    --accent: #114b8b;
+  }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 28px 20px 48px;
+  }
+  .frame {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px 22px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+  .crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+    font-size: 0.92rem;
+  }
+  .crumbs a {
+    color: var(--accent);
+    text-decoration: none;
+    background: #eef3f8;
+    border: 1px solid #d6e0ea;
+    border-radius: 999px;
+    padding: 0.22rem 0.55rem;
+  }
+  .crumbs a:hover { text-decoration: underline; }
+  .source {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+  }
+  .markdown {
+    display: grid;
+    gap: 8px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .markdown > * { margin: 0; }
+  .markdown h1,
+  .markdown h2,
+  .markdown h3,
+  .markdown h4,
+  .markdown h5,
+  .markdown h6 { line-height: 1.2; margin-top: 0.4rem; }
+  .markdown ul,
+  .markdown ol { margin: 0.25rem 0 0.25rem 1.25rem; padding: 0; }
+  .markdown blockquote {
+    margin: 0;
+    padding: 0.4rem 0.8rem;
+    border-left: 3px solid var(--line);
+    background: #fbfcfe;
+    color: var(--muted);
+  }
+  .markdown pre,
+  .markdown code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  .markdown pre {
+    overflow: auto;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fbfcfe;
+    font-size: 0.92rem;
+    line-height: 1.45;
+  }
+  .markdown code {
+    padding: 0.05rem 0.25rem;
+    border-radius: 4px;
+    background: #eef3f8;
+  }
+  .markdown a { color: var(--accent); }
+</style>
+            
+
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+  options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'] }
+};
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+            
+</head><body><main><section class="frame">
+<div class="crumbs"><a href="SKILL.md">raw source</a></div>
+<div class="source">.claude/skills/honest-conjecture-resolution/SKILL.md</div>
+<div class="markdown"><hr><p>name: honest-conjecture-resolution description: &gt;- Drive a hard mathematical conjecture toward resolution across competing proof routes while staying epistemically honest: test the right adversaries, distinguish false claims from lossy tools, reduce to named crux lemmas, calibrate evidence, avoid route proliferation, and keep ledgers/drafts/ dashboards synchronized. Use for multi-round open-problem campaigns, plateau audits, proof/disproof alternation, side-route decisions, subagent packet design, and converting route state into readable mathematical drafts. Load targeted references only when needed.</p><hr><h1>Honest Conjecture Resolution</h1><p>This is the orchestration layer for hard conjecture campaigns. It is not the script-writing layer (<code>conjecture-explorer</code>) and not the final proof-writing layer (<code>proof-developer</code>). Its job is to keep the proof state honest, small, falsifiable, and synchronized while several routes compete.</p><h2>Load References On Demand</h2><p>Use this main file for every campaign round. Load only the relevant reference file when the task needs detail:</p><ul><li><code>references/adversaries-and-proxies.md</code>: adversary design, proxy failures, assembly traps, exact</li></ul><p>dual targets, and compute hygiene.</p><ul><li><code>references/state-compression.md</code>: proof-contract accounting, plateau gates, route walkback,</li></ul><p>consolidation, side quests, and subagent discipline.</p><ul><li><code>references/artifact-discipline.md</code>: ledgers, side drafts, dashboards, inventories, generated</li></ul><p>outputs, and source-of-truth synchronization.</p><ul><li><code>references/full-playbook.md</code>: archival full pre-compression playbook. Read only if a needed</li></ul><p>historical lesson is missing from the distilled references.</p><h2>When To Use</h2><ul><li>A conjecture has several candidate routes, live subclaims, or possible counterexample families.</li><li>A route looks numerically robust but lacks a proof.</li><li>A bound or proxy is growing and you need to decide whether the target is false or the tool is lossy.</li><li>The campaign is plateauing, looping through reductions, or expanding the dashboard without closing</li></ul><p>proof debt.</p><ul><li>Subagents or side quests may help, but only if their contracts are precise and mergeable.</li><li>The ledger has become chronological clutter and needs conversion into a current-state proof map.</li></ul><h2>Cardinal Rules</h2><ol><li><strong>Lossy bound does not mean false target.</strong> Measure the actual target and the proxy separately.</li></ol><p>A proxy can grow while the theorem remains true.</p><ol><li><strong>Numerical robustness is not proof.</strong> Robust tests count only against the right adversaries and</li></ol><p>should be paired with a proved analytic core or a precise reduced lemma.</p><ol><li><strong>A counterexample is a result.</strong> Record the witness, failed claim, mechanism, and smallest known</li></ol><p>instance. Then stop reopening that exact route.</p><ol><li><strong>Every active claim needs a status.</strong> Use <code>proved</code>, <code>reduced</code>, <code>conditional</code>, `verified</li></ol><p>computationally<code>, </code>plausible<code>, </code>stalled<code>, or </code>refuted`. Avoid “morally” or “essentially” proved.</p><ol><li><strong>Proof and disproof alternate.</strong> A proof reduction must name the smallest falsifier profile; a</li></ol><p>failed counterexample search must name the structure it failed to realize.</p><ol><li><strong>Progress shrinks state.</strong> A round that adds definitions, leaves, pages, or terminology without</li></ol><p>proving/refuting/merging/parking debt is probably negative progress.</p><ol><li><strong>Methods must change the proof contract.</strong> Alon-style imports, Grothendieck-style abstractions,</li></ol><p>literature searches, computations, and subagent batches are active only if they return a native lemma, theorem citation, counterexample, exact reformulation, proxy kill, diagnostic, or blindness statement.</p><ol><li><strong>Consolidation is mathematical work.</strong> It should reduce active leaves, expose the current crux,</li></ol><p>remove closed debt, and install a gate that prevents the same clutter from returning.</p><h2>Minimal Campaign-State Invariant</h2><p>Before another serious round, the active ledger opening should answer:</p><pre><code>Current exact target:
+Last equivalent reduction:
+Current smallest falsifier profile:
+Proved inputs being reused:
+Active proof-debt rows:
+Parked routes and why:
+Next decisive move:
+What will be deleted/merged if the move succeeds or fails:</code></pre><p>If this does not fit in one screen, consolidate before proving more lemmas.</p><h2>Round Contract</h2><p>Use a before/after packet for every significant round:</p><pre><code>Before:
+Exact target:
+Current crux:
+Smallest falsifier profile:
+Rows allowed to change this round:
+Artifacts allowed to change this round:
+
+After:
+Proof-contract delta:
+Rows proved/refuted/merged/parked:
+State deleted:
+New smallest falsifier profile:
+Next decisive move:</code></pre><p>Valid deltas are: proved row, refuted row, equivalent reformulation, sharper falsifier, imported theorem, proxy killed, leaves merged, route parked, or explicit blindness statement. If no delta exists, record at most one compact diagnostic and do not expand the dashboard, ledger, or proof spine.</p><h2>Proof-Debt Table</h2><p>For each active theorem-level target, maintain rows like:</p><pre><code>Claim:
+Direction needed: equivalent / necessary / sufficient / special-case / heuristic
+Status: proved / refuted / reduced / computational / plausible / stalled / open
+Evidence:
+Missing implication:
+Smallest falsifier profile:
+Next decisive test:</code></pre><p>Most rabbit holes start when a sufficient condition is refined as if it were equivalent. Track the direction on every arrow.</p><h2>Core Operating Loop</h2><ol><li>State the exact target and last equivalent reduction.</li><li>Identify the current smallest crux and its falsifier profile.</li><li>Choose one mode: proof attempt, adversarial diagnostic, exact literature match, side-method assay,</li></ol><p>subagent batch, or consolidation.</p><ol><li>Run the round with bounded scope and compute hygiene.</li><li>Merge by proof-contract delta: prove, refute, merge, park, demote, or sharpen.</li><li>Update the source-of-truth quartet in the same pass: TeX/side draft, ledger, dashboard, and</li></ol><p>inventory/scripts where relevant.</p><h2>Mode Selection</h2><ul><li><strong>Need to test a lemma or search for witnesses:</strong> use <code>conjecture-explorer</code>; read</li></ul><p><code>references/adversaries-and-proxies.md</code> for adversary patterns.</p><ul><li><strong>Proxy or bound looks wrong:</strong> read <code>references/adversaries-and-proxies.md</code>; measure proxy and</li></ul><p>target separately.</p><ul><li><strong>Dashboard/ledger is growing faster than theorem progress:</strong> read <code>references/state-compression.md</code>.</li><li><strong>Need subagents:</strong> read <code>references/state-compression.md</code> and spawn only from orthogonal evidence</li></ul><p>contracts.</p><ul><li><strong>Need to clean route records or write a readable synthesis:</strong> read</li></ul><p><code>references/artifact-discipline.md</code>.</p><ul><li><strong>Need dashboard format/rendering details:</strong> use the <code>conjecture-dashboard</code> skill.</li></ul><h2>Compute Hygiene On EC2</h2><p>The EC2 instance also serves the research site and may host other work.</p><ul><li>Start small, estimate memory/CPU growth, and scale gradually.</li><li>Prefer <code>nice -n 10 uv run python ...</code> for heavy diagnostics.</li><li>Limit worker counts; do not launch several all-core or high-memory jobs at once.</li><li>Use timeouts, sample limits, chunking, checkpointing, or symmetry reduction.</li><li>Stop jobs that start swapping, peg all cores for too long, or threaten server responsiveness.</li></ul><h2>Exit Criteria</h2><p>A round is closed only after one of these is true:</p><ul><li><code>promote</code>: a proof or stable statement moves to TeX/side draft.</li><li><code>continue on named crux</code>: exactly one next proof-debt row is active.</li><li><code>spawn next packet</code>: subagent routes are orthogonal and have success/failure criteria.</li><li><code>park/stall</code>: the blocker is precise and the route is not active.</li><li><code>refuted</code>: the witness/mechanism is recorded and the route is closed.</li></ul><p>Do not end a round with “continue” as the status.</p></div>
+</section></main></body></html>

@@ -1,0 +1,87 @@
+---
+name: conjecture-dashboard
+description: Maintain and render a tree-shaped HTML dashboard for a conjecture campaign. Use when a project has multiple live routes, ledgers, side drafts, or verifier scripts and needs an at-a-glance status view with links to the source-of-truth files.
+---
+
+# Conjecture Dashboard
+
+Use this skill when a campaign needs a compact visual status tree that can be opened in a browser and
+linked from a homepage. The dashboard is not a ledger replacement; it is a navigation surface that
+summarizes the current route tree and points to the authoritative artifacts.
+
+## When to use
+
+- You have several live or recently closed routes and want a readable branch-status view.
+- You need a browser-friendly page that links each branch to its ledger, draft, or TeX source.
+- The active ledger has become hard to scan, but the route structure is still best understood as a
+  tree.
+- You want a stable HTML summary that can be linked from the repo homepage or site index.
+
+## Dashboard contract
+
+- The dashboard lives as generated HTML rendered from an authored JSON manifest.
+- The manifest is the source of truth for the current route tree. It should be updated by the agent
+  in the same pass that changes the ledger or TeX files.
+- The manifest should describe proof routes, reductions, closed conjectures, counterexamples,
+  verification branches, and helper tools. It is a synthetic route tree, not a file tree.
+- Node labels and short summaries may contain inline markdown and LaTeX math. Use `$...$`,
+  `$$...$$`, `\(...\)`, or `\[...\]` directly in those fields when a title or description needs
+  math.
+- The renderer may normalize inline `$...$` math to explicit `\(...\)` in the generated HTML so it
+  stays inline and typesets consistently.
+- If a node points at a local markdown file through a content field, render that file as markdown in
+  the dashboard rather than as escaped plaintext.
+- If a link target is a local markdown file, the renderer should rewrite it automatically to the
+  generated HTML preview page; the manifest should still name the original `.md` file.
+- When a markdown file is meant to be read in the dashboard preview, write equations in normal
+  LaTeX math delimiters such as `$...$`, `$$...$$`, `\(...\)`, or `\[...\]`. Do not fence
+  mathematical content inside code blocks unless the intention is to show the literal source.
+- The generated HTML should be static, linkable, and readable on mobile.
+- The dashboard should show the current structure, not a chronology of every past attempt.
+
+## Recommended manifest shape
+
+- `title`: dashboard title.
+- `subtitle`: one-line description of the campaign.
+- `version`: optional monotonically increasing integer campaign-state version.
+- `updated`: optional date stamp.
+- `nodes`: top-level tree nodes.
+- Each node may contain:
+  - `label`
+  - `kind` such as `route`, `reduction`, `conjecture`, `counterexample`, `lemma`, `tool`, or
+    `archive`
+  - `status`
+  - `updated_version`: optional integer recording the dashboard version at which this node was last
+    materially touched
+  - `summary`
+  - `links` as `{label, href}` objects
+  - `children` as nested nodes
+
+## Status semantics
+
+- Use stable status words such as `active`, `stalled`, `proved`, `refuted`, `draft`, `tool`,
+  `verification`, `historical`, or `closed`.
+- Keep the status vocabulary small and consistent across the tree.
+- If a route changes status, update the manifest and regenerate the HTML in the same pass.
+
+## Rendering workflow
+
+- Maintain the manifest in the repo next to the route artifacts, typically as `dashboard.json`.
+- Render it with `scripts/render_conjecture_dashboard.py`.
+- For active multi-leaf campaigns, prefer version staleness over wall-clock staleness:
+  - bump the top-level `version` whenever a round changes the campaign state;
+  - set `updated_version` on each active node materially changed by that round;
+  - compare `version - updated_version` to decide which active leaves need attention.
+- If the renderer supports it, use an explicit command such as
+  `scripts/render_conjecture_dashboard.py --bump-version --touch "Leaf label"` so version bumps and
+  node touches are reproducible.  Do not bump the version for a render-only refresh.
+- Commit the manifest and the generated HTML together when the dashboard is part of the repo record.
+- Link the generated `dashboard.html` from the repo homepage or site index.
+
+## Maintenance rules
+
+- Keep the tree shallow enough to scan quickly.
+- Avoid duplicating the ledger; link to it instead.
+- Put durable status changes in the ledger or TeX file first, then reflect them in the dashboard.
+- Use the dashboard to answer three questions quickly: what is alive, what is dead, and where does
+  each branch live in the route tree.

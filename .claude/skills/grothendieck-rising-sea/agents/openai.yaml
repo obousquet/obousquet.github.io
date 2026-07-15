@@ -1,0 +1,4 @@
+interface:
+  display_name: "Grothendieck Rising Sea"
+  short_description: "Resolve problems by building the right abstract framework."
+  default_prompt: "Use the grothendieck-rising-sea skill to lift the current problem into a better category or invariant framework, identify the recurring structures, state the functorial laws, and descend the resulting structural theorem back to the original conjecture."
