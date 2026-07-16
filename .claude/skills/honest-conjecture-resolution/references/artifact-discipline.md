@@ -89,8 +89,11 @@ After plateau:
 
 ## Generated Outputs
 
-- For key `.tex` files, periodically generate PDF and HTML.
-- When generated artifacts are tracked, commit and push them with the source changes that produced
-  them.
+- For key `.tex` files, periodically generate PDF artifacts only.
+- Do not generate HTML from `.tex` files as a standing artifact; these builds are slow and brittle
+  in the current research repos.
+- When generated PDF artifacts are tracked, commit and push them with the source changes that
+  produced them.
 - Keep dashboard HTML generated from the manifest and committed with it when the dashboard is part
-  of repo state.
+  of repo state. Regenerate it whenever `dashboard.json` or another `*dashboard*.json` manifest
+  changes.
