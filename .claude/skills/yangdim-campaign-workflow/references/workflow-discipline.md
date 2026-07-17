@@ -46,4 +46,7 @@ A status-changing result should be reflected in the same pass across the relevan
 
 ## Paper artifact rule
 
-After a significant `main.tex` or `prescribed_dual_bridge_realization.tex` edit, compile, regenerate the top-level PDF artifact, commit, and push the source plus generated artifact.  Generated side PDFs from draft compiles should not be committed unless explicitly requested.
+After a significant `main.tex` or `prescribed_dual_bridge_realization.tex` edit, compile with
+SyncTeX enabled, regenerate the top-level PDF artifact, commit, and push the source plus generated
+artifact.  Generated side PDFs from draft compiles should not be committed unless explicitly
+requested.

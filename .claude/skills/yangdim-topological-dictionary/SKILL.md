@@ -24,4 +24,5 @@ Read `references/topological-dictionary.md`, then load only the one or two child
 - `CM(Delta_H) <=> ample` is proved; do not treat it as conjectural.
 - Do not transfer raw-Yang topological adjectives to derived, Alexander-dual, or cubical objects without checking the relevant packet.
 - Put theorem-level results in `main.tex` or `prescribed_dual_bridge_realization.tex`; keep active-only status in ledgers.
-- After significant TeX changes, compile, commit, and push the source plus generated PDF artifacts when the standing project rule applies.
+- After significant TeX changes, compile with SyncTeX enabled, then commit and push the source plus
+  generated PDF artifacts when the standing project rule applies.

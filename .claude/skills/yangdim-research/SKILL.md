@@ -44,4 +44,5 @@ If the task has a clear topic owner, switch to that skill after this overview an
 - Keep overview references short. If a reference accumulates multiple proof routes, split it into topic packets and leave only routing/status in the overview. Prefer one-level reference packets linked directly from `SKILL.md` or a named overview; avoid reviving monolithic route diaries.
 - Split reference packets by job: objects/notation, terminology, paper conventions, computation, pitfalls, or a named topic skill. Do not mix proof-route status into this overview skill.
 - Update this skill only for stable project facts, recurring pitfalls, routing changes, or reusable workflow lessons.
-- After significant TeX changes, compile, commit, and push the source and generated PDF artifacts as requested by the user.
+- After significant TeX changes, compile with SyncTeX enabled, then commit and push the source and
+  generated PDF artifacts as requested by the user.

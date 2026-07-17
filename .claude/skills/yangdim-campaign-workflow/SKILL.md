@@ -31,4 +31,4 @@ Counterexample search and proof reduction should be run as a feedback loop. A se
 
 ## Promotion rule
 
-Promote to TeX only after there is a proof-level statement with explicit hypotheses and dependency labels. After significant TeX changes, compile, commit, and push source plus generated PDF artifacts when the standing project rule applies.
+Promote to TeX only after there is a proof-level statement with explicit hypotheses and dependency labels. After significant TeX changes, compile with SyncTeX enabled, then commit and push source plus generated PDF artifacts when the standing project rule applies.

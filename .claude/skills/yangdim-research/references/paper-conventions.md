@@ -14,7 +14,9 @@
 
 ## Build hygiene
 
-- For significant `main.tex` or `prescribed_dual_bridge_realization.tex` edits, compile and commit the generated top-level PDF with the source when the standing project rule applies.
+- For significant `main.tex` or `prescribed_dual_bridge_realization.tex` edits, compile with
+  SyncTeX enabled and commit the generated top-level PDF with the source when the standing project
+  rule applies. Example: `latexmk -pdf -synctex=1 main.tex`.
 - Check for fatal TeX errors and undefined-reference warnings after requested compiles.
 - Do not commit transient auxiliary files such as `.paux`.
 - Keep generated PDFs at the repository top level when they correspond to top-level TeX entrypoints; build-directory copies are transient unless deliberately tracked.

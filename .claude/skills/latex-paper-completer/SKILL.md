@@ -23,6 +23,11 @@ Systematically enhance a draft research paper to maximize self-containedness, bu
 
 The user provides either a full `.tex` file or a specific section. Follow the complete workflow below:
 
+If the user provides a PDF review file produced by `scripts/skim_notes_to_review.py`, treat it as an
+edit queue. For each annotation, use the mapped SyncTeX location as a starting point, verify the
+selected PDF text against the nearby TeX source, apply the requested improvement conservatively,
+and mark any ambiguous or stale annotation in the final response instead of guessing.
+
 ### Step 0: Scope and Strategy
 
 Ask the user (if not specified):

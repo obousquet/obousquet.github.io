@@ -90,6 +90,9 @@ After plateau:
 ## Generated Outputs
 
 - For key `.tex` files, periodically generate PDF artifacts only.
+- Compile LaTeX with SyncTeX enabled, for example `latexmk -pdf -synctex=1 main.tex`, so PDF
+  review annotations can later be mapped back to source lines. Treat `.synctex.gz` as a local build
+  artifact unless explicitly asked to preserve or share it.
 - Do not generate HTML from `.tex` files as a standing artifact; these builds are slow and brittle
   in the current research repos.
 - When generated PDF artifacts are tracked, commit and push them with the source changes that
