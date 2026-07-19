@@ -75,16 +75,22 @@ For each potentially relevant result, record:
 
 ### 2.4 Durable Source Packets
 
-When a paper must be read beyond the abstract, create or reuse a durable source packet instead of
-redoing extraction in chat or `/tmp`.
+When a paper must be read beyond the abstract, create or reuse a durable source packet inside the
+repo. This is mandatory workflow hygiene: do not leave downloaded PDFs, arXiv source archives,
+HTML captures, or converted text only in chat, a browser cache, or `/tmp`. The next agent should be
+able to inspect the already-extracted source without repeating the download/conversion.
+
+Create the packet before close reading, or immediately after the first successful extraction, under:
 
 Recommended layout:
 
 ```text
 literature/<citation-key>/
-  metadata.json          # title, authors, year, DOI/arXiv URL, access date, extraction command
-  source.txt             # converted text from PDF, TeX, or HTML
-  source.tex             # arXiv/source TeX when available and useful, or source-html.html
+  metadata.json          # title, authors, year, DOI/arXiv URL, access date, extraction command(s)
+  source.txt             # durable converted text from PDF, TeX, or HTML
+  source.tex             # arXiv/source TeX when available and useful
+  source-html.html       # official HTML capture when that is the best source
+  original.pdf           # optional; commit only when repo policy/licensing allow
   key-results.md         # compact theorem/lemma extraction for future agents
   notes.md               # optional reading notes and relevance assessment
 ```
@@ -98,10 +104,14 @@ Extraction priority:
 2. Prefer official HTML when it preserves math and section structure.
 3. Otherwise convert the PDF to text, for example `pdftotext -layout paper.pdf source.txt`.
 
-Record the exact extraction command and source URL in `metadata.json`. Do not repeatedly download or
-reconvert the same paper if a packet already exists; inspect and update the packet instead. Commit
-converted text and key-results files when licensing and repo policy allow. If the PDF itself should
-not be committed, store only its URL/checksum plus the derived notes needed for future work.
+Record the exact source URL and extraction commands in `metadata.json`, including commands such as
+`curl`, arXiv source unpacking, `pdftotext -layout`, HTML-to-text conversion, or manual cleanup. Do
+not repeatedly download or reconvert the same paper if a packet already exists; inspect and update
+the packet instead.
+
+Commit `metadata.json`, `source.txt`, `key-results.md`, and durable notes whenever they are used for
+research decisions. If the original PDF or source archive should not be committed, still store its
+URL, checksum when available, and the derived converted/extracted files that repo policy permits.
 
 ### 2.5 Key Result Extraction
 
