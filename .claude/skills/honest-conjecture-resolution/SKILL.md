@@ -129,8 +129,8 @@ direction on every arrow.
    subagent batch, or consolidation.
 4. Run the round with bounded scope and compute hygiene.
 5. Merge by proof-contract delta: prove, refute, merge, park, demote, or sharpen.
-6. Update the source-of-truth quartet in the same pass: TeX/side draft, ledger, dashboard, and
-   inventory/scripts where relevant.
+6. Update the source-of-truth artifacts in the same pass: TeX/side draft, ledger, dashboard,
+   inventory/scripts, and durable literature packets where relevant.
 
 ## Mode Selection
 
@@ -141,6 +141,10 @@ direction on every arrow.
 - **Dashboard/ledger is growing faster than theorem progress:** read `references/state-compression.md`.
 - **Need subagents:** read `references/state-compression.md` and spawn only from orthogonal evidence
   contracts.
+- **Need an exact literature match or theorem import:** use the `literature-reviewer` skill and
+  `references/artifact-discipline.md`; store downloaded, converted, or extracted sources under
+  `literature/<citation-key>/`, write precise reusable statements in `key-results.md`, refresh the
+  literature index when present, and link route-relevant results from the ledger/dashboard.
 - **Need to clean route records or write a readable synthesis:** read
   `references/artifact-discipline.md`.
 - **Need dashboard format/rendering details:** use the `conjecture-dashboard` skill.
