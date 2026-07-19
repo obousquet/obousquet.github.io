@@ -12,6 +12,8 @@ truth records after a research round.
 - **Dashboard:** scan-level navigation for active/proved/refuted/parked route status with links to
   source artifacts.
 - **Scripts:** reproducible diagnostics, verifiers, finite certificates, and regression checks.
+- **Literature packets:** durable source conversions, extraction metadata, and compact key-result
+  files for papers that influence route status, terminology, or proof inputs.
 - **Inventory:** where artifacts live and what role/status they have.
 - **Skills:** reusable process lessons only, not campaign chronology or local route names.
 
@@ -52,11 +54,34 @@ Use the `conjecture-dashboard` skill for format and rendering details.
 ## Inventory And Script Sync
 
 - Maintain a root inventory such as `EXPLORATION_INVENTORY.md` when a repo has many route artifacts.
+- Track durable literature packets in the inventory when a paper contributes a proof input, route
+  obstruction, terminology choice, or exact comparison theorem.
 - Every reusable finite certificate or diagnostic should have three things: script command,
   human-readable statement/table, and inventory entry.
 - When a script becomes evidence, label it as active diagnostic, verifier, regression check, finite
   certificate, or historical scratch.
 - Preserve runnable entry points when moving scripts.
+
+## Literature Artifact Rules
+
+Use `literature/<citation-key>/` for papers that require close reading. A useful packet contains:
+
+- `metadata.json` with citation, source URL/DOI/arXiv ID, access date, extraction command, and
+  license/repo-policy note when relevant.
+- `source.txt` converted from arXiv TeX, official HTML, or PDF text extraction.
+- `source.tex`, `source-html.html`, or a PDF checksum/URL when useful for provenance.
+- `key-results.md` listing the theorem/lemma/proposition statements that matter, with exact
+  paper numbering, hypotheses, conclusion, location, notation translation, and route relevance.
+
+Prefer arXiv source TeX or official HTML over PDF text when they preserve theorem structure. Do not
+re-download or reconvert a paper if an adequate packet already exists. If a paper changes a route
+status, cite the `key-results.md` entry from the ledger/dashboard rather than leaving the result only
+in chat.
+
+When literature packets are added or changed, run `python3 scripts/render_literature_index.py` if the
+repo has that helper. Commit `literature/index.md` and `literature/index.html` with the packet
+updates. Link `literature/index.html` from the relevant dashboard when literature results are part of
+the route state.
 
 ## Round Update Order
 

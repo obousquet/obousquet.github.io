@@ -73,6 +73,76 @@ For each potentially relevant result, record:
 - How it connects to our work
 - Relevance level: essential / important / useful context / tangential
 
+### 2.4 Durable Source Packets
+
+When a paper must be read beyond the abstract, create or reuse a durable source packet instead of
+redoing extraction in chat or `/tmp`.
+
+Recommended layout:
+
+```text
+literature/<citation-key>/
+  metadata.json          # title, authors, year, DOI/arXiv URL, access date, extraction command
+  source.txt             # converted text from PDF, TeX, or HTML
+  source.tex             # arXiv/source TeX when available and useful, or source-html.html
+  key-results.md         # compact theorem/lemma extraction for future agents
+  notes.md               # optional reading notes and relevance assessment
+```
+
+Use stable citation keys such as `alon1979probabilistic`, `gromov1983filling`, or the existing
+BibTeX key. If a repo already has a literature cache convention, follow it.
+
+Extraction priority:
+
+1. Prefer arXiv source TeX when available because theorem environments and labels survive.
+2. Prefer official HTML when it preserves math and section structure.
+3. Otherwise convert the PDF to text, for example `pdftotext -layout paper.pdf source.txt`.
+
+Record the exact extraction command and source URL in `metadata.json`. Do not repeatedly download or
+reconvert the same paper if a packet already exists; inspect and update the packet instead. Commit
+converted text and key-results files when licensing and repo policy allow. If the PDF itself should
+not be committed, store only its URL/checksum plus the derived notes needed for future work.
+
+### 2.5 Key Result Extraction
+
+For any paper that may be cited or used in a proof route, write a compact `key-results.md`. This is
+the quick-load artifact future agents should read before opening the raw conversion.
+
+Include:
+
+- Citation and source packet path.
+- The exact theorem/lemma/proposition number or label from the paper.
+- Location: section/page/equation/source line when available.
+- Precise hypotheses and conclusion, paraphrased unless a short exact quote is essential.
+- Notation translation into the current repo's notation.
+- How the result could be used: cite only, direct input, adaptable method, obstruction, or
+  terminology alignment.
+- Any caveat: different definitions, missing hypothesis, unpublished status, proof gap, or
+  dependence on another result.
+
+Do not bury important theorems in a long narrative review. If a theorem is likely to be invoked
+again, promote it into `key-results.md` with enough precision that an agent can decide whether the
+raw source must be reopened.
+
+### 2.6 Literature Index
+
+When adding or changing literature packets, refresh the repo-level literature index if the repo uses
+one:
+
+```bash
+python3 scripts/render_literature_index.py
+```
+
+The renderer scans `literature/*/metadata.json` and `literature/*/key-results.md`, then writes:
+
+- `literature/index.md` for quick source review in the repo.
+- `literature/index.html` for browser/dashboard navigation.
+
+If a dashboard exists, add or update a dashboard node/link for `literature/index.html` when the
+literature materially affects a route, proof input, terminology choice, or obstruction. The index is
+not a substitute for `key-results.md`; it is the table of contents across extracted papers and
+results.
+
 ---
 
 ## Step 3: Analyze Connections
@@ -125,10 +195,17 @@ Date: [date]
 - Terms searched: [list]
 - Sources checked: [list]
 - Papers reviewed: [count]
+- Durable packets created/updated: [`literature/<citation-key>/`, ...]
+- Literature index refreshed: yes/no (`literature/index.md`, `literature/index.html`)
 
 ## Essential References (must cite)
 1. [Citation] — [one-line relevance]. Connection: [how it relates to our work]
 2. ...
+
+## Key Results Extracted
+1. [Citation, Theorem/Lemma X.Y] — [precise hypothesis/conclusion summary].
+   Packet: `literature/<citation-key>/key-results.md`
+   Use: [direct input / adaptable method / terminology / obstruction]
 
 ## Important Connections
 1. [Citation] — [Result X] connects to our [Theorem Y] because [reason].
