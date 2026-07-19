@@ -35,6 +35,17 @@ Examine the paper systematically across these dimensions:
 - Look for prose that could be tightened or improved
 - **Forward references:** flag any term, object, or notation *used before it is defined*. Distinguish these from intentional, helpful forward references (proof roadmaps, "see §X" navigation, "we prove below") — only the term-before-definition kind is a defect. Do not treat the raw count of references-to-later-labels as the metric; a good terminology table legitimately points forward. The target is "no term opaque at first use."
 - **Jargon density:** flag bespoke or evocative-but-vague terms that carry heavy load but lack a crisp early definition or glossary entry. Recommend a clearer/more explicit name, or at minimum a one-line gloss at first use plus a glossary entry.
+- **AI-like proof-process jargon:** in abstracts, introductions, conclusions, and theorem summaries,
+  flag terms that sound like internal proof-management labels rather than standard mathematical
+  prose. Examples include "proof spine", "proof package", "mechanism", "route", "pipeline",
+  "stratum" when no stratification is actually defined, "architecture", "engine", "certificate"
+  when no formal certificate is specified, and similar phrases. These often gesture at a real idea
+  but use the wrong register. Recommend replacing them with the actual mathematical content:
+  "the main reduction", "the induction scheme", "the auxiliary construction", "the invariant",
+  "the decomposition into cases", "the comparison lemma", "the obstruction", or a formally
+  defined term. Do not ban standard terms such as "stratum", "filtration", "certificate", or
+  "mechanism" when they are conventional in the field or explicitly defined; the defect is
+  unsupported, generic, AI-flavored abstraction.
 
 **Overall Structure**
 - Does the paper have a clear narrative arc?
