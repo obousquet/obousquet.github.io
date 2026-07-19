@@ -41,14 +41,19 @@ Examine the paper systematically across these dimensions:
   "stratum" when no stratification is actually defined, "architecture", "engine", "certificate"
   when no formal certificate is specified, "finite certificate", "proof debt", "proof obligation",
   "gate", "assay", and similar phrases. Generic use of "obstruction" should also be flagged unless
-  the obstruction is named, located, and mathematically contextualized. These often gesture at a
-  real idea but use the wrong register. Recommend replacing them with the actual mathematical
+  the obstruction is named, located, and mathematically contextualized. Generic use of "boundary"
+  should likewise be flagged unless the paper specifies which boundary is meant, such as a
+  topological boundary, graph boundary, boundary operator, measure-theoretic boundary, boundary
+  stratum, or boundary condition. Generic use of "sector" should also be flagged unless the sector
+  is a defined geometric region, parameter regime, decomposition class, or standard term in the
+  relevant field. These often gesture at a real idea but use the wrong register. Recommend replacing
+  them with the actual mathematical
   content: "the main reduction", "the induction scheme", "the auxiliary construction", "the
   invariant", "the decomposition into cases", "the comparison lemma", "the remaining lemma to
   prove", "the necessary condition", "the counterexample family", or a formally defined term. Do
-  not ban standard terms such as "stratum", "filtration", "certificate", "obstruction", or
-  "mechanism" when they are conventional in the field or explicitly defined; the defect is
-  unsupported, generic, AI-flavored abstraction.
+  not ban standard terms such as "stratum", "filtration", "certificate", "obstruction",
+  "boundary", "sector", or "mechanism" when they are conventional in the field or explicitly
+  defined; the defect is unsupported, generic, AI-flavored abstraction.
 
 **Overall Structure**
 - Does the paper have a clear narrative arc?
