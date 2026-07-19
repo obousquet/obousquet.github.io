@@ -39,11 +39,14 @@ Examine the paper systematically across these dimensions:
   flag terms that sound like internal proof-management labels rather than standard mathematical
   prose. Examples include "proof spine", "proof package", "mechanism", "route", "pipeline",
   "stratum" when no stratification is actually defined, "architecture", "engine", "certificate"
-  when no formal certificate is specified, and similar phrases. These often gesture at a real idea
-  but use the wrong register. Recommend replacing them with the actual mathematical content:
-  "the main reduction", "the induction scheme", "the auxiliary construction", "the invariant",
-  "the decomposition into cases", "the comparison lemma", "the obstruction", or a formally
-  defined term. Do not ban standard terms such as "stratum", "filtration", "certificate", or
+  when no formal certificate is specified, "finite certificate", "proof debt", "proof obligation",
+  "gate", "assay", and similar phrases. Generic use of "obstruction" should also be flagged unless
+  the obstruction is named, located, and mathematically contextualized. These often gesture at a
+  real idea but use the wrong register. Recommend replacing them with the actual mathematical
+  content: "the main reduction", "the induction scheme", "the auxiliary construction", "the
+  invariant", "the decomposition into cases", "the comparison lemma", "the remaining lemma to
+  prove", "the necessary condition", "the counterexample family", or a formally defined term. Do
+  not ban standard terms such as "stratum", "filtration", "certificate", "obstruction", or
   "mechanism" when they are conventional in the field or explicitly defined; the defect is
   unsupported, generic, AI-flavored abstraction.
 
