@@ -57,6 +57,26 @@ summarizes the current route tree and points to the authoritative artifacts.
   - `links` as `{label, href}` objects
   - `children` as nested nodes
 
+## Dashboard language discipline
+
+- Dashboard labels and summaries are mathematical communication, not internal scratchpad shorthand.
+  Keep them compact, but make every compact phrase precise enough for a reader who has not followed
+  the whole chat history.
+- Avoid generic proof-process words in labels or summaries unless they are qualified, contextualized,
+  or formally defined in the linked ledger/TeX file. Terms that often become unclear include
+  "gate", "obstruction", "proof debt", "proof obligation", "assay", "certificate", "finite
+  certificate", "boundary", "sector", "mechanism", "proof spine", "proof package", "route",
+  "pipeline", and "stratum".
+- These words are not banned. Use them when they are standard or precise: for example a topological
+  boundary, graph boundary, boundary operator, boundary condition, defined geometric sector,
+  parameter sector, named obstruction, or formal certificate. Otherwise replace them with the
+  actual mathematical content, such as "remaining lemma to prove", "necessary condition",
+  "counterexample family", "main reduction", "induction step", "comparison lemma", "auxiliary
+  construction", or "case split".
+- Prefer node labels that name the mathematical state directly: `Alexander-dual CM criterion
+  proved`, `endpoint-separation lemma stalled`, or `rank-3 counterexample search active` is better
+  than `CM gate`, `boundary obstruction`, or `finite certificate route`.
+
 ## Status semantics
 
 - Use stable status words such as `active`, `stalled`, `proved`, `refuted`, `draft`, `tool`,
