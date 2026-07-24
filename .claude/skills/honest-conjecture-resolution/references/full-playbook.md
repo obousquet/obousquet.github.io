@@ -843,9 +843,16 @@ shared infrastructure, not as an unlimited batch cluster.
 - **Scale searches deliberately.** Start with small parameters, estimate CPU and memory growth, and
   only then move to larger runs. Prefer chunked or checkpointed searches over one large all-or-nothing
   process.
-- **Use lower priority for heavy jobs.** For expensive diagnostics, use `nice`, e.g.
-  `nice -n 10 uv run python scripts/explore_foo.py ...`, so interactive work and the web service stay
-  responsive.
+- **Bound memory before launching.** For any nontrivial numerical computation, read `MemAvailable`
+  from `/proc/meminfo` and set a hard address-space cap at no more than 75% of that value. Do not
+  count swap as usable memory and do not rely on swap to finish a run.
+- **Use lower priority and hard limits for heavy jobs.** For expensive diagnostics, use `nice` and
+  `prlimit`, e.g.
+  ```bash
+  mem_cap=$(awk '/MemAvailable:/ {printf "%.0f\n", $2 * 1024 * 0.75}' /proc/meminfo)
+  nice -n 10 prlimit --as="$mem_cap" --cpu=3600 -- uv run python scripts/explore_foo.py ...
+  ```
+  so interactive work and the web service stay responsive.
 - **Limit parallelism.** Do not launch multiple high-memory or all-core jobs at once. If a script has
   worker/thread/process options, set them conservatively unless the user explicitly asks for a
   saturation run.

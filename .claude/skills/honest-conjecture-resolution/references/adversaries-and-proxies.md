@@ -100,7 +100,14 @@ to the crux lemma.
 
 - Treat the EC2 instance as shared infrastructure, not a batch cluster.
 - Start small and estimate memory growth before scaling.
-- Use `nice -n 10 uv run python scripts/explore_foo.py ...` for heavy diagnostics.
+- Before launching any nontrivial numerical computation, compute a hard memory cap from current
+  available RAM, not swap:
+  ```bash
+  mem_cap=$(awk '/MemAvailable:/ {printf "%.0f\n", $2 * 1024 * 0.75}' /proc/meminfo)
+  nice -n 10 prlimit --as="$mem_cap" --cpu=3600 -- uv run python scripts/explore_foo.py ...
+  ```
+- Keep `prlimit --as` at or below 75% of `MemAvailable`. If that is insufficient, shrink, chunk, or
+  checkpoint the run rather than relying on swap.
 - Limit workers and avoid multiple high-memory/all-core jobs.
 - Prefer chunking, checkpointing, sample limits, staged output, timeouts, and symmetry reduction.
 - Stop and redesign if a run swaps, pegs all cores too long, or threatens the web service.

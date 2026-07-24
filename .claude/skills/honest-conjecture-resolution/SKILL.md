@@ -154,7 +154,14 @@ direction on every arrow.
 The EC2 instance also serves the research site and may host other work.
 
 - Start small, estimate memory/CPU growth, and scale gradually.
-- Prefer `nice -n 10 uv run python ...` for heavy diagnostics.
+- Before launching any nontrivial numerical computation, read `MemAvailable` from `/proc/meminfo`
+  and set `prlimit --as` to at most 75% of that value. Do not include swap in the budget and do not
+  rely on swap to finish a run.
+- Prefer a bounded, lower-priority launch such as:
+  ```bash
+  mem_cap=$(awk '/MemAvailable:/ {printf "%.0f\n", $2 * 1024 * 0.75}' /proc/meminfo)
+  nice -n 10 prlimit --as="$mem_cap" --cpu=3600 -- uv run python scripts/explore_foo.py ...
+  ```
 - Limit worker counts; do not launch several all-core or high-memory jobs at once.
 - Use timeouts, sample limits, chunking, checkpointing, or symmetry reduction.
 - Stop jobs that start swapping, peg all cores for too long, or threaten server responsiveness.

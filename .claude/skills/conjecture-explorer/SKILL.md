@@ -117,10 +117,18 @@ Pattern: 2^n - 1 (confirmed up to n=10)
 - Increase parameter size gradually.
 - Be a good EC2 citizen: do not saturate CPU or memory with unconstrained searches. Start with small
   limits, estimate memory growth before scaling, and avoid launching several heavy jobs at once.
-- For heavy or long-running computations, prefer a lower-priority invocation such as
-  `nice -n 10 uv run python explore_<topic>.py ...`. If the script supports worker counts, set a
-  conservative value instead of using every core. Use timeouts or explicit max-parameter limits for
-  exploratory runs.
+- Before any numerical run that could grow beyond a trivial toy case, check current RAM with
+  `/proc/meminfo` and set a hard address-space cap no larger than 75% of `MemAvailable`; do not
+  count swap as usable memory. A standard launch pattern is:
+  ```bash
+  mem_cap=$(awk '/MemAvailable:/ {printf "%.0f\n", $2 * 1024 * 0.75}' /proc/meminfo)
+  nice -n 10 prlimit --as="$mem_cap" --cpu=3600 -- uv run python explore_<topic>.py ...
+  ```
+- If the resulting cap is too small for the intended run, shrink the parameters, stream/chunk the
+  computation, checkpoint intermediate output, or ask before using a larger fraction of RAM. Do not
+  rely on swap to finish a search.
+- If the script supports worker counts, set a conservative value instead of using every core. Use
+  timeouts, `prlimit --cpu`, or explicit max-parameter limits for exploratory runs.
 - If a job starts swapping, consuming all cores for a long time, or threatening the shared web/server
   workload, stop it and restart with smaller parameters, chunking, checkpointing, or a sampled search.
 

@@ -15,7 +15,14 @@
 
 ## Command and compatibility guardrails
 
-- Default to the repo convention `uv run python <script>` for exploration scripts unless the script header or current `AGENTS.md` says otherwise.
+- Default to the repo convention `uv run python <script>` only for toy checks. Before any
+  nontrivial numerical diagnostic, cap memory from current RAM, not swap:
+  ```bash
+  mem_cap=$(awk '/MemAvailable:/ {printf "%.0f\n", $2 * 1024 * 0.75}' /proc/meminfo)
+  nice -n 10 prlimit --as="$mem_cap" --cpu=3600 -- uv run python <script>
+  ```
+  Keep the cap at or below 75% of `MemAvailable`; shrink/chunk/checkpoint instead of relying on
+  swap or launching an uncapped search.
 - Write `explore_*.py` for working scripts: quick-and-dirty is acceptable, but the mathematical logic and printed patterns must be clear.
 - Keep route findings in the active ledger or a focused `drafts/` report; do not append chronological script notes to overview references.
 - For old quick diagnostics that may run under older Python, prefer `bin(x).count("1")` or a local `popcount` helper over `int.bit_count()`.
