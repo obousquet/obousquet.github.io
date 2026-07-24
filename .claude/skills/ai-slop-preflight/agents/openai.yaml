@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Slop Preflight"
+  short_description: "Audit manuscripts for AI artifacts before submission."
+  default_prompt: "Run an AI-slop and submission-compliance preflight on this LaTeX manuscript."
