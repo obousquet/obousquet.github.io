@@ -33,6 +33,8 @@ summarizes the current route tree and points to the authoritative artifacts.
   the dashboard rather than as escaped plaintext.
 - If a link target is a local markdown file, the renderer should rewrite it automatically to the
   generated HTML preview page; the manifest should still name the original `.md` file.
+- Keep link groups tidy: render 1-3 links directly, but collapse longer link groups into a
+  disclosure section so dense nodes do not dominate the dashboard.
 - When a markdown file is meant to be read in the dashboard preview, write equations in normal
   LaTeX math delimiters such as `$...$`, `$$...$$`, `\(...\)`, or `\[...\]`. Do not fence
   mathematical content inside code blocks unless the intention is to show the literal source.
