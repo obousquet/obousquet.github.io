@@ -38,6 +38,13 @@ summarizes the current route tree and points to the authoritative artifacts.
 - When a markdown file is meant to be read in the dashboard preview, write equations in normal
   LaTeX math delimiters such as `$...$`, `$$...$$`, `\(...\)`, or `\[...\]`. Do not fence
   mathematical content inside code blocks unless the intention is to show the literal source.
+- Do not wrap reader-facing mathematical statements in backticks just to make them stand out. A
+  span such as `` `NCTD<=VC` `` is rendered as literal code and MathJax will intentionally skip it;
+  write `$NCTD \le VC$` or `\(NCTD \le VC\)` instead. Reserve backticks and fenced blocks for
+  filenames, shell commands, JSON keys, literal identifiers, and source snippets.
+- Current renderers may best-effort coerce obvious relation-style code spans in Markdown previews
+  into inline math for legacy files, but do not rely on that compatibility path when writing new
+  Markdown.
 - The generated HTML should be static, linkable, and readable on mobile.
 - The dashboard should show the current structure, not a chronology of every past attempt.
 
@@ -98,6 +105,8 @@ summarizes the current route tree and points to the authoritative artifacts.
   `scripts/render_conjecture_dashboard.py --bump-version --touch "Leaf label"` so version bumps and
   node touches are reproducible.  Do not bump the version for a render-only refresh.
 - Commit the manifest and the generated HTML together when the dashboard is part of the repo record.
+- Do not commit generated Markdown preview pages such as `notes.md.html`; they are reproducible
+  side outputs and should be ignored by `.gitignore`.
 - Link the generated `dashboard.html` from the repo homepage or site index.
 
 ## Maintenance rules
