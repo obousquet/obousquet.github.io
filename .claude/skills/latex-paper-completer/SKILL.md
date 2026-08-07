@@ -113,7 +113,7 @@ SELF-CONTAINEDNESS REPORT:
 CRITICAL ISSUES (must fix):
 1. Theorem 3 uses the concept "regularity condition" which is never formally defined
    → Recommendation: Add Definition X formally stating the condition
-   
+
 2. Notation $\rho(x,y)$ appears in Eq. (5) without introduction
    → Recommendation: Introduce in Section 2 with definition and intuition
 
@@ -258,7 +258,7 @@ Look for:
 \begin{proof}[Proof Sketch]
 We prove this in three steps:
 1. [High-level idea for step 1]
-2. [High-level idea for step 2]  
+2. [High-level idea for step 2]
 3. [High-level idea for step 3]
 
 The key insight is [main idea]. Technical details follow.
