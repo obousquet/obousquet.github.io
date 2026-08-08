@@ -1,6 +1,6 @@
 ---
 name: latex-research-reviewer
-description: Provide comprehensive expert peer review and revision guidance for LaTeX research papers in advanced mathematics and machine learning. Use whenever a user asks to review, evaluate, revise, or assess the journal readiness of one paper or a companion-paper series. Check mathematical correctness, proof rigor, convention shifts, prose, structure, series cohesion, novelty and provenance, notation, citations, and rendered presentation; support both referee-report and review-and-implement workflows.
+description: Provide comprehensive expert peer review and revision guidance for LaTeX research papers in advanced mathematics and machine learning. Use whenever a user asks to review, evaluate, revise, or assess the journal readiness of one paper or a companion-paper series. Check mathematical correctness, proof rigor, convention shifts, definition placement, jargon and proof fragmentation, prose, structure, series cohesion, novelty and provenance, notation, citations, and rendered presentation; support both referee-report and review-and-implement workflows.
 ---
 
 # LaTeX Research Paper Reviewer
@@ -59,8 +59,19 @@ Examine the paper systematically across these dimensions:
   invariant, or complement notation before the formal setup.  Expand acronyms
   and give a one-line mathematical gloss at first use; a later full definition
   does not repair an opaque abstract.
+- **Definition adequacy:** an English description is not a mathematical
+  definition. In notation tables and at first use, require the domain, formula,
+  constraints, measure or normalization, and endpoint conventions for central
+  objects. Preserve interpretation alongside the formula. Check that the
+  concise introductory definition agrees exactly with the later proof-level
+  definition.
 - **Forward references:** flag any term, object, or notation *used before it is defined*. Distinguish these from intentional, helpful forward references (proof roadmaps, "see §X" navigation, "we prove below") — only the term-before-definition kind is a defect. Do not treat the raw count of references-to-later-labels as the metric; a good terminology table legitimately points forward. The target is "no term opaque at first use."
 - **Jargon density:** flag bespoke or evocative-but-vague terms that carry heavy load but lack a crisp early definition or glossary entry. Recommend a clearer/more explicit name, or at minimum a one-line gloss at first use plus a glossary entry.
+- **Data-versus-name test:** when a coined term denotes only a function, set,
+  measure, or minimizer satisfying a short displayed list of properties, prefer
+  stating those properties directly. If removing the name loses no
+  mathematical information, remove it. For a legitimate standard term, state
+  the defining formula or optimization problem before relying on the name.
 - **Cross-field standard terms:** even legitimate specialist terms may need a
   short parenthetical gloss when the paper connects several communities.  Keep
   the standard term, but do not force a reader from the adjacent field to infer
@@ -115,9 +126,19 @@ Examine the paper systematically across these dimensions:
 
 **Structural Navigability** (especially for long, multi-file papers)
 - Flag any single section or source file that has become a long, *flat* wall of results — many theorems/lemmas with almost no `\subsection`/`\subsubsection` or signpost structure. These are a readability emergency even when each result is correct.
+- Flag the opposite failure as well: a chain of short theorem-like
+  environments, each used once only by the next, makes a full proof read like a
+  dependency map. Build the local citation/use graph. Recommend one proof with
+  named steps unless an intermediate statement is reusable, independently
+  citable, or isolates a genuine proof contract.
+- Ask of every named result: "Would a later reader cite this statement without
+  citing the enclosing proof?" If not, consider demoting it to a proof step.
 - Recommend splitting an over-grown file at its natural conceptual seams, promoting the largest clusters to their own sections, and adding in-body navigation headers so a reader can locate an argument.
 - Check that the table of contents (at the configured `tocdepth`) actually reflects the conceptual structure; recommend headers at the depth that will surface.
-- When recommending a restructure, note the safety discipline the author should follow: keep content and `\label` keys byte-identical (move/retitle only), and re-verify the build and the label set so no cross-reference breaks.
+- When recommending a restructure, note the safety discipline the author
+  should follow: for moves or retitles, keep content and `\label` keys
+  byte-identical. For deliberate consolidation, record removed labels, update
+  all references, and verify the before/after label-set delta and final build.
 
 **Citation Accuracy & Completeness**
 - Verify that all citations are formatted consistently

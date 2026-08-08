@@ -5,8 +5,9 @@ description: >-
   improve self-containedness, intuition, and progressive complexity. Use this
   skill whenever a user uploads a .tex file or section and asks to
   complete/improve a draft, add intuitive explanations, define missing concepts,
-  fill in proofs, or restructure for progressive disclosure. Works on papers at
-  any stage and offers three levels of enhancement: (1)
+  fill in proofs, reduce jargon or proof fragmentation, or restructure for
+  progressive disclosure. Works on papers at any stage and offers three levels
+  of enhancement: (1)
   Self-containedness—identify undefined concepts, create glossaries, ensure
   consistency; (2) Intuition—suggest and write rigorous examples, illustrations,
   and intuitive explanations without vagueness; (3) Complexity levels—restructure
@@ -65,6 +66,13 @@ Fix: [Recommendation]
 - Check for notation used without introduction
 - Flag notation that changes meaning between sections
 - Identify where notation could be simplified or made clearer
+- Require a mathematical definition, not only an English gloss. For a central
+  functional, norm, operator, or auxiliary quantity, record its domain,
+  formula, constraints, and normalization. Preserve a short interpretation
+  alongside the formula.
+- Treat the table as a first-use surface. It must be intelligible on its own,
+  but a central definition should also be stated consistently at the later
+  proof-level point of use.
 
 Template for notation table:
 ```
@@ -140,13 +148,31 @@ Long papers (especially multi-`\input` ones) accrete two problems that hurt self
 - Cut at clean boundaries (a blank line between an environment's `\end{}` and the next environment/prose) so no environment is split.
 - Make the cut points match the configured `tocdepth`: headers deeper than `tocdepth` improve in-body reading but will not appear in the table of contents — choose the level accordingly.
 
+**Also audit over-fragmentation.** Build the local use graph of theorem-like
+statements. If several short lemmas or propositions are used exactly once, in
+order, only to prove the next item, consolidate them into one proof with
+descriptive steps. Keep a named intermediate result only when it has a
+standalone formulation, is reused, isolates a genuine proof contract, or is
+likely to be cited independently. Do not make theorem numbering reproduce a
+proof outline.
+
 **Build a point-of-use terminology table.** For a section that introduces many coined terms, add a short "Vocabulary for this section" table at its head: each term, a one-line plain-language gloss, and an `\autoref` to its formal definition. This front-loads meaning so nothing is opaque on first reading, and it is the single highest-value, lowest-risk jargon fix.
+
+**Prefer data over coined names.** If an object is only a function, set, or
+measure satisfying a short list of properties, state those properties directly
+instead of inventing a noun phrase. Put plain mathematical content in
+subsection and theorem titles. When a specialist term is standard and useful,
+give the formula or optimization problem first and identify the standard name
+second; do not ask the name to carry the definition.
 
 **Rename opaque terms carefully (optional, with author sign-off).** Evocative-but-vague coined nouns can be renamed to more explicit ones — but only the *displayed* term. **Keep `\label` keys stable** and change prose/title text only, so every cross-reference still resolves. Protect `\label{}`/`\ref{}`/`\autoref{}` contents from any global search-and-replace, prefer whole-word boundaries, and scan afterwards for doubled-word artifacts (e.g. a swap turning "X cycle" into "Y cycle cycle"). Prefer a glossary over a rename when a term is precise and heavily used; do not degrade a carefully written note just to remove a word.
 
 **Operational discipline (do this for every restructuring edit).**
 1. Keep content byte-identical when only moving/retitling — the split should not change a single line of mathematics.
-2. After each change, **rebuild** and confirm the **label set is unchanged** (capture the `\label` multiset before and after; the diff should be exactly the new headers' labels, with none lost).
+2. After each change, **rebuild** and compare the `\label` multiset before and
+   after. For moves and retitles it must be unchanged. When consolidating
+   one-use results, record the intentionally removed labels and update every
+   reference to them; no unexplained label loss is acceptable.
 3. Confirm there are no new undefined or multiply-defined references.
 4. Preserve file history with `git mv` when renaming/splitting files.
 

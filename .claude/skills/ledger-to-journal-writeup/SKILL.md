@@ -1,6 +1,6 @@
 ---
 name: ledger-to-journal-writeup
-description: Convert mathematical proof ledgers, historical route notes, exploratory drafts, or campaign archives into journal-style self-contained LaTeX writeups. Use when Codex needs to clean a proof ledger into a polished theorem/proof note, remove chronology, consolidate current results, add definitions/examples/reading guides/dependency maps, audit proof contracts for gaps, extract a proof-only companion note from campaign history, or decide which results should be promoted to theorem-level statements.
+description: Convert mathematical proof ledgers, historical route notes, exploratory drafts, or campaign archives into journal-style self-contained LaTeX writeups. Use when Codex needs to clean a proof ledger into a polished theorem/proof note, remove chronology and campaign jargon, consolidate current results or chains of one-use lemmas, add definitions/examples/reading guides/dependency maps, audit proof contracts for gaps, extract a proof-only companion note from campaign history, or decide which results should be promoted to theorem-level statements.
 ---
 
 # Ledger to journal writeup
@@ -101,11 +101,19 @@ The reader path should be local as well as global. Before a dense proof section,
 add a paragraph saying what the section proves, which definitions it depends on,
 what the main obstruction is, and what the output will be used for.
 
+A dependency map is orientation, not a template for fragmenting the full
+proof. Once the reader reaches the proof, present it in mathematical order. If
+several intermediate statements are short, consecutive, and used only once,
+use descriptive proof steps rather than separate numbered results.
+
 ### 4. Rebuild definitions before use
 
 For every technical term, check whether the reader can reconstruct the formal data without reading the history.
 
 - Define objects by their data, not by campaign jargon.
+- In notation tables, pair the plain-language interpretation with the actual
+  formula, domain, constraints, and normalization. A phrase such as
+  “transport cost of a row” does not define the quantity.
 - Separate similar notions explicitly, for example graph boundary versus coordinate boundary versus auxiliary checked boundary.
 - State degenerate cases and endpoint conventions.
 - Give a small example immediately after definitions that encode a non-obvious convention.
@@ -116,6 +124,12 @@ A definition should say what counts as valid data and what failure looks like. I
 If a campaign term is kept because it is useful, rename it only once and then
 define it formally. Do not allow multiple synonyms for the same object to
 survive from different historical stages.
+
+Apply a deletion test to coined terminology: if the term can be replaced
+everywhere by “a function \(d\) satisfying [short displayed conditions]”
+without losing content, delete the coined term and state the conditions
+directly. For a standard specialist term, present the defining construction
+first and mention the conventional name second.
 
 Prefer definitions that expose the full input-output interface. For example,
 when a construction can fail, define both a valid instance and a failure
@@ -181,6 +195,12 @@ Promote to theorem/proposition level when a statement:
 - has explicit hypotheses and a complete proof in the writeup.
 
 Keep as lemmas or definitions when a statement is local proof plumbing, bookkeeping, or a one-use algebraic step.
+
+Collapse a linear chain of one-use lemmas into one proof with numbered or
+italicized steps. Preserve a named intermediate result only if it is reused,
+independently citable, conceptually distinct, or needed to state an exact
+handoff. The theorem graph should expose real mathematical dependencies, not
+mirror every stage of the discovery process.
 
 When unsure, add a short "Reusable outputs" guide first, then promote after the proof audit stabilizes.
 

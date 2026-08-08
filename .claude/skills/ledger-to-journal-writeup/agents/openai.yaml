@@ -1,4 +1,4 @@
 interface:
   display_name: "Ledger to Journal Writeup"
-  short_description: "Convert proof ledgers into self-contained journal-style writeups."
-  default_prompt: "Use the ledger-to-journal-writeup skill to extract the current proof ledger or historical draft into a precise self-contained LaTeX theorem note with definitions, examples, reading guide, dependency map, and proof-contract audit."
+  short_description: "Turn proof ledgers into clean journal writeups"
+  default_prompt: "Use $ledger-to-journal-writeup to turn this proof archive into a self-contained LaTeX writeup with formal definitions, plain terminology, appropriately consolidated proofs, and audited proof contracts."
