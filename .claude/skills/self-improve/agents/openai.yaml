@@ -1,0 +1,4 @@
+interface:
+  display_name: "Self Improve"
+  short_description: "Turn session evidence into actionable improvement findings"
+  default_prompt: "Use $self-improve to review this session, or a specified session directory, and write a shareable improvement report."

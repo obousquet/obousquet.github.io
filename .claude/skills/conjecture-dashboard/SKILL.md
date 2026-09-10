@@ -120,6 +120,7 @@ summarizes the current route tree and points to the authoritative artifacts.
 - Avoid duplicating the ledger; link to it instead.
 - If literature packets materially affect a route, link to `literature/index.html` or directly to
   the relevant `literature/<citation-key>/key-results.md`.
+- If literature affects a route, use `shared-literature` and link the common index or canonical packet.
 - Put durable status changes in the ledger or TeX file first, then reflect them in the dashboard.
 - Use the dashboard to answer three questions quickly: what is alive, what is dead, and where does
   each branch live in the route tree.

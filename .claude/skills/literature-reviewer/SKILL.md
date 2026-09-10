@@ -7,6 +7,17 @@ description: Conduct comprehensive literature searches for a mathematical resear
 
 Systematically search for and review mathematical literature related to the current research. Find references, discover connections, and identify results that strengthen the paper's context or yield new consequences.
 
+## Local results before web search
+
+Every prior-work search starts with the common extracted literature, even when
+web browsing will also be needed. Search succinct result statements and project
+notes first with `python3 scripts/research_library.py search 'terms'`; add
+`--sources` to search full extracted text. Read `merged-results.md` when present,
+then the underlying extraction and its provenance. These local statements may
+match the current question better than an abstract or web snippet. Browse for
+gaps, primary-source verification, or updates; finding a paper online is not a
+reason to download or convert it again when an adequate local version exists.
+
 ## How to Use This Skill
 
 The user wants to find related work for their paper or a specific result. Follow the workflow below.
@@ -75,28 +86,31 @@ For each potentially relevant result, record:
 
 ### 2.4 Durable Source Packets
 
-When a paper must be read beyond the abstract, create or reuse a durable source packet inside the
-repo. This is mandatory workflow hygiene: do not leave downloaded PDFs, arXiv source archives,
-HTML captures, or converted text only in chat, a browser cache, or `/tmp`. The next agent should be
-able to inspect the already-extracted source without repeating the download/conversion.
-
-Create the packet before close reading, or immediately after the first successful extraction, under:
+Before downloading or converting a paper, use the `shared-literature` skill.
+Locate the common library through `.research-library.json` and search all subject
+areas by DOI, arXiv ID, title, authors, and aliases. Reuse an existing source and
+extraction; if absent, reserve a canonical entry with `research_library.py`.
+Do not create an independent repo-local literature cache or leave durable sources
+only in chat, a browser cache, or `/tmp`.
 
 Recommended layout:
 
 ```text
-literature/<citation-key>/
-  metadata.json          # title, authors, year, DOI/arXiv URL, access date, extraction command(s)
+<library>/<domain>/<citation-key>/
+  metadata.json          # citation, identifiers, version, access and extraction provenance
   source.txt             # durable converted text from PDF, TeX, or HTML
-  source.tex             # arXiv/source TeX when available and useful
-  source-html.html       # official HTML capture when that is the best source
-  original.pdf           # optional; commit only when repo policy/licensing allow
-  key-results.md         # compact theorem/lemma extraction for future agents
-  notes.md               # optional reading notes and relevance assessment
+  source.tex             # source TeX when available and useful
+  source-html.html       # official HTML capture when appropriate
+  original.pdf           # when storage policy permits
+  key-results.md         # precise reusable theorem/lemma extraction
+  project-notes/<project>.md  # project notation and relevance
+  variants/<origin>/     # alternative versions and preserved extractions
 ```
 
-Use stable citation keys such as `alon1979probabilistic`, `gromov1983filling`, or the existing
-BibTeX key. If a repo already has a literature cache convention, follow it.
+Use a stable citation key, but check identifiers and aliases before choosing a
+new one. Subject directories organize papers; they are not independent caches.
+Existing project literature paths are compatibility views, not locations for new
+downloads. Commit source packets in the shared library's owning repository.
 
 Extraction priority:
 
@@ -124,7 +138,7 @@ Include:
 - The exact theorem/lemma/proposition number or label from the paper.
 - Location: section/page/equation/source line when available.
 - Precise hypotheses and conclusion, paraphrased unless a short exact quote is essential.
-- Notation translation into the current repo's notation.
+- Put notation translation into the project's own note under `project-notes/`.
 - How the result could be used: cite only, direct input, adaptable method, obstruction, or
   terminology alignment.
 - Any caveat: different definitions, missing hypothesis, unpublished status, proof gap, or
@@ -136,22 +150,19 @@ raw source must be reopened.
 
 ### 2.6 Literature Index
 
-When adding or changing literature packets, refresh the repo-level literature index if the repo uses
-one:
+After adding or changing packets, refresh the shared catalog and literature index:
 
 ```bash
+python3 scripts/research_library.py index
 python3 scripts/render_literature_index.py
 ```
 
-The renderer scans `literature/*/metadata.json` and `literature/*/key-results.md`, then writes:
-
-- `literature/index.md` for quick source review in the repo.
-- `literature/index.html` for browser/dashboard navigation.
-
-If a dashboard exists, add or update a dashboard node/link for `literature/index.html` when the
-literature materially affects a route, proof input, terminology choice, or obstruction. The index is
-not a substitute for `key-results.md`; it is the table of contents across extracted papers and
-results.
+Both commands use the configured common library. The renderer indexes canonical
+packets across subject directories without counting variants or compatibility
+views as additional papers. Commit the generated indexes with the packet changes
+in the library's owning repository. Link the common index or canonical packet
+from the project dashboard when it affects a research decision. The index is a
+table of contents; `key-results.md` carries the extracted results.
 
 ---
 
@@ -205,8 +216,8 @@ Date: [date]
 - Terms searched: [list]
 - Sources checked: [list]
 - Papers reviewed: [count]
-- Durable packets created/updated: [`literature/<citation-key>/`, ...]
-- Literature index refreshed: yes/no (`literature/index.md`, `literature/index.html`)
+- Durable packets created/updated: [`<library>/<domain>/<citation-key>/`, ...]
+- Literature index refreshed: yes/no (shared `index.md` and `index.html`)
 
 ## Essential References (must cite)
 1. [Citation] — [one-line relevance]. Connection: [how it relates to our work]
@@ -214,7 +225,7 @@ Date: [date]
 
 ## Key Results Extracted
 1. [Citation, Theorem/Lemma X.Y] — [precise hypothesis/conclusion summary].
-   Packet: `literature/<citation-key>/key-results.md`
+   Packet: `<library>/<domain>/<citation-key>/key-results.md`
    Use: [direct input / adaptable method / terminology / obstruction]
 
 ## Important Connections

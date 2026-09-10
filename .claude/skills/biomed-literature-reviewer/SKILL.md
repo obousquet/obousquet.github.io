@@ -16,6 +16,17 @@ intervention, biomarker, cell behavior, or clinical claim. The goal is not just
 to collect papers, but to classify the evidence, expose weak links, and separate
 mechanistic plausibility from demonstrated human clinical relevance.
 
+## Local results before web search
+
+Every prior-work search starts with the common extracted literature, even when
+web browsing will also be needed. Search succinct result statements and project
+notes first with `python3 scripts/research_library.py search 'terms'`; add
+`--sources` to search full extracted text. Read `merged-results.md` when present,
+then the underlying extraction and its provenance. These local statements may
+match the current question better than an abstract or web snippet. Browse for
+gaps, primary-source verification, or updates; finding a paper online is not a
+reason to download or convert it again when an adequate local version exists.
+
 ## Step 0: Scope the Review
 
 If the user did not specify the scope, ask only the minimum needed:
@@ -59,6 +70,18 @@ Search current primary sources when the user asks for a real literature review:
 - Preprints only as lower-confidence, clearly labeled context.
 
 Prefer primary papers and trial registry records over secondary summaries. When using a review, check the key cited primary studies behind any important claim.
+
+## Shared source packets
+
+Use `shared-literature` before downloading or extracting a study. Search the
+configured common library across all domains by DOI, PMID/PMCID, title, trial ID,
+and aliases. Reuse existing sources and extractions. Reserve absent papers in
+the `biomed` subject directory using `scripts/research_library.py`; retain
+versions, corrections, registry updates, and differing evidence extractions.
+Keep reusable study findings in `key-results.md` and project-specific clinical
+questions or interpretation in `project-notes/`. Preserve restricted access to
+private notes. Commit packet changes and refreshed indexes in the library's
+owning repository, not a separate repo-local cache.
 
 ## Step 3: Classify Evidence
 

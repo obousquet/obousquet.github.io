@@ -150,7 +150,7 @@ Examine the paper systematically across these dimensions:
   number, scope, hypotheses, and publication metadata.  Distinguish “this
   source contains a related idea” from “this source proves the formulation used
   here.”
-- If the repository has durable literature packets or reading notes, consult
+- Locate the common library with `shared-literature`; if it has durable packets or reading notes, consult
   them before searching or downloading the source again.  When a genuinely new
   source is inspected, preserve enough durable information—metadata, source
   location or extracted text, and the exact key result—to prevent repeated

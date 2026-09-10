@@ -17,6 +17,24 @@ the operating standard and choose the right specialized skill. This file should
 stay light: it routes the work and enforces shared principles; the detailed
 workflows live in the specialized skills.
 
+## Local results before web search
+
+Every prior-work search starts with the common extracted literature, even when
+web browsing will also be needed. Search succinct result statements and project
+notes first with `python3 scripts/research_library.py search 'terms'`; add
+`--sources` to search full extracted text. Read `merged-results.md` when present,
+then the underlying extraction and its provenance. These local statements may
+match the current question better than an abstract or web snippet. Browse for
+gaps, primary-source verification, or updates; finding a paper online is not a
+reason to download or convert it again when an adequate local version exists.
+
+## Shared literature source
+
+Before acquiring or extracting papers, use `shared-literature` to search and
+reuse the configured common library. Store new source packets in its `biomed`
+section, with project interpretation in separate notes. Do not start a new
+per-project download cache.
+
 ## Specialized Skills
 
 Load the relevant skill before doing the task:

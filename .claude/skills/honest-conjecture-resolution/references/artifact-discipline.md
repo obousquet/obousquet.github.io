@@ -64,7 +64,9 @@ Use the `conjecture-dashboard` skill for format and rendering details.
 
 ## Literature Artifact Rules
 
-Use `literature/<citation-key>/` for papers that require close reading. A useful packet contains:
+Use `shared-literature` to locate and search the common library before close reading.
+Reuse or reserve `<library>/<domain>/<citation-key>/`; do not create a separate project cache.
+A useful packet contains:
 
 - `metadata.json` with citation, source URL/DOI/arXiv ID, access date, extraction command, and
   license/repo-policy note when relevant.
@@ -78,10 +80,11 @@ re-download or reconvert a paper if an adequate packet already exists. If a pape
 status, cite the `key-results.md` entry from the ledger/dashboard rather than leaving the result only
 in chat.
 
-When literature packets are added or changed, run `python3 scripts/render_literature_index.py` if the
-repo has that helper. Commit `literature/index.md` and `literature/index.html` with the packet
-updates. Link `literature/index.html` from the relevant dashboard when literature results are part of
-the route state.
+When packets change, run `python3 scripts/research_library.py index` and
+`python3 scripts/render_literature_index.py` against the configured shared library.
+Commit packet changes and indexes in the library's owning repository; links in
+project views do not stage their targets. Link the shared index or packet from the
+relevant dashboard. Keep project-specific interpretation separate from reusable results.
 
 ## Round Update Order
 

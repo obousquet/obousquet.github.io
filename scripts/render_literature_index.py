@@ -4,6 +4,9 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import os
+from urllib.parse import quote
+from research_library import library_root, citation_url
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -80,14 +83,16 @@ def packet_from_dir(packet_dir: Path, literature_dir: Path) -> Packet | None:
     tags_value = data.get("tags") or data.get("keywords") or []
     tags = tuple(str(tag).strip() for tag in tags_value if str(tag).strip()) if isinstance(tags_value, list) else ()
     source_text = packet_dir / "source.txt"
-    key_results = packet_dir / "key-results.md"
+    key_results = packet_dir / "merged-results.md"
+    if not key_results.exists():
+        key_results = packet_dir / "key-results.md"
     return Packet(
         key=key,
         path=packet_dir,
         title=first_metadata_value(data, "title") or key,
         authors=first_metadata_value(data, "authors", "author"),
         year=first_metadata_value(data, "year", "date"),
-        url=first_metadata_value(data, "url", "source_url", "doi", "arxiv", "arxiv_url"),
+        url=citation_url(data),
         tags=tags,
         source_text=source_text if source_text.exists() else None,
         key_results=key_results if key_results.exists() else None,
@@ -98,13 +103,14 @@ def packet_from_dir(packet_dir: Path, literature_dir: Path) -> Packet | None:
 def discover_packets(literature_dir: Path) -> list[Packet]:
     if not literature_dir.exists():
         return []
-    packets = [
-        packet
-        for child in sorted(literature_dir.iterdir(), key=lambda p: p.name.lower())
-        if child.is_dir()
-        for packet in [packet_from_dir(child, literature_dir)]
-        if packet is not None
-    ]
+    children = []
+    for child in sorted(literature_dir.iterdir()):
+        if child.name in {"math", "biomed", "physics"} and child.is_dir():
+            children.extend(p for p in child.iterdir() if p.is_dir() and not p.is_symlink())
+        elif child.is_dir() and (child / "metadata.json").exists():
+            children.append(child)
+    packets = [packet for child in children
+               for packet in [packet_from_dir(child, literature_dir)] if packet is not None]
     return sorted(packets, key=lambda packet: (packet.year, packet.key.lower()), reverse=True)
 
 
@@ -195,7 +201,7 @@ def slugify(text: str) -> str:
 
 
 def relative_href(base_dir: Path, path: Path) -> str:
-    return path.relative_to(base_dir).as_posix()
+    return quote(os.path.relpath(path, base_dir), safe="/.")
 
 
 def render_markdown(output_dir: Path, packets: list[Packet], results: list[KeyResult]) -> str:
@@ -223,6 +229,10 @@ def render_markdown(output_dir: Path, packets: list[Packet], results: list[KeyRe
             artifacts.append(f"[source text]({relative_href(output_dir, packet.source_text)})")
         if packet.key_results is not None:
             artifacts.append(f"[key results]({relative_href(output_dir, packet.key_results)})")
+        for pdf in sorted(packet.path.glob("*.pdf")):
+            artifacts.append(f"[PDF]({relative_href(output_dir, pdf)})")
+        if (packet.path / "library-record.json").exists():
+            artifacts.append(f"[provenance]({relative_href(output_dir, packet.path / 'library-record.json')})")
         title = f"[{packet.title}]({packet.url})" if packet.url else packet.title
         lines.append(
             "| "
@@ -255,6 +265,10 @@ def render_html(output_dir: Path, packets: list[Packet], results: list[KeyResult
             artifacts.append(f'<a href="{esc(relative_href(output_dir, packet.source_text))}">source text</a>')
         if packet.key_results is not None:
             artifacts.append(f'<a href="{esc(relative_href(output_dir, packet.key_results))}">key results</a>')
+        for pdf in sorted(packet.path.glob("*.pdf")):
+            artifacts.append(f'<a href="{esc(relative_href(output_dir, pdf))}">PDF</a>')
+        if (packet.path / "library-record.json").exists():
+            artifacts.append(f'<a href="{esc(relative_href(output_dir, packet.path / "library-record.json"))}">provenance</a>')
         title = esc(packet.title)
         if packet.url:
             title = f'<a href="{esc(packet.url)}">{title}</a>'
@@ -327,7 +341,18 @@ def main() -> int:
     args = parser.parse_args()
 
     root = args.repo_root.resolve()
-    literature_dir = (args.literature_dir or root / "literature").resolve()
+    if args.literature_dir:
+        literature_dir = args.literature_dir.resolve()
+    else:
+        # Resolve configuration from --repo-root, without assuming the tool checkout owns data.
+        previous = Path.cwd()
+        try:
+            os.chdir(root)
+            literature_dir = library_root()
+        except ValueError as error:
+            parser.error(str(error))
+        finally:
+            os.chdir(previous)
     md_path = args.md or literature_dir / "index.md"
     html_path = args.html or literature_dir / "index.html"
 

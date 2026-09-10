@@ -141,10 +141,10 @@ direction on every arrow.
 - **Dashboard/ledger is growing faster than theorem progress:** read `references/state-compression.md`.
 - **Need subagents:** read `references/state-compression.md` and spawn only from orthogonal evidence
   contracts.
-- **Need an exact literature match or theorem import:** use the `literature-reviewer` skill and
-  `references/artifact-discipline.md`; store downloaded, converted, or extracted sources under
-  `literature/<citation-key>/`, write precise reusable statements in `key-results.md`, refresh the
-  literature index when present, and link route-relevant results from the ledger/dashboard.
+- **Need an exact literature match or theorem import:** use `shared-literature` first to search
+  local extracted results and project notes, then `literature-reviewer` for any web search still
+  needed. Reuse or reserve the packet in the common library, preserve precise statements and
+  separate project context, refresh the shared index, and link results from the ledger/dashboard.
 - **Need to clean route records or write a readable synthesis:** read
   `references/artifact-discipline.md`.
 - **Need dashboard format/rendering details:** use the `conjecture-dashboard` skill.
