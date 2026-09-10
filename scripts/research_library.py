@@ -155,13 +155,16 @@ def search_library(root, query, include_sources=False):
                             '_score': (65 if query.casefold() in folded else 35) + (5 if path.name == 'merged-results.md' else 0)})
     notes = root / 'project-notes'
     if notes.exists():
-        for path in sorted(notes.rglob('*.md')):
+        note_paths = list(notes.rglob('*.md'))
+        if include_sources:
+            note_paths += list(notes.rglob('*.txt')) + list(notes.rglob('*.tex'))
+        for path in sorted(note_paths):
             if path.name == 'index.md':
                 continue
             content = path.read_text(encoding='utf-8', errors='replace')
             if all(term in content.casefold() for term in terms):
                 excerpt, line = matched_excerpt(content, query)
-                matches.append({'kind': 'project-note', 'path': path.relative_to(root).as_posix(),
+                matches.append({'kind': 'project-note' if path.suffix == '.md' else 'source', 'path': path.relative_to(root).as_posix(),
                                 'line': line, 'excerpt': excerpt, '_score': 60 if query.casefold() in content.casefold() else 25})
     return matches
 
