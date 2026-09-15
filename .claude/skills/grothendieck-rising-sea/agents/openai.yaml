@@ -1,4 +1,4 @@
 interface:
   display_name: "Grothendieck Rising Sea"
-  short_description: "Resolve problems by building the right abstract framework."
-  default_prompt: "Use the grothendieck-rising-sea skill to lift the current problem into a better category or invariant framework, identify the recurring structures, state the functorial laws, and descend the resulting structural theorem back to the original conjecture."
+  short_description: "Surround conjectures with sustained theory-building."
+  default_prompt: "Use $grothendieck-rising-sea to develop the surrounding theory of these objects in depth, following natural generalizations and connections even while the route back to the conjecture remains unknown."
