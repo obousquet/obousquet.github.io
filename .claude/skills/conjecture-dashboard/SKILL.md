@@ -116,6 +116,17 @@ summarizes the current route tree and points to the authoritative artifacts.
 
 ## Maintenance rules
 
+- Before adding a result node or rewriting `latest_progress`, compare the claim with the campaign's
+  existing-result map, earlier rounds, and relevant related-repo results. Follow source links to the
+  actual statements and corrections; the dashboard alone is not an exhaustive search index. Use
+  `honest-conjecture-resolution` for the search procedure.
+- Reuse an existing node for the same result; link imported results to their originating proof and
+  record the original round/date when known. Label rediscovery or rechecking as reuse/verification,
+  preserving the last genuine advance. For an extension, new proof, or application, state the precise
+  addition over the earlier result. A new label or a move between repos does not establish novelty.
+- Link the campaign's compact result map or inventory from an appropriate existing description or
+  link group. Keep detailed search coverage and provenance in that record; no new manifest fields
+  or duplicate chronological log are needed.
 - Keep the tree shallow enough to scan quickly.
 - Avoid duplicating the ledger; link to it instead.
 - If literature packets materially affect a route, link to `literature/index.html` or directly to

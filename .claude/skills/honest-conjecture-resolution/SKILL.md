@@ -28,6 +28,8 @@ needs detail:
   consolidation, side quests, and subagent discipline.
 - `references/artifact-discipline.md`: ledgers, side drafts, dashboards, inventories, generated
   outputs, and source-of-truth synchronization.
+- `references/existing-results.md`: finding earlier campaign and related-repo results, comparing
+  statements, preserving provenance, and distinguishing new contributions from rediscovery.
 - `references/full-playbook.md`: archival full pre-compression playbook. Read only if a needed
   historical lesson is missing from the distilled references.
 
@@ -62,6 +64,21 @@ needs detail:
 8. **Consolidation is mathematical work.** It should reduce active leaves, expose the current crux,
    remove closed debt, and install a gate that prevents the same clutter from returning.
 
+## Check Existing Results Before Investing
+
+Before a substantial attempt or reopening a route, search the current campaign's earlier results
+and failures, relevant sibling repositories, and the shared literature. After a handoff or
+compaction, recover the linked result map before selecting work. Search statements, equivalent
+formulations, and older terminology; the latest dashboard and the literature catalog do not cover
+all campaign artifacts. Inspect source proofs and later corrections before importing a claim.
+
+Before reporting a new result, compare it with the closest existing statement: hypotheses,
+quantifiers, conclusion, and proof mechanism. Cite the original source and identify the actual
+addition. Rediscovery counts as reuse or verification, not a new theorem or a reset of the last
+advance. A new proof, extension, or application can matter; state exactly what changed. Reuse recent
+search coverage for unchanged work rather than rescanning all repos every turn. For the search and
+recording procedure, read `references/existing-results.md`.
+
 ## Minimal Campaign-State Invariant
 
 Before another serious round, the active ledger opening should answer:
@@ -71,6 +88,7 @@ Current exact target:
 Last equivalent reduction:
 Current smallest falsifier profile:
 Proved inputs being reused:
+Existing-result map and related-repo sources checked (link); actual unresolved difference:
 Active proof-debt rows:
 Parked routes and why:
 Next decisive move:
@@ -87,11 +105,13 @@ Use a before/after packet for every significant round:
 Before:
 Exact target:
 Current crux:
+Closest existing results/failures (links) and intended addition:
 Smallest falsifier profile:
 Rows allowed to change this round:
 Artifacts allowed to change this round:
 
 After:
+Contribution beyond prior work, or reuse/verification:
 Proof-contract delta:
 Rows proved/refuted/merged/parked:
 State deleted:
@@ -127,7 +147,8 @@ direction on every arrow.
 2. Identify the current smallest crux and its falsifier profile.
 3. Choose one mode: proof attempt, adversarial diagnostic, exact literature match, side-method assay,
    subagent batch, or consolidation.
-4. Run the round with bounded scope and compute hygiene.
+4. Check existing results, then run the round with bounded scope and compute hygiene.
+   Reuse a matching proof or witness instead of reconstructing it by default.
 5. Merge by proof-contract delta: prove, refute, merge, park, demote, or sharpen.
 6. Update the source-of-truth artifacts in the same pass: TeX/side draft, ledger, dashboard,
    inventory/scripts, and durable literature packets where relevant.

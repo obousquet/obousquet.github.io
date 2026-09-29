@@ -25,6 +25,10 @@ truth records after a research round.
 - Record false shortcuts once: false claim, witness/mechanism, replacement rule.
 - Prefer named debts and success/failure criteria over “continue” or “needs work.”
 - Chat is not storage; write status-changing claims to ledger or draft before relying on them.
+- Keep a compact searchable map of reusable results and failed mechanisms in the existing ledger
+  or inventory, with statements/aliases, current status, originating proof locations, and links to
+  relevant related-repo results. Preserve it through consolidation and handoffs; see
+  `existing-results.md`. An archive entry stays discoverable even after leaving the active tree.
 
 ## Draft / TeX Rules
 
