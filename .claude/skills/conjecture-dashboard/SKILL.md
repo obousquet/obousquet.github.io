@@ -116,6 +116,9 @@ summarizes the current route tree and points to the authoritative artifacts.
 
 ## Maintenance rules
 
+- When the shared knowledge index is configured, link relevant stable result cards and their
+  source owners. Use `research-knowledge` to check prior results, corrections and freshness before
+  promoting a dashboard claim. Keep the dashboard a summary rather than another result database.
 - Before adding a result node or rewriting `latest_progress`, compare the claim with the campaign's
   existing-result map, earlier rounds, and relevant related-repo results. Follow source links to the
   actual statements and corrections; the dashboard alone is not an exhaustive search index. Use

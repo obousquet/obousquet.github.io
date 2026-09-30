@@ -52,6 +52,12 @@ reason to download or convert it again when an adequate local version exists.
 
 ## Packet and note ownership
 
+Our own substantive writeups also need shared packets. Use `research-knowledge` to register an
+internal work, fingerprint its source dependencies, and create extraction candidates. Check these
+against the source before curating result cards. Refresh candidates after source changes, preserve
+reviewed cards, and audit their freshness. A packet's extraction status is separate from the
+mathematical status of its claims. Original writeup sources remain in their owning repository.
+
 ```text
 <library>/<domain>/<citation-key>/
   metadata.json

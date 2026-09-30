@@ -18,6 +18,11 @@ Commit source packets and refreshed indexes in the library's owning repository;
 project symlinks do not stage their target files. Preserve restricted views.
 
 ## Existing Results Before New Work
+- When the shared knowledge registry is configured, use `research-knowledge`: run
+  `python3 scripts/research_knowledge.py sync`, then read a task-specific `context --campaign .
+  --task 'current question'` bundle at campaign start/resume. Search before substantial new work;
+  inspect original sources and corrections. Register reusable writeups as internal packets and
+  run `audit` after meaningful changes. The database is a rebuildable cache, not proof authority.
 - Before a substantial proof attempt, computation, or new route, check what is already known in the
   current campaign and related repositories. Recover this context after handoffs or compaction;
   the latest round and dashboard alone are not a complete account of earlier results.

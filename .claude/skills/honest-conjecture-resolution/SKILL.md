@@ -66,6 +66,11 @@ needs detail:
 
 ## Check Existing Results Before Investing
 
+When configured, use `research-knowledge` to sync the shared index and read a bounded context bundle
+for the current task at campaign start/resume. Search it across campaign and sibling sources, then
+inspect original proofs and corrections. Register substantive writeups as internal packets; keep
+result cards and source fingerprints current. Use direct source searches for gaps in index coverage.
+
 Before a substantial attempt or reopening a route, search the current campaign's earlier results
 and failures, relevant sibling repositories, and the shared literature. After a handoff or
 compaction, recover the linked result map before selecting work. Search statements, equivalent
