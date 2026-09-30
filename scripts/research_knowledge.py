@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 SCHEMA = 1
-INDEX_VERSION = 2
+INDEX_VERSION = 3
 KINDS = {'theorem', 'lemma', 'example', 'counterexample', 'conjecture', 'idea', 'failed-approach', 'correction', 'definition'}
 STATUSES = {'proved', 'conditional', 'computational', 'conjectural', 'refuted', 'withdrawn', 'open', 'unreviewed'}
 SKIP = {'.git', '.claude', '.agents', '.codex', '.venv', 'node_modules', '__pycache__', '.cache', 'submission', '.lake'}
@@ -66,6 +66,12 @@ class Workspace:
         for row in self.data['sources']:
             if row['id'] in self.sources:
                 raise ValueError('Duplicate source id: ' + row['id'])
+            if row.get('type', 'text') not in ('text', 'json-records'):
+                raise ValueError('Unsupported source type: ' + row['id'])
+            collections = row.get('collections', [])
+            if row.get('type') == 'json-records' and (not collections or
+                    len({c['id'] for c in collections}) != len(collections)):
+                raise ValueError('Structured sources need uniquely named collections: ' + row['id'])
             self.sources[row['id']] = {**row, 'root': (self.base / row['path']).resolve()}
         self.dbpath = (self.base / self.data.get('cache', '.cache/knowledge.sqlite')).resolve()
         self.library = (self.base / self.data['library']).resolve()
@@ -93,6 +99,9 @@ class Workspace:
         return {'id': name, **self.campaigns[name]}
 
     def connect(self, write=False):
+        # Large FTS sorts may spill to disk. Use the cache filesystem rather than a
+        # small RAM-backed /tmp; preserve an explicit SQLite temporary-directory override.
+        os.environ.setdefault('SQLITE_TMPDIR', str(self.dbpath.parent))
         if write:
             self.dbpath.parent.mkdir(parents=True, exist_ok=True)
             conn = sqlite3.connect(self.dbpath, timeout=60)
@@ -180,6 +189,10 @@ def discover(ws):
                 selected = p.suffix in SUFFIXES or (p.suffix == '.json' and ('dashboard' in name or name in {'metadata.json', 'library-record.json'}))
                 if source.get('include'):
                     selected = any(rel.match(pattern) for pattern in source['include'])
+                if source.get('type') == 'json-records':
+                    selected = any(rel.match(c['glob']) for c in source['collections'])
+                    if str(rel) in {c.get('schema') for c in source['collections']}:
+                        selected = False
                 if not selected or any(rel.match(pattern) for pattern in source.get('exclude', [])):
                     continue
                 try:
@@ -195,6 +208,113 @@ def discover(ws):
     return found, issues
 
 
+def structured_records(ws, repo, found):
+    """Read configured object-per-file collections without changing their authority or status."""
+    source = ws.sources[repo]
+    collections = {c['id']: c for c in source['collections']}
+    records, lookup, schemas, issues, signature = {}, {}, {}, [], []
+    for cid, spec in collections.items():
+        if not spec.get('schema'):
+            continue
+        p = ws.source_path({'repo': repo, 'path': spec['schema']})
+        if p.is_symlink():
+            raise ValueError('Schema must not be a symlink: ' + spec['schema'])
+        data = p.read_bytes()
+        schemas[cid] = (json.loads(data), {'repo': repo, 'path': spec['schema'], 'sha256': digest(data)})
+        signature.append((spec['schema'], digest(data)))
+    for _, rel, path, _ in found:
+        matches = [c for c in collections.values() if Path(rel).match(c['glob'])]
+        if len(matches) != 1:
+            raise ValueError('Record must match exactly one collection: ' + rel)
+        spec = matches[0]
+        try:
+            data = path.read_bytes()
+            signature.append((rel, digest(data)))
+            record = json.loads(data)
+            if not isinstance(record, dict):
+                raise ValueError('Expected one JSON object per file')
+            identifier = record.get(spec.get('id_field', 'id'))
+            if isinstance(identifier, bool) or not isinstance(identifier, (str, int)) or str(identifier) == '':
+                raise ValueError('Missing or invalid stable record ID')
+            rid = f'{repo}:{spec["id"]}:{identifier}'
+            if rid in records:
+                raise ValueError('Duplicate record ID: ' + rid)
+            records[rid] = (record, spec, rel, digest(data))
+        except (ValueError, OSError) as exc:
+            # Duplicate identities make the whole source ambiguous; do not pick one silently.
+            if str(exc).startswith('Duplicate record ID:'):
+                raise
+            issues.append({'repo': repo, 'path': rel, 'issue': str(exc)})
+    for cid, spec in collections.items():
+        if not any(s['id'] == cid for _, s, _, _ in records.values()):
+            issues.append({'repo': repo, 'collection': cid, 'issue': 'empty-collection'})
+    # Build exactly the lookup keys requested by the consuming registry.
+    for spec in collections.values():
+        for ref in spec.get('references', {}).values():
+            cid, field = ref['collection'], ref.get('key', 'id')
+            if cid not in collections:
+                raise ValueError('Unknown reference collection: ' + cid)
+            if (cid, field) in lookup:
+                continue
+            table = lookup[cid, field] = {}
+            for rid, (record, target, rel, sha) in records.items():
+                if target['id'] != cid or field not in record:
+                    continue
+                key = str(record[field])
+                if key in table:
+                    raise ValueError('Ambiguous reference key: ' + cid + ':' + key)
+                table[key] = (rid, record, rel, sha)
+    output = {}
+    for rid, (record, spec, rel, sha) in records.items():
+        cid = spec['id']
+        sources = [{'repo': repo, 'path': rel, 'sha256': sha}]
+        aliases = []
+        for field in spec.get('alias_fields', []):
+            value = record.get(field, [])
+            aliases.extend(str(x) for x in (value if isinstance(value, list) else [value]))
+        title = str(record.get(spec.get('title_field', 'name')) or rid)
+        status = record.get(spec.get('status_field', 'status')) or 'unreviewed'
+        body = ['Structured source record; source status is not an independent proof review.',
+                'Omitted fields remain unspecified; false, zero and missing are distinct.',
+                '\nComplete record:\n' + json.dumps(record, ensure_ascii=False, indent=2)]
+        schema, schema_source = schemas.get(cid, ({}, None))
+        if schema_source:
+            sources.append(schema_source)
+        for column in schema.get('columns', []):
+            field = column['name']
+            if field not in record:
+                continue
+            meaning = column.get('description', '')
+            enum = next((e.get('display_name', '') for e in column.get('enum', [])
+                         if e['value'] == record[field]), '')
+            if meaning or enum:
+                body.append(f'Field {field}: {meaning}' + (f' Meaning of this value: {enum}' if enum else ''))
+        links = []
+        for field, ref in spec.get('references', {}).items():
+            if field not in record or record[field] in (None, ''):
+                continue
+            value, prefix = str(record[field]), ref.get('prefix', '')
+            key = value[len(prefix):] if value.startswith(prefix) else value
+            target = lookup[ref['collection'], ref.get('key', 'id')].get(key)
+            if not target:
+                issue = {'repo': repo, 'path': rel, 'issue': 'unresolved-reference', 'field': field, 'target': value}
+                issues.append(issue)
+                body.append(f'UNRESOLVED REFERENCE {field}: {value}; inspect the owning database.')
+                continue
+            target_id, linked, linked_rel, linked_sha = target
+            links.append(target_id)
+            sources.append({'repo': repo, 'path': linked_rel, 'sha256': linked_sha})
+            selected = {f: linked[f] for f in ref.get('fields', ['name']) if f in linked}
+            body.append(f'Reference {field}: [{target_id}] ({repo}:{linked_rel})\n' +
+                        json.dumps(selected, ensure_ascii=False, indent=2))
+        meta = {'id': rid, 'title': title, 'kind': spec.get('kind', 'record'),
+                'status': str(status), 'review': 'structured import; not independently verified',
+                'aliases': aliases, 'sources': sources, 'relations': {'references': links},
+                'origin_kind': 'structured', 'collection': cid}
+        output[rel] = [(rid, 1, title, '\n\n'.join(body), meta)]
+    return output, issues, digest(json.dumps(sorted(signature)))
+
+
 def sync(ws, full=False):
     ws.dbpath.parent.mkdir(parents=True, exist_ok=True)
     with ws.dbpath.with_suffix('.lock').open('w') as lock:
@@ -205,23 +325,40 @@ def sync(ws, full=False):
         previous = {r['key']: r for r in conn.execute('SELECT * FROM files')}
         version = conn.execute("SELECT value FROM state WHERE key='indexer_version'").fetchone()
         full = full or not version or int(version[0]) != INDEX_VERSION
+        prior_state = conn.execute("SELECT value FROM state WHERE key='sync'").fetchone()
+        prior_state = json.loads(prior_state[0]) if prior_state else {}
+        full = full or prior_state.get('registry_sha256') != digest(ws.path.read_bytes())
+        structured, signatures, dirty = {}, {}, set()
+        for repo, source in ws.sources.items():
+            if source.get('type') != 'json-records':
+                continue
+            try:
+                structured[repo], problems, signatures[repo] = structured_records(ws, repo, [f for f in found if f[0] == repo])
+                issues.extend(problems)
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                structured[repo] = {}
+                issues.append({'repo': repo, 'issue': 'structured-import-failed: ' + str(exc)})
+            if signatures.get(repo) != prior_state.get('structured_signatures', {}).get(repo):
+                dirty.add(repo)
         seen = set()
         with conn:
             for repo, rel, path, stat in found:
                 key = repo + ':' + rel
+                if repo in structured and rel not in structured[repo]:
+                    continue
                 seen.add(key)
                 old = previous.get(key)
-                if not full and old and old['mtime'] == stat.st_mtime_ns and old['size'] == stat.st_size:
+                if not full and repo not in dirty and old and old['mtime'] == stat.st_mtime_ns and old['size'] == stat.st_size:
                     continue
                 try:
                     content = path.read_text(encoding='utf-8')
-                    parts = chunks(content, rel)
+                    parts = structured[repo][rel] if repo in structured else chunks(content, rel)
                 except (OSError, ValueError) as exc:
                     issues.append({'repo': repo, 'path': rel, 'issue': str(exc)})
                     seen.discard(key)  # remove an older successful parse; never serve it as current
                     continue
                 sha = digest(content)
-                if not full and old and old['sha'] == sha:
+                if not full and repo not in dirty and old and old['sha'] == sha:
                     conn.execute('UPDATE files SET mtime=?,size=? WHERE key=?', (stat.st_mtime_ns, stat.st_size, key))
                     continue
                 if old:
@@ -244,7 +381,8 @@ def sync(ws, full=False):
             report = {'updated': now(), 'files': len(seen), 'changed': changed, 'removed': removed,
                       'chunks': conn.execute('SELECT count(*) FROM chunks').fetchone()[0], 'issues': issues,
                       'registry_sha256': digest(ws.path.read_bytes()),
-                      'sources': {r: sum(1 for x in found if x[0] == r) for r in ws.sources}}
+                      'structured_signatures': signatures,
+                      'sources': {r: sum(1 for key in seen if key.startswith(r + ':')) for r in ws.sources}}
             conn.execute('INSERT OR REPLACE INTO state VALUES (?,?)', ('sync', json.dumps(report)))
             conn.execute('INSERT OR REPLACE INTO state VALUES (?,?)', ('indexer_version', str(INDEX_VERSION)))
         conn.close()
@@ -285,6 +423,9 @@ def result(ws, row):
     return {'id': meta.get('id', row['key']), 'repo': row['repo'], 'path': row['path'],
             'line': row['line'], 'anchor': row['anchor'], 'title': row['title'],
             'kind': meta.get('kind', 'raw'), 'status': meta.get('status', 'unreviewed'),
+            'origin_kind': meta.get('origin_kind', 'card' if meta.get('id') else 'raw'),
+            'collection': meta.get('collection'),
+            'authority': ws.sources.get(row['repo'], {}).get('authority', ''),
             'review': meta.get('review', 'unreviewed'), 'assumptions': meta.get('assumptions', []),
             'sources': meta.get('sources', []), 'relations': meta.get('relations', {}),
             'freshness_issues': freshness(ws, evidence), 'body': row['body']}
@@ -535,6 +676,14 @@ def units(text):
     return len(text.encode('utf-8'))
 
 
+def source_registry(ws, private=False):
+    return {'registry': str(ws.path), 'sources': [
+        {**{k: v for k, v in source.items() if k != 'root'},
+         'resolved_path': str(source['root']), 'type': source.get('type', 'text'),
+         'available': source['root'].is_dir()}
+        for repo, source in ws.sources.items() if allowed(ws, repo, private)]}
+
+
 def context(ws, task, campaign, budget=6000, role=None, private=False):
     profile = ws.campaign(campaign)
     if budget < 500:
@@ -571,6 +720,9 @@ def context(ws, task, campaign, budget=6000, role=None, private=False):
             continue
         seen.add(hit['id'])
         block = f"\n## {hit['title']} [{hit['id']}]\n{hit['repo']}:{hit['path']}:{hit['line']} | {hit['kind']} | {hit['status']}\n"
+        block += 'Review: ' + hit.get('review', 'unreviewed') + '\n'
+        if hit.get('authority'):
+            block += 'Source ownership: ' + hit['authority'] + '\n'
         block += 'Freshness: ' + ('; '.join(hit['freshness_issues']) or 'no recorded source drift') + '\n'
         if hit.get('assumptions'):
             block += 'Assumptions: ' + '; '.join(hit['assumptions']) + '\n'
@@ -603,6 +755,7 @@ def main(argv=None):
     p = sub.add_parser('context'); p.add_argument('--task', required=True); p.add_argument('--campaign', required=True); p.add_argument('--budget', type=int, default=6000); p.add_argument('--role', choices=['historian', 'literature', 'transfer']); p.add_argument('--include-private', action='store_true'); p.add_argument('--json', action='store_true')
     p = sub.add_parser('packet'); p.add_argument('work'); p.add_argument('--refresh', action='store_true')
     sub.add_parser('audit')
+    p = sub.add_parser('sources'); p.add_argument('--include-private', action='store_true')
     args = parser.parse_args(argv)
     try:
         ws = Workspace(config_path(args.config))
@@ -611,6 +764,7 @@ def main(argv=None):
         elif args.command == 'inspect': output = inspect(ws, args.id, args.include_private)
         elif args.command == 'packet': output = packet(ws, args.work, args.refresh)
         elif args.command == 'audit': output = audit(ws)
+        elif args.command == 'sources': output = source_registry(ws, args.include_private)
         else:
             output = context(ws, args.task, args.campaign, args.budget, args.role, args.include_private)
             if not args.json:

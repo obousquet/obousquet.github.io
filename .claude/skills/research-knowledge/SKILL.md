@@ -31,6 +31,17 @@ coverage limit. Use `shared-literature` for external paper acquisition and ident
 
 ## Maintain reusable findings
 
+Use `python3 scripts/research_knowledge.py sources` to identify configured source repositories,
+subjects, input types, and ownership. The shared registry supports manuscript/text sources and
+structured JSON collections. Register new authoritative sources and their mappings in the artifact
+workspace; consult the owner's existing schema and ownership map before choosing what to index.
+
+For structured knowledge, update records in their owning database, preserve stable IDs, scope,
+source status and proof/citation links, run that database's validators, then run shared `sync` and
+`audit`. Do not create a second editable packet for each existing database record. Keep authored
+proofs in their declared owner and exclude generated catalogue copies when the originals are
+indexed. An imported `established` status reports the source's assessment, not a new proof review.
+
 Register substantial internal writeups under `writeups` in the artifact workspace's registry. Use
 `python3 scripts/research_knowledge.py packet WORK_ID` to create their shared literature packets.
 After meaningful source changes, use `packet WORK_ID --refresh`. This fingerprints explicit TeX
