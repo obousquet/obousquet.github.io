@@ -367,7 +367,7 @@ def search(ws, query, campaign=None, limit=10, kinds=None, private=False):
     state = conn.execute("SELECT value FROM state WHERE key='sync'").fetchone()
     conn.close()
     return {'query': query, 'campaign': profile.get('id'), 'hits': selected, 'matches_considered': len(rows),
-            'candidate_limit_reached': len(rows) == 2000, 'coverage': json.loads(state[0]) if state else None}
+            'candidate_limit_reached': len(rows) >= 2000, 'coverage': json.loads(state[0]) if state else None}
 
 
 def inspect(ws, identifier, private=False):
