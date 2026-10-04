@@ -178,783 +178,155 @@
 <article>
 
 <h1 class="post-title">Associative Memory, States, Attention, Optimization:<br>A Unifying Perspective</h1>
-<div class="post-meta">March 2026 &nbsp;&middot;&nbsp; Olivier Bousquet</div>
+<div class="post-meta">March 2026 &nbsp;&middot;&nbsp; Olivier Bousquet &nbsp;&middot;&nbsp; Revised October 2026</div>
 
 <div class="callout" style="border-left-color: #e67e22; background: #fef9f3;">
-  <strong>Work in progress.</strong>
-  This post is an early draft. Some claims may be imprecise or incomplete, and the structure is still evolving. Corrections and feedback are welcome.
+<strong>Draft, revised October 2026.</strong>
+This exposition distinguishes exact update identities, results with explicit assumptions, and design analogies. The corrected LaTeX paper contains the proofs and additional qualifications.
 </div>
-
-<div class="toc">
-  <strong>Contents</strong>
-  <ol>
-    <li><a href="#hook">The same algorithm, three axes</a></li>
-    <li><a href="#sequence">The sequence axis as associative memory</a></li>
-    <li><a href="#framework">The general framework</a>
-      <br>&emsp; Regularized cost &middot; Generating function $h$ &middot; Cost hierarchy &middot; Write strategies &middot; Monoid &amp; PE &middot; Key geometry &middot; Taxonomy &middot; Equation tables
-    </li>
-    <li><a href="#depth">The depth axis</a></li>
-    <li><a href="#data">The data axis</a>
-      <br>&emsp; Every gradient is an outer product &middot; LR = PE &middot; Critical batch size &middot; Adam as diagonal Shampoo
-    </li>
-    <li><a href="#transfer">Cross-axis transfer</a></li>
-    <li><a href="#limits">Where the analogy breaks</a></li>
-    <li><a href="#open">Open questions</a></li>
-  </ol>
-</div>
-
-
-<!-- ================================================================ -->
-<h2 id="hook">The same algorithm, three axes</h2>
-
-<p>In 1960, Widrow and Hoff introduced the <em>delta rule</em> <a href="#ref1">[1]</a>: given a target $y$ and input $x$, update a weight matrix by the error-corrective rule</p>
-
-$$W \leftarrow W + \eta\,(y - Wx)\,x^\top$$
-
-<p>This is gradient descent on the squared loss $\frac{1}{2}\|y - Wx\|^2$, applied once per training example. Over six decades it became a cornerstone of adaptive filtering and online learning, known as the LMS or Widrow&ndash;Hoff rule.</p>
-
-<p>In 2024, Yang et al. introduced DeltaNet <a href="#ref2">[2]</a>, a sequence model that updates a memory matrix once per token:</p>
-
-$$S_t \leftarrow S_{t-1} + (v_t - S_{t-1} k_t)\, k_t^\top$$
-
-<p>DeltaNet knowingly borrows the delta rule &mdash; the paper cites Widrow and Hoff. But what has not been fully appreciated is how <em>exact</em> the correspondence is. This is literally the same algorithm with a change of variable names: keys $k_t$ play the role of inputs $x$, values $v_t$ play the role of targets $y$, and the memory $S_t$ plays the role of the weight matrix $W$ (with normalized keys and learning rate $\eta = 1$). The algebra is identical; only the <em>axis of computation</em> changes &mdash; from training examples to tokens.</p>
-
-<div class="callout">
-  <strong>Same algorithm, different axis.</strong>
-  This turns out to be the tip of an iceberg. The same pattern &mdash; one operation appearing independently along different axes &mdash; repeats across a surprising range of techniques.
-</div>
-
-<p>This post is about that structure. Large language models perform iterative state updates along three axes of computation &mdash; <strong>sequence</strong>, <strong>depth</strong>, and <strong>data</strong> &mdash; that were studied largely in isolation as separate topics. Behrouz et al. <a href="#ref12">[12]</a> recently unified sequence-axis architectures as associative memories within a regularized optimization framework. We show that this extends to all three axes, and that the Bregman generating function $h$ additionally unifies retention and normalization &mdash; two design choices previously treated as independent.</p>
-
-<p>The common pattern is a state update: retain part of the old state and add new information. In its simplest form:</p>
-
-$$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
-
-<p>where $A_t$ controls forgetting and $v_t k_t^\top$ writes a new key-value association. This appears across all three axes:</p>
-
-<div class="table-wrap">
-<table>
-  <thead>
-    <tr><th>System</th><th>State</th><th>Shape</th><th>Retention</th><th>Write term</th><th>Index</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>GRU<sup>&dagger;</sup></td><td>Hidden $h_t$</td><td>vector</td><td>$\text{diag}(1-z_t)$ (gate)</td><td>$z_t \odot \tilde{h}_t$</td><td>Time $t$</td></tr>
-    <tr><td>SSM (S4, Mamba)</td><td>Latent $s_t$</td><td>vector</td><td>$\bar{A}$ (dynamics, diagonal)</td><td>$\bar{B} u_t$</td><td>Time $t$</td></tr>
-    <tr><td>Residual network</td><td>$x^{(\ell)}$</td><td>vector</td><td>$I$ (identity)</td><td>$f(x^{(\ell-1)})$</td><td>Layer $\ell$</td></tr>
-    <tr><td>Momentum</td><td>Buffer $m$</td><td>vector</td><td>$\beta I$</td><td>$(1-\beta)g_n$</td><td>Step $n$</td></tr>
-    <tr><td>Linear attention</td><td>KV memory $S_t$</td><td>matrix</td><td>$I$ (no forget)</td><td>$v_t k_t^\top$</td><td>Token $t$</td></tr>
-    <tr><td>SGD + weight decay</td><td>Weights $W$</td><td>matrix</td><td>$(1{-}\lambda\eta)I$</td><td>$\eta\, g_n$</td><td>Step $n$</td></tr>
-  </tbody>
-</table>
-<p style="font-size: 0.9em; color: #555; margin-top: 0.3em;">
-  <sup>&dagger;</sup> A vanilla RNN uses $h_t = \sigma(W_h h_{t-1} + W_x x_t)$,
-  which does not cleanly separate retention from writing since $W_h$ is a full
-  learned matrix and the nonlinearity wraps both terms. The GRU isolates
-  retention via a diagonal gate $\text{diag}(1-z_t)$.
-</p>
-</div>
-
-<p>But this shared form hides a deeper unity: as we will show, all of these are special cases of a single <em>regularized optimization</em> framework.</p>
-
-<ul style="margin-bottom: 1rem;">
-  <li><strong>Sequence axis</strong> ($t$ = token): the KV cache accumulates information about past tokens. This is <em>working memory</em>.</li>
-  <li><strong>Depth axis</strong> ($\ell$ = layer): the residual stream is refined by each layer. This is <em>processing memory</em>.</li>
-  <li><strong>Data axis</strong> ($n$ = example): the weight matrix is updated by each gradient step. This is <em>long-term memory</em>.</li>
-</ul>
-
-<p>Feed-forward network (FFN) layers are themselves associative memories <a href="#ref3">[3]</a>: the weight matrices store key-value associations learned during training. Training &mdash; updating $W$ via gradient descent &mdash; is precisely the state update applied along the data axis.</p>
-
-
-<!-- ================================================================ -->
-<h2 id="sequence">The sequence axis as associative memory</h2>
-
-<p>We develop the framework first on the sequence axis, where the connection to associative memory is most direct. Each subsection introduces one dimension of the memory system &mdash; state, cost, algorithm, retention, capacity, duality, structure &mdash; which the <a href="#framework">general framework</a> then generalizes to all three axes.</p>
-
-<p><strong>Notation.</strong> Keys $k_t \in \mathbb{R}^{d_k}$, values $v_t \in \mathbb{R}^{d_v}$, queries $q \in \mathbb{R}^{d_k}$. The memory state is a matrix $S_t \in \mathbb{R}^{d_v \times d_k}$ (or a vector when $d_k = 1$). The sequence length is $N$ and the number of attention heads is $H$. For $N$ key-value pairs, $K = [k_1, \ldots, k_N]^\top \in \mathbb{R}^{N \times d_k}$ and $V = [v_1, \ldots, v_N]^\top \in \mathbb{R}^{N \times d_v}$.</p>
-
-<h3>The landscape: attention and recurrent dualities</h3>
-
-
-<p><strong>Attention (store everything).</strong> Keep all key-value pairs explicitly: $y = \sum_j w(q, k_j)\, v_j$. Lossless but costs $O(Td)$ per query.</p>
-
-<p><strong>State update (compress).</strong> Maintain a fixed-size matrix $S$ via rank-one writes. Retrieval is $O(d^2)$ regardless of stored items, but compression is lossy.</p>
-
-<p>Even DeltaNet's nonlinear (delta-rule) update admits a parallel form. Yang et al. <a href="#ref2">[2]</a> showed that the recurrence $S_t = S_{t-1}(I - k_t k_t^\top) + v_t k_t^\top$ can be rewritten as $\mathbf{O} = \mathbf{A}\,\mathbf{V}$ with $\mathbf{A} = (QK^\top \odot L)(I + KK^\top \odot (L - I))^{-1} \odot \mathbf{M}$, where $L$ is the lower-triangular matrix of ones. The term $(I + KK^\top \odot (L - I))^{-1}$ captures the error-correction: it inverts out key correlations that a Hebbian write would ignore.</p>
-
-<p>Dao and Gu <a href="#ref4">[4]</a> showed that the input-output map of a linear recurrence is a <em>semiseparable matrix</em>, and the recurrent and attention views are its two factorizations. The matrix mixer framework <a href="#ref27">[27]</a> generalizes this: all sequence models are $Y = MX$ where $M$ is a structured matrix. This duality extends to all three axes: Zhang <a href="#ref10">[10]</a> proved an exact depth-axis duality; the data-axis duality (online SGD vs. batch gradient) is a structural analogy.</p>
-
-<p>A <em>chunk</em> (or mini-batch) interpolates: within a chunk, use attention; between chunks, compress into state. Mini-batch SGD is the data-axis analogue. On both axes, the optimal chunk size matches the memory capacity.</p>
-
-<h3>The physical state: shapes and interfaces</h3>
-
-
-<p>An associative memory stores key-value pairs $(k_i, v_i)$ and retrieves values given a query $q$. The memory state is a matrix $S \in \mathbb{R}^{d_v \times d_k}$ updated via rank-one writes:</p>
-
-$$S_t = A_t \circ S_{t-1} + v_t\, k_t^\top$$
-
-<p>where $A_t$ controls forgetting and retrieval is $y = S_t\, q$. A vector state is the special case $d_k = 1$: there is no key, just a value being accumulated.</p>
-
-<p><strong>How the state interfaces with the network.</strong> When the state is a vector $s \in \mathbb{R}^d$, the network interacts with it through general linear maps: reading is $y = W_r\, s$ and writing is $\Delta s = W_w\, z$, both unconstrained matrix multiplies.</p>
-
-<p>When the state is a matrix $S \in \mathbb{R}^{d_v \times d_k}$, the interface is more structured. Reading with a query $q$ gives $y = Sq = \sum_j q_j\, S_{:,j}$. In terms of the flattened state $\mathrm{vec}(S) \in \mathbb{R}^{d_v d_k}$:</p>
-
-$$y = (q^\top \otimes I_{d_v})\,\mathrm{vec}(S)$$
-
-<p>This is a matrix with $d_k$ blocks, each being $q_j I_{d_v}$&mdash;a scalar times the identity. Unlike a general linear map from $\mathbb{R}^{d_v d_k}$ to $\mathbb{R}^{d_v}$ (which would require $d_v^2 d_k$ parameters), the read is parameterized by just $d_k$ values. Within each key dimension, all $d_v$ value components are treated identically.</p>
-
-<p>The write is similarly structured: $\Delta S = v\, k^\top$, i.e., $\mathrm{vec}(\Delta S) = k \otimes v$&mdash;a Kronecker product. When key and value are linear projections of the input $x$, the write becomes $\mathrm{vec}(\Delta S) = (W_K x) \otimes (W_V x)$, a <em>quadratic</em> feature of the input, in contrast to the <em>linear</em> $\Delta s = W\, x$ for a vector state.</p>
-
-<p>The matrix state trades generality for capacity: its Kronecker-structured read/write cannot express arbitrary linear transformations of the flattened state, but it can store $O(d_k)$ associations instead of $O(1)$. The output projection $W_O$ applied after retrieval provides the unconstrained mixing that the structured read alone cannot.</p>
-
-<p><strong>The projection spectrum.</strong> More broadly, the linear map from state to attention inputs (queries, keys, values) is always a <em>structured</em> matrix. Different architectures choose different points on a spectrum from dense to maximally constrained:</p>
-
-<div class="table-wrap">
-<table>
-  <thead>
-    <tr><th>Structure</th><th>Params</th><th>Example</th><th>Map</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>Dense</td><td>$O(d \cdot d_k)$</td><td>Standard transformer</td><td>$k = W_K\, x$</td></tr>
-    <tr><td>Low-rank</td><td>$O(d \cdot d_c)$</td><td>MLA (DeepSeek-V2)</td><td>$k = W_K^U(W_{DKV}\, x)$</td></tr>
-    <tr><td>Block-diagonal</td><td>$O(d \cdot d_h)$</td><td>Multi-head attn</td><td>Per-head $k^{(h)} = W_K^{(h)} x^{(h)}$</td></tr>
-    <tr><td>Coarse block-diag.</td><td>$O(d \cdot d_h/g)$</td><td>GQA</td><td>Fewer KV heads, shared across $g$ query heads</td></tr>
-    <tr><td>Kronecker</td><td>$O(d_k + d_v)$</td><td>Matrix state read</td><td>$y = (q^\top \otimes I_{d_v})\,\mathrm{vec}(S)$</td></tr>
-  </tbody>
-</table>
-</div>
-
-<p>At the dense end, a standard transformer uses unconstrained $W_K, W_V \in \mathbb{R}^{d_k \times d}$ to project the residual stream into key-value space. Multi-head Latent Attention (MLA) compresses the residual stream into a shared low-rank latent $c_t = W_{DKV}\, x_t \in \mathbb{R}^{d_c}$, from which per-head keys and values are recovered: $k_t^{(h)} = W_{K,h}^U\, c_t$. The combined map $k_t^{(h)} = W_{K,h}^U W_{DKV}\, x_t$ is a low-rank factorization of $W_K$, reducing the KV cache from $O(H d_h)$ to $O(d_c)$ per token. Multi-head attention uses a block-diagonal projection: each head has its own $W_K^{(h)}$ acting on a disjoint slice of the residual stream. GQA coarsens this: $g$ query heads share each KV head, so the KV projection has $H/g$ blocks&mdash;interpolating between full multi-head ($g = 1$) and multi-query attention ($g = H$, a single shared KV head). At the Kronecker end, the matrix-state read is parameterized by just $d_k$ values.</p>
-
-<p>The same spectrum appears on the <strong>depth axis</strong>. When the residual state is a matrix $M \in \mathbb{R}^{p \times q}$ (as in residual matrix transformers), the projections that produce attention inputs from this state inherit Kronecker structure. A low-rank projection from the matrix state (compressing $M$ to a vector before projecting) would be the depth-axis analogue of MLA. With multi-head attention, the structure is <em>doubly</em> constrained: block-diagonal across heads, and Kronecker-structured within each head.</p>
-
-
-
-<p>When analyzing state-update models, the shape of the memory state &mdash; whether it is a vector, a matrix, or a higher-order tensor &mdash; inherently restricts the expressivity and parameter count of its transition operators. By "flattening" the state into a vector, we can directly compare these operators under a unified framework.</p>
-
-<p><strong>Vector states.</strong> For a vector state $h_t \in \mathbb{R}^d$, a linear recurrence takes the form $h_t = T_t h_{t-1} + \Delta_t$. The transition matrix $T_t \in \mathbb{R}^{d \times d}$ can be dense (unconstrained cross-talk between all dimensions, costing $O(d^2)$ parameters and compute) or diagonal ($T_t = \text{diag}(\alpha_t)$, costing $O(d)$). Models like Mamba and GLA use input-dependent diagonal transitions to balance expressivity and efficiency.</p>
-
-<p><strong>Matrix states and Kronecker transitions.</strong> When the memory is a matrix $S_t \in \mathbb{R}^{d_v \times d_k}$, the flattened state $\mathrm{vec}(S_t)$ exists in $\mathbb{R}^{d_v d_k}$. A dense transition matrix acting on this flattened state would require $O(d_v^2 d_k^2)$ operations per step, which is computationally prohibitive. However, matrix-valued updates naturally factorize into highly structured operators.</p>
-
-<p>Consider a right-multiplying transition that acts on the key space (e.g., the $(I - \beta_t k_t k_t^\top)$ operator in DeltaNet):</p>
-
-$$ S_t = S_{t-1} A_t + \dots $$
-
-<p>Applying the Kronecker product identity $\mathrm{vec}(XA) = (A^\top \otimes I_{d_v}) \mathrm{vec}(X)$, the flattened transition matrix is exactly $T_t = A_t^\top \otimes I_{d_v}$. If we reorder the dimensions (flattening row-by-row instead of column-by-column), $T_t$ becomes a <em>block-diagonal</em> matrix consisting of $d_v$ identical blocks of $A_t^\top$.</p>
-
-<div class="callout">
-  <strong>The matrix-state intuition.</strong>
-  A matrix memory update is structurally equivalent to running $d_v$ parallel, independent vector SSMs (of state dimension $d_k$), each tracking one coordinate of the value space, but constrained to share the exact same transition dynamics.
-</div>
-
-<p>Conversely, a left-multiplying transition $S_t = B_t S_{t-1}$ (acting on the value space) yields $T_t = I_{d_k} \otimes B_t$, meaning computation across key dimensions is decoupled. Element-wise scaling $S_t = C_t \circ S_{t-1}$ corresponds trivially to a diagonal matrix in the flattened space. Upgrading from vectors to matrices multiplies the storage capacity, while the Kronecker structure limits the parameter and compute blowup.</p>
-
-<h3>The update rule: costs and optimizers</h3>
-
-
-<p>Different write rules correspond to different <em>cost functions</em> that the write operation implicitly minimizes. This cost-update duality provides the deeper "why" for the shared structure across axes.</p>
-
-<p><strong>Additive (Hebbian).</strong> $S_t = S_{t-1} + v_t k_t^\top$ ignores what is already stored. The corresponding cost is a linear alignment: $\ell_t(S) = -\langle v_t, S k_t \rangle$. Its gradient with respect to $S$ is $\nabla_S \ell_t = -v_t k_t^\top$, so a single gradient descent step with unit step size gives $S_t = S_{t-1} - \nabla_S \ell_t = S_{t-1} + v_t k_t^\top$, recovering the Hebbian update. Over $N$ steps from $S_0 = 0$: $S_N = \sum_{i=1}^{N} v_i k_i^\top = V^\top K$, which is the unnormalized linear attention memory.</p>
-
-<p><strong>Error-corrective (delta rule).</strong> $S_t = S_{t-1} + (v_t - S_{t-1} k_t) k_t^\top$ writes only the prediction error. The corresponding cost is MSE: $\ell_t = \frac{1}{2}\|v_t - S k_t\|^2$. On the data axis, this is exactly the Widrow&ndash;Hoff / LMS rule <a href="#ref28">[28]</a>.</p>
-
-<p><strong>Log-sum-exp (softmax attention).</strong> The connection to attention can be made precise through <em>energy functions</em> in the Hopfield framework. A Hopfield network stores $N$ patterns (keys $k_1, \ldots, k_N$) and retrieves by minimizing an energy $E(q)$ over the query. The retrieval rule is $q^* = -\nabla_q E(q)$ at a fixed point. Different energies yield different retrieval mechanisms:</p>
-
-<div class="table-wrap">
-<table>
-  <thead>
-    <tr><th>Model</th><th>Energy $E(q)$</th><th>Retrieval $-\nabla_q E$</th><th>Capacity</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>Classical Hopfield</td><td>$-\frac{1}{2}\|Kq\|^2$</td><td>$K^\top K\, q$ &rarr; sign</td><td>$O(d)$</td></tr>
-    <tr><td>Linear attention</td><td>$-\mathbf{1}^\top K q$</td><td>$\sum_i k_i$</td><td>$O(1)$</td></tr>
-    <tr><td>Softmax attention</td><td>$-\log \sum_i e^{k_i^\top q}$</td><td>$\sum_i \text{softmax}(Kq)_i\, k_i$</td><td>$e^{O(d)}$</td></tr>
-  </tbody>
-</table>
-</div>
-
-<p>The key insight is how per-pattern similarities $k_i^\top q$ are aggregated: summing their squares (classical Hopfield) gives polynomial capacity; the log-sum-exp aggregation (modern Hopfield) gives exponential capacity because it is dominated by the largest similarity. Ramsauer et al. <a href="#ref6">[6]</a> showed that softmax attention is exactly one retrieval step of this modern Hopfield network: with values attached to keys, the output is $y = \sum_i \text{softmax}(Kq)_i\, v_i$, the standard attention formula. On the data axis, the loss function <em>is</em> the energy and gradient descent <em>is</em> the retrieval; the log-sum-exp cost is cross-entropy with softmax outputs.</p>
-
-<p>A striking pattern: the <em>form</em> of the cost determines the capacity. Linear &rarr; $O(1)$/step. Quadratic (MSE) &rarr; $O(d)$. Log-sum-exp &rarr; $e^{O(d)}$. The same cost forms appear on all three axes.</p>
-
-
-
-<p>The cost determines <em>what</em> to optimize; the optimization algorithm determines <em>how</em>. Rewriting the delta rule as $S_t = S_{t-1}(I - \beta_t k_t k_t^\top) + \beta_t v_t k_t^\top$ with $\beta_t = 1/\|k_t\|^2$ reveals that the transition $(I - \beta_t k_t k_t^\top)$ acts on the <em>key space</em> by right-multiplication. With unit-norm keys ($\beta_t = 1$), this is an orthogonal projection onto $k_t^\perp$ that removes the component in direction $k_t$. (With $\beta_t = 2/\|k_t\|^2$ it would be a Householder reflection.) Unrolling the recurrence, each stored key is transformed by an accumulated product of projections &mdash; an <em>online Gram-Schmidt</em> process that orthogonalizes the effective keys, which is why the delta rule achieves higher capacity than additive writes.</p>
-
-<p>When iterated over a fixed set of key-value pairs (multiple epochs on the data axis), the delta rule converges to the pseudoinverse $S^* = VK^+$ &mdash; this is the Kaczmarz method <a href="#ref28">[28]</a>. On the sequence axis, a single pass only approximates it.</p>
-
-<p>The algorithm sits in a hierarchy: one-step (Hebbian) &rarr; GD (delta rule) &rarr; GD+momentum (Titans) &rarr; Newton (Longhorn / natural gradient) &rarr; FTRL (full attention / batch optimization). The same hierarchy appears on all axes.</p>
-
-<h3>Memory management: retention and forgetting</h3>
-
-
-<p>The retention operator $A_t$ controls how old information decays. Afzal <a href="#ref5">[5]</a> established a fundamental duality: forget gates in linear recurrences <em>are</em> positional encodings in softmax transformers. The cumulative product $P_{j \to t} = \prod_{s=j+1}^{t} A_s$ defines a distance $d(j,t) = -\log\|P_{j \to t}\| = \sum_{s=j+1}^t D_s$ between positions. This distance satisfies non-negativity ($d(j,t) \geq 0$), identity ($d(t,t) = 0$), and the chain rule $d(j,t) = d(j,s) + d(s,t)$ for $j < s < t$ &mdash; a strengthened triangle inequality. It is in general <em>asymmetric</em> ($d(j,t) \neq d(t,j)$), appropriate for causal modeling. The <em>monoid</em> of transition matrices determines the geometry:</p>
-
-<div class="table-wrap">
-<table>
-  <thead>
-    <tr><th>Transition monoid</th><th>Recurrence</th><th>Positional encoding</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>$\{I\}$ (trivial)</td><td>Linear attention</td><td>NoPE</td></tr>
-    <tr><td>$\mathbb{R}_{>0}$ (scalars)</td><td>RetNet</td><td>ALiBi</td></tr>
-    <tr><td>Diagonal matrices</td><td>Mamba2 / GLA</td><td>FoX <a href="#ref16">[16]</a></td></tr>
-    <tr><td>$\mathrm{SO}(2)$ (rotations)</td><td>Complex-valued gates (Mamba-3 <a href="#ref18">[18]</a>)</td><td>RoPE</td></tr>
-    <tr><td>Householder reflections</td><td>DeltaNet</td><td>PaTH <a href="#ref17">[17]</a></td></tr>
-  </tbody>
-</table>
-</div>
-
-<p>The monoid structure induces a classification of PEs into <em>additive</em> and <em>multiplicative</em> forms. Scalar and diagonal monoids act on attention logits as additive biases: $\mathrm{Att}_{t,j} = q_t^\top k_j + d(j,t)$ (ALiBi, FoX). Rotation and Householder monoids act multiplicatively on keys: $\mathrm{Att}_{t,j} = q_t^\top P_{j \to t}\, k_j$ (RoPE, PaTH). Commutative monoids with $\|A_s\| < 1$ contribute additively in the log domain; orthogonal monoids ($\|A_s\| = 1$) preserve norms and act multiplicatively on the key-query inner product.</p>
-
-<p>A crucial distinction: <em>data-independent</em> transitions (RoPE's rotation, RetNet's scalar decay) preserve the Gram matrix of stored keys &mdash; they encode position without changing correlation structure. <em>Data-dependent</em> transitions (DeltaNet's Householder, Mamba's diagonal gate) actively reshape key geometry &mdash; DeltaNet orthogonalizes keys, Mamba selectively attenuates dimensions. This determines whether the monoid serves as a positional encoding (data-independent) or active memory management (data-dependent).</p>
-
-<h3>The consequence: capacity and hardware tradeoffs</h3>
-
-
-<p>When retrieving from $M = \sum_i v_i k_i^\top$ with query $q = k_*$ (the target pattern), the output decomposes into signal $(k_*^\top q) v_*$ plus interference from other stored associations. For $N$ random patterns of dimension $d$, the retrieval signal-to-noise ratio is $\mathrm{SNR}_{\text{linear}} = d/N$. The memory saturates at $N_{\max} \sim d$ patterns.</p>
-
-<p><strong>Softmax attention SNR.</strong> For softmax attention with temperature $\tau$, querying with $q = k_*$ gives weight ratio $w_j / w_* = \exp(-\Delta_j / \tau)$ where $\Delta_j = \|k_*\|^2 - k_*^\top k_j$ is the logit gap. The SNR becomes:</p>
-
-$$\mathrm{SNR}_{\text{softmax}} \gtrsim \frac{d_v \exp\!\bigl(2(d - c\sqrt{d \log N})/\tau\bigr)}{N}$$
-
-<p>The <em>temperature $\tau$ is critical</em>. Standard transformers use $\tau = \sqrt{d_k}$; the Hopfield setting <a href="#ref6">[6]</a> uses $\tau = O(1)$:</p>
-
-<div class="table-wrap">
-<table>
-  <thead>
-    <tr><th>Setting</th><th>Temperature $\tau$</th><th>Capacity $N_{\max}$</th><th>SNR amplification</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>Linear attention</td><td>$\tau \to \infty$ (flat kernel)</td><td>$O(d_k)$</td><td>$\times 1$</td></tr>
-    <tr><td>Standard transformer</td><td>$\sqrt{d_k}$</td><td>$\exp(O(\sqrt{d_k}))$</td><td>$\times \exp(2\sqrt{d_k})$</td></tr>
-    <tr><td>Unscaled / Hopfield</td><td>$O(1)$</td><td>$\exp(O(d_k))$</td><td>$\times \exp(2d_k)$</td></tr>
-  </tbody>
-</table>
-</div>
-
-<p>The often-cited $N_{\max} \sim \exp(O(d))$ assumes $\tau = O(1)$. Standard transformers achieve $\exp(O(\sqrt{d_k}))$ &mdash; still super-polynomial, but a different exponent. In practice, even $\exp(\sqrt{d_k})$ is enormous: for $d_k = 128$, $\exp(2\sqrt{128}) \approx 4 \times 10^9$, far exceeding any practical sequence length. The capacity of softmax attention is never the bottleneck; the quadratic compute cost hits first.</p>
-
-<p>The $\text{SNR} = d/N$ bound assumes random keys. When keys are correlated, the pseudoinverse $VK^+$ amplifies noise by $1/\sigma_{\min}(K)$. For nearly collinear keys, regularization (retention $\alpha < 1$) is more appropriate than exact orthogonalization.</p>
-
-<p>The kernel choice determines the capacity-computation tradeoff. This tradeoff is universal <a href="#ref26">[26]</a>: fixed-size state (SSM, capacity $O(d)$) vs. growing token cache (Transformer, capacity $\exp(O(d/\tau))$).</p>
-
-<p>Log-linear attention <a href="#ref21">[21]</a> provides a principled interpolation. Guo et al. observe that all efficient attention variants share the form $\mathbf{O} = (\mathbf{A} \odot \mathbf{M})\,\mathbf{V}$, where $\mathbf{A}$ is the attention-like matrix and $\mathbf{M}$ is a causal mask whose <em>structure</em> determines scaling: lower-triangular (linear attention, $O(1)$ decode), semiseparable (Mamba-2, $O(1)$ decode), or hierarchical (log-linear, $O(\log N)$ decode). The key idea is to replace the fixed-size state with $L = O(\log N)$ states $S_t^{(\ell)} \in \mathbb{R}^{d_v \times d_k}$, one per level of a Fenwick tree over the prefix $[0, t]$. The output is:</p>
-
-$$o_t = \sum_{\ell=0}^{L-1} \lambda_t^{(\ell)}\, q_t^\top S_t^{(\ell)}$$
-
-<p>where $\lambda_t^{(\ell)}$ are data-dependent weights for different temporal scales. When all $\lambda_t^{(\ell)}$ are equal, this reduces to ordinary linear attention. Any linear attention variant can be "lifted" to a log-linear variant by composing its mask with the hierarchical mask &mdash; Guo et al. demonstrate this for Mamba-2 and Gated DeltaNet.</p>
-
-<h2 id="framework">The general framework</h2>
-
-<p>The examples above &mdash; from additive writes to softmax attention &mdash; share a common structure recently identified by Behrouz et al. <a href="#ref12">[12]</a>: each model corresponds to a different instantiation of a regularized optimization problem. We now generalize <em>each</em> dimension of the memory system &mdash; cost, algorithm, retention, normalization, capacity &mdash; to all three axes.</p>
-
-<h3>The regularized cost</h3>
-
-<p>The most general state update along any axis can be written as:</p>
-
-$$W_t = \arg\min_W \; \ell_t(W; k_t, v_t) + \frac{1}{\eta_t}\, D_h(W, W_{t-1})$$
-
-<p>where $\ell_t$ is the per-step cost, $\eta_t$ is the learning rate, and $D_h$ is a <em>Bregman divergence</em> with generating function $h$:</p>
-
-$$D_h(W, W') = h(W) - h(W') - \langle \nabla h(W'),\, W - W' \rangle$$
-
-<p>The Bregman term penalizes deviation from the previous state &mdash; it <em>is</em> the retention mechanism. To connect this cost to concrete state updates, we derive the update rules by solving or approximating the optimization problem.</p>
-
-<p><strong>Euclidean case.</strong> When $h(W) = \frac{1}{2}\|W\|_F^2$, the Bregman divergence is $D_h = \frac{1}{2}\|W - W'\|_F^2$. Setting the gradient of the cost to zero gives the <em>implicit</em> (proximal) update:</p>
-
-$$W_t = W_{t-1} - \eta_t\, \nabla \ell_t(W_t)$$
-
-<p>This is implicit because $W_t$ appears on both sides. The <em>explicit</em> (one-step gradient) approximation replaces $\nabla \ell_t(W_t)$ by $\nabla \ell_t(W_{t-1})$, recovering the state update $W_t \approx W_{t-1} - \eta_t\, \nabla \ell_t(W_{t-1}) = A_t \circ W_{t-1} + \psi(v_t, k_t)$. On the data axis this is SGD; on the sequence axis it is DeltaNet&rsquo;s delta rule.</p>
-
-<p>For the quadratic cost $\ell_t(W) = \frac{1}{2}\|v_t - Wk_t\|^2$, the implicit equation can be solved in closed form:</p>
-
-$$W_t = W_{t-1} + \frac{\eta_t}{1 + \eta_t \|k_t\|^2}(v_t - W_{t-1} k_t)\, k_t^\top$$
-
-<p>This is Longhorn: the <em>exact</em> minimizer of the per-step regularized cost. When $\|k_t\| = 1$ and $\eta_t \to \infty$, it reduces to the normalized delta rule (NLMS on the data axis). So DeltaNet (explicit GD) and Longhorn (exact/Newton) are two approximation levels of the same cost.</p>
-
-<p><strong>General case (mirror descent).</strong> For general $h$, the explicit approximation gives the mirror descent update:</p>
-
-$$W_t = \nabla h^*\!\bigl(\nabla h(W_{t-1}) - \eta_t\, \nabla \ell_t(W_{t-1})\bigr)$$
-
-<p>where $\nabla h^*$ is the <em>link function</em> mapping from dual to primal space: identity for Euclidean $h$ (standard GD), softmax for entropic $h$ (Memora), polar decomposition for Stiefel-constrained Euclidean (Muon).</p>
-
-<p><strong>Constrained dual (Frank-Wolfe).</strong> By Lagrangian duality, the regularized cost is equivalent to a hard constraint: minimize $\ell_t(W)$ subject to $W \in \mathcal{C}$, where the constraint radius is dual to $1/\eta_t$. The Frank-Wolfe (conditional gradient) algorithm solves this via:</p>
-
-$$s_t = \arg\min_{S \in \mathcal{C}} \langle \nabla \ell_t(W_{t-1}),\, S \rangle, \qquad W_t = (1 - \gamma_t)\, W_{t-1} + \gamma_t\, s_t$$
-
-<p>This is a state update with <em>scalar</em> retention $(1-\gamma_t)$ and a write term $\gamma_t s_t$ where the linear minimization oracle (LMO) returns a point on the <em>boundary</em> of $\mathcal{C}$. The LMO plays the same structural role as $\nabla h^*$: both map a gradient signal to a feasible update. The most general formulation subsumes both:</p>
-
-$$W_t = \arg\min_{W \in \mathcal{C}} \left\{\ell_t(W) + \frac{1}{\eta_t}\, D_h(W, W_{t-1})\right\}$$
-
-<p>where mirror descent is the unconstrained case ($\mathcal{C} = \mathbb{R}^{d \times d}$) and Frank-Wolfe operates when the hard constraint dominates the Bregman penalty. The framework&rsquo;s pair $(h, \mathcal{M}_{\text{norm}})$ parameterizes both: $h$ determines the Bregman geometry, $\mathcal{M}_{\text{norm}}$ determines the constraint set.</p>
-
-<h3>The cost hierarchy</h3>
-
-<p>The cost forms introduced on the sequence axis generalize to all axes. The same cost applied to different axes gives corresponding systems:</p>
-
-<div class="table-wrap">
-<table>
-  <thead>
-    <tr><th>Cost form</th><th>Sequence axis</th><th>Data axis</th><th>Capacity</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>Linear (alignment)</td><td>Linear attention</td><td>Hebbian</td><td>$O(1)$/step</td></tr>
-    <tr><td>$\ell_p$ norm ($p \geq 1$)</td><td>Moneta <a href="#ref12">[12]</a></td><td>$\ell_p$ regression</td><td>$O(d)$</td></tr>
-    <tr><td>Quadratic (MSE)</td><td>DeltaNet</td><td>Widrow&ndash;Hoff / SGD</td><td>$O(d)$</td></tr>
-    <tr><td>Huber</td><td>Yaad <a href="#ref12">[12]</a></td><td>Robust regression</td><td>$O(d)$</td></tr>
-    <tr><td>Log-sum-exp</td><td>Softmax attention</td><td>Cross-entropy</td><td>$e^{O(d)}$</td></tr>
-  </tbody>
-</table>
-</div>
-
-<p>The log-sum-exp row is key: softmax attention and cross-entropy training both arise from the same cost form. Both achieve exponential capacity through the same mechanism &mdash; the exponential nonlinearity amplifies the gap between matched and mismatched patterns.</p>
-
-<h3>The write-strategy hierarchy</h3>
-
-<p>The algorithm hierarchy introduced on the sequence axis generalizes across all axes:</p>
-
-<div class="table-wrap">
-<table>
-  <thead>
-    <tr><th>Method</th><th>Algorithm</th><th>Sequence axis</th><th>Data axis</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>Additive</td><td>1 step</td><td>Linear attention</td><td>Hebbian</td></tr>
-    <tr><td>Error-corrective</td><td>GD</td><td>DeltaNet / Gated DeltaNet <a href="#ref15">[15]</a></td><td>Widrow&ndash;Hoff / SGD</td></tr>
-    <tr><td>+ momentum</td><td>GD+mom.</td><td>Titans <a href="#ref12">[12]</a></td><td>Adam</td></tr>
-    <tr><td>Stiefel proj.</td><td>GD</td><td>&mdash;</td><td>Muon</td></tr>
-    <tr><td>Full curvature</td><td>Newton</td><td>Longhorn</td><td>Natural gradient</td></tr>
-    <tr><td>Batch optimal</td><td>FTRL</td><td>Softmax attention</td><td>Pseudoinverse</td></tr>
-  </tbody>
-</table>
-</div>
-
-<p>GD with momentum on the sequence axis gives Titans <a href="#ref12">[12]</a>, which maintains two state matrices (memory + momentum) &mdash; exactly as Adam maintains $(m_t, v_t)$ on the data axis. FTRL recovers full attention on the sequence axis and batch optimization on the data axis. Bernstein and Newhouse <a href="#ref23">[23]</a> show that Adam, Shampoo, and Muon are all steepest descent under different norms: Adam under the diagonal Mahalanobis norm, Lion <a href="#ref-lion">[Lion]</a> under $\ell_\infty$ (giving sign of momentum), and Muon under the spectral norm (giving polar decomposition). Each norm corresponds to a different generating function $h$ and hence a different normalization manifold. LUCID <a href="#ref24">[24]</a> applies preconditioning to the sequence-axis readout, achieving gains analogous to natural gradient on the data axis.</p>
-
-<p>The choice of $h$ shapes not just convergence geometry but the <em>implicit bias</em> of the solution found: Muon&rsquo;s Stiefel projection removes the simplicity bias (preference for low-rank solutions) that SGD and Adam preserve <a href="#ref-dragutinovic">[D&amp;R 2025]</a>.</p>
-
-<p>The constrained dual introduced above is already established on the data axis <a href="#ref-lionmuon">[LM 2026]</a>: Lion and Muon are stochastic Frank-Wolfe on norm-ball constraints &mdash; $\ell_\infty$ for Lion, spectral for Muon &mdash; with weight decay $\lambda$ setting the constraint radius $1/\lambda$ and providing scalar retention $(1-\lambda\eta)$. On the <em>sequence</em> axis, the same construction applies. For the quadratic cost, the gradient $g_t = -(v_t - S_{t-1}k_t)\,k_t^\top$ is rank-1. The LMO over a spectral- or nuclear-norm ball returns a <em>normalized</em> rank-1 matrix, and the Frank-Wolfe update becomes:</p>
-
-$$S_t = (1-\gamma_t)\, S_{t-1} + \gamma_t R \cdot \hat{e}_t\, \hat{k}_t^\top$$
-
-<p>a <em>normalized delta rule with scalar forgetting</em>: it writes a normalized error-key outer product while uniformly decaying the entire memory. This combines error correction (like DeltaNet), scalar forgetting (like weight decay), and normalized writes (like Muon) &mdash; a combination not present in any current sequence model. The key structural difference from mirror descent is the forgetting mechanism: Frank-Wolfe always gives scalar retention $(1-\gamma_t)$, while mirror descent inherits richer structure from the cost &mdash; rank-1 for DeltaNet, diagonal for Mamba.</p>
-
-<p>Recent work also explores meta-modifications that sit <em>on top of</em> any base optimizer. Cautious optimizers <a href="#ref-cautious">[Liang 2024]</a> mask update components whose sign disagrees with the current gradient &mdash; an <em>input-dependent gate</em> on the write operation, the data-axis analogue of input-dependent forget gates (Mamba, FoX) on the sequence axis. Where Mamba gates <em>retention</em>, cautious optimizers gate the <em>write</em>: both suppress components that the current input does not support.</p>
-
-<p>The classical associative memory community independently discovered the same progression &mdash; from Hebbian to error-corrective (Storkey <a href="#ref11">[11]</a>) to exponential-kernel (modern Hopfield <a href="#ref6">[6]</a>) &mdash; before it appeared on the sequence axis. The capacity jumps at each step are the same: $O(d/\log d) \to O(d) \to e^{O(d)}$.</p>
-
-<h3>Retention, normalization, and the generating function $h$</h3>
-
-<p>The monoid structure captures the <em>algebraic</em> dimension of retention. The Bregman framework adds a <em>geometric</em> dimension: the generating function $h$ simultaneously determines how the state forgets and how it is normalized.</p>
-
-<div class="table-wrap">
-<table>
-  <thead>
-    <tr><th>$h(W)$</th><th>Retention</th><th>Normalization</th><th>Manifold</th><th>Axis</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>$\frac{1}{2}\|W\|_F^2$</td><td>Scalar forget gate</td><td>RMSNorm</td><td>Sphere</td><td>Depth</td></tr>
-    <tr><td>$\sum w \log w$</td><td>Entropic (KL)</td><td>Softmax</td><td>Simplex</td><td>Sequence</td></tr>
-    <tr><td>$\frac{1}{2}\|W\|_F^2$ (Euclidean)</td><td>Weight decay</td><td>Polar decomp.</td><td>Stiefel</td><td>Data</td></tr>
-  </tbody>
-</table>
-</div>
-
-<p>The solution is computed via <em>mirror descent</em>: $W_t = \nabla h^*(\nabla h(W_{t-1}) - \eta_t \nabla \ell_t)$, where $\nabla h^*$ is the link function. For entropic $h$, $\nabla h^* = \mathrm{softmax}$, so the update <em>is</em> softmax normalization &mdash; this is exactly Memora <a href="#ref12">[12]</a>. For quadratic $h$, mirror descent reduces to standard GD, and projection onto the sphere gives RMSNorm. For Euclidean $h$ with a Stiefel manifold constraint, the projection is Muon's polar decomposition &mdash; same $h$ as RMSNorm, different manifold.</p>
-
-<p>The monoid and $h$ are complementary: the monoid determines the <em>algebraic structure</em> of the transitions (scalar, diagonal, orthogonal), while $h$ determines the <em>geometry</em> of the retention (Euclidean, entropic). Together they fully specify how the memory forgets.</p>
-
-<div class="callout">
-  <strong>Retention and normalization are dual aspects of the same object.</strong>
-  The generating function $h$ simultaneously determines how the state forgets (via $D_h$), how it is normalized (via $\nabla h^*$), and the geometry of the state space (via $\nabla^2 h$). The manifold $\mathcal{M}_{\text{norm}}$ is a separate choice determining <em>what</em> is projected onto. Together, $(h, \mathcal{M}_{\text{norm}})$ fully specify the normalization operation.
-</div>
-
-<h3>Key geometry and the chain from cost to capacity</h3>
-
-<p>The write strategy and retention jointly shape the <em>effective Gram matrix</em> $G_{ij} = \langle \tilde{k}_i, \tilde{k}_j \rangle$ of stored keys, which determines retrieval capacity. The optimal key geometry depends on the task:</p>
-
-<p><strong>Lookup</strong> (independent associations): orthogonal keys give zero cross-talk, maximum capacity $N_{\max} = d_k$. The delta rule drives $G \to I$ via online Gram-Schmidt.</p>
-
-<p><strong>Regression</strong> (correlated keys, smooth values): orthogonalization is counterproductive &mdash; it destroys the correlation structure needed for generalization. The right approach is <em>regularized regression</em>: $S^* = VK^\top(KK^\top + \lambda I)^{-1}$.</p>
-
-<div class="callout">
-  <strong>Retention = implicit regularization.</strong>
-  Scalar retention $\alpha < 1$ implements ridge regression with $\lambda \sim 1 - \alpha^2$. The retention parameter controls the bias-variance tradeoff: $\alpha \to 1$ gives the pseudoinverse (exact but fragile); $\alpha \to 0$ gives strong regularization (robust but forgetful). This explains input-dependent gating in Mamba/GLA: the model learns to forget more when keys are correlated (regularize) and less when keys are orthogonal (maximize capacity). DeltaNet can use $\alpha = 1$ because the Householder <em>is</em> the regularizer.
-</div>
-
-<p><strong>Hierarchical keys</strong> (group structure): block-diagonal Gram matrix &mdash; correlated within groups, orthogonal across. This is exactly multi-head attention. On the data axis: weight decay is the retention, and block-diagonal structure is MoE.</p>
-
-<p>The framework yields a complete chain from cost to capacity:</p>
-
-$$\mathcal{L} \;\xrightarrow{\;\nabla\;}\; \text{update rule} \;\xrightarrow{\;h\;}\; \text{retention + normalization} \;\xrightarrow{\;\nabla^2\;}\; \text{kernel} \;\xrightarrow{\;\text{capacity}\;}\; \text{SNR}$$
-
-<p>The full specification of a memory system is the tuple $(\mathcal{L}, h, \mathcal{M}, \mathcal{H})$: cost, generating function, monoid, and memory space. From these, the write rule, retention, normalization, and read operation all follow.</p>
-
-<h3>Taxonomy: models as tuples</h3>
-
-<p>The tables below classify existing models on each axis as instantiations of the $(\mathcal{L}, h, \mathcal{M})$ tuple, extending the taxonomies of Yang et al. [2] and Behrouz et al. [12] with the generating function and monoid columns.</p>
-
-<p><strong>Sequence axis.</strong> Models above the line use matrix memory ($S \in \mathbb{R}^{d_v \times d_k}$); those below use MLP memory.</p>
-
-<div class="table-wrap">
-<table>
-  <thead>
-    <tr><th>Model</th><th>Cost $\mathcal{L}$</th><th>$h$</th><th>Monoid $\mathcal{M}$</th><th>Alg.</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>Linear Attn</td><td>Alignment</td><td>Eucl.</td><td>$\{I\}$</td><td>1-step</td></tr>
-    <tr><td>RetNet</td><td>Dot-prod.</td><td>Eucl.</td><td>Scalar</td><td>GD</td></tr>
-    <tr><td>Mamba / Mamba2</td><td>Dot-prod.</td><td>Eucl.</td><td>Diagonal</td><td>GD</td></tr>
-    <tr><td>GLA</td><td>Dot-prod.</td><td>Eucl.</td><td>Diagonal</td><td>GD</td></tr>
-    <tr><td>Mamba-3</td><td>Dot-prod.</td><td>Eucl.</td><td>SO(2)</td><td>GD</td></tr>
-    <tr><td>DeltaNet</td><td>MSE</td><td>Eucl.</td><td>Householder</td><td>GD</td></tr>
-    <tr><td>Gated DeltaNet</td><td>MSE</td><td>Eucl.</td><td>HH &times; scalar</td><td>GD</td></tr>
-    <tr><td>RWKV-7</td><td>MSE</td><td>Eucl.</td><td>Diag &times; HH</td><td>GD</td></tr>
-    <tr><td>Longhorn</td><td>MSE</td><td>Eucl.</td><td>&mdash;</td><td>Newton</td></tr>
-    <tr><td>Moneta</td><td>$\ell_p$</td><td>$\ell_q$</td><td>&mdash;</td><td>GD</td></tr>
-    <tr><td>Yaad</td><td>Huber</td><td>Eucl.</td><td>&mdash;</td><td>GD</td></tr>
-    <tr><td>Memora</td><td>MSE</td><td>Entropic</td><td>&mdash;</td><td>GD</td></tr>
-    <tr><td>FoX</td><td>Log-sum-exp</td><td>&mdash;</td><td>Diagonal</td><td>FTRL</td></tr>
-    <tr><td>Softmax Attn</td><td>Log-sum-exp</td><td>&mdash;</td><td>&mdash;</td><td>FTRL</td></tr>
-    <tr style="border-top: 2px solid var(--border);"><td>TTT-Linear</td><td>MSE</td><td>Eucl.</td><td>&mdash;</td><td>GD</td></tr>
-    <tr><td>TTT-MLP</td><td>MSE</td><td>Eucl.</td><td>&mdash;</td><td>GD</td></tr>
-    <tr><td>Titans</td><td>MSE</td><td>Eucl.</td><td>Scalar</td><td>GD+mom.</td></tr>
-  </tbody>
-</table>
-</div>
-
-<p><strong>Depth axis.</strong> No model on the depth axis has an independent per-step cost.</p>
-
-<div class="table-wrap">
-<table>
-  <thead>
-    <tr><th>Model</th><th>$h$ (Norm.)</th><th>Monoid $\mathcal{M}$</th><th>Memory</th><th>Update rule</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>Residual connection</td><td>&mdash;</td><td>$\{I\}$</td><td>$\mathbb{R}^d$</td><td>$x + f(x)$</td></tr>
-    <tr><td>Pre-Norm</td><td>Eucl. (RMSNorm)</td><td>$\{I\}$</td><td>$\mathbb{R}^d$</td><td>$x + f(\text{Norm}(x))$</td></tr>
-    <tr><td>Hyper-connections</td><td>Eucl.</td><td>$\text{GL}(n)$</td><td>$\mathbb{R}^{n \times d}$</td><td>Learnable mixing</td></tr>
-    <tr><td>mHC (Sinkhorn)</td><td>Entropic</td><td>Birkhoff $\mathcal{B}_n$</td><td>$\mathbb{R}^{n \times d}$</td><td>Sinkhorn-projected mixing</td></tr>
-    <tr><td>JPmHC (Cayley)</td><td>Eucl. (Stiefel)</td><td>$O(n)$</td><td>$\mathbb{R}^{n \times d}$</td><td>Cayley-projected mixing</td></tr>
-    <tr><td>Res. Matrix Transf.</td><td>Eucl.</td><td>Learned</td><td>$\mathbb{R}^{p \times q}$</td><td>$AM + vk^\top$</td></tr>
-    <tr><td>Attention Residuals</td><td>Entropic (softmax)</td><td>&mdash;</td><td>$\mathbb{R}^{p \times q}$</td><td>$\sum_\ell w_\ell x^{(\ell)}$</td></tr>
-  </tbody>
-</table>
-</div>
-
-<p><strong>Data axis.</strong> Optimizers as instantiations of the regularized cost.</p>
-
-<div class="table-wrap">
-<table>
-  <thead>
-    <tr><th>Optimizer</th><th>Cost $\mathcal{L}$</th><th>$h$ (Norm.)</th><th>Monoid $\mathcal{M}$</th><th>Alg.</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>Hebbian</td><td>Alignment</td><td>Eucl.</td><td>$\{I\}$</td><td>1-step</td></tr>
-    <tr><td>SGD</td><td>MSE</td><td>Eucl.</td><td>Scalar</td><td>GD</td></tr>
-    <tr><td>SGD + wd</td><td>MSE</td><td>Eucl. ($L^2$ ball)</td><td>Scalar</td><td>GD</td></tr>
-    <tr><td>Adam</td><td>Any</td><td>Eucl. (diag.)</td><td>Scalar</td><td>GD+mom.</td></tr>
-    <tr><td>Shampoo</td><td>Any</td><td>Kronecker</td><td>&mdash;</td><td>Newton</td></tr>
-    <tr><td>Muon</td><td>Any</td><td>Eucl. (Stiefel)</td><td>&mdash;</td><td>GD</td></tr>
-    <tr><td>Lion</td><td>Any</td><td>Sign ($\ell_\infty$)</td><td>Scalar</td><td>GD+mom.</td></tr>
-    <tr><td>Shampoo / SOAP</td><td>Any</td><td>Kronecker</td><td>&mdash;</td><td>Newton</td></tr>
-    <tr><td>Kron (PSGD)</td><td>Any</td><td>Kronecker</td><td>&mdash;</td><td>Newton</td></tr>
-    <tr><td>Natural gradient</td><td>Any</td><td>Fisher</td><td>&mdash;</td><td>Newton</td></tr>
-    <tr><td>CE + nat. grad</td><td>Log-sum-exp</td><td>Fisher</td><td>&mdash;</td><td>Newton</td></tr>
-    <tr><td>Batch GD / ERM</td><td>Any</td><td>Eucl.</td><td>&mdash;</td><td>FTRL</td></tr>
-  </tbody>
-</table>
-</div>
-
-<p>The key insight from these tables: models with the same cost and algorithm but different $h$ (e.g., DeltaNet vs. Memora &mdash; both MSE/GD, but Euclidean vs. entropic $h$) produce qualitatively different retention and normalization behavior. The $h$ column reveals structure invisible in the write rule alone.</p>
-
-<h3>Costs and update equations</h3>
-
-<p>The taxonomy tables above classify models by <em>which</em> design choices they make. The tables below spell out the <em>exact</em> cost functions and update equations, making the cross-axis correspondences precise. (See the paper for the full list of 20+ models.)</p>
-
-<p><strong>Sequence axis (selected models).</strong> State $S_t \in \mathbb{R}^{d_v \times d_k}$; keys $k_t$, values $v_t$, queries $q_t$. All read-outs are $o_t = S_t q_t$ unless noted.</p>
-
-<div class="table-wrap">
-<table>
-  <thead>
-    <tr><th>Model</th><th>Per-step cost $\ell_t$</th><th>State update $S_t$</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>Linear Attn</td><td>$-\langle v_t, S k_t \rangle$</td><td>$S_{t-1} + v_t k_t^\top$</td></tr>
-    <tr><td>RetNet</td><td>$-\langle v_t, S k_t \rangle$</td><td>$\gamma S_{t-1} + v_t k_t^\top$</td></tr>
-    <tr><td>Mamba / GLA</td><td>$-\langle v_t, S k_t \rangle$</td><td>$S_{t-1} \text{Diag}(\alpha_t) + v_t k_t^\top$</td></tr>
-    <tr><td>DeltaNet</td><td>$\frac{1}{2}\|v_t - Sk_t\|^2$</td><td>$S_{t-1}(I - \beta_t k_t k_t^\top) + \beta_t v_t k_t^\top$</td></tr>
-    <tr><td>Gated DeltaNet</td><td>$\frac{1}{2}\|v_t - Sk_t\|^2$</td><td>$\alpha_t S_{t-1}(I - \beta_t k_t k_t^\top) + \beta_t v_t k_t^\top$</td></tr>
-    <tr><td>Longhorn</td><td>$\frac{1}{2}\|v_t - Sk_t\|^2$</td><td>$S_{t-1}(I - \frac{\beta_t k_t k_t^\top}{1 + \beta_t \|k_t\|^2}) + \frac{\beta_t v_t k_t^\top}{1 + \beta_t \|k_t\|^2}$</td></tr>
-    <tr><td>Memora</td><td>$\frac{1}{2}\|v_t - Sk_t\|^2$</td><td>$\text{softmax}(\log S_{t-1} - \eta(S_{t-1}k_t - v_t) k_t^\top)$</td></tr>
-    <tr><td>Softmax Attn</td><td>$-\log\sum_j e^{k_j^\top q}$</td><td>All $(k_j, v_j)$ stored</td></tr>
-    <tr style="border-top: 2px solid var(--border);"><td>Titans</td><td>$\frac{1}{2}\|v_t - Mk_t\|^2$</td><td>$M_t = \alpha M_{t-1} - \eta \mathcal{S}_t$; &ensp; $\mathcal{S}_t = \beta \mathcal{S}_{t-1} + (1-\beta) \nabla_M \ell_t$</td></tr>
-  </tbody>
-</table>
-</div>
-
-<p><strong>Data axis (optimizers).</strong> Weights $W_n$; input $x_n$, target $y_n$; gradient $g_n = \nabla_W \ell_n$.</p>
-
-<div class="table-wrap">
-<table>
-  <thead>
-    <tr><th>Optimizer</th><th>Per-step cost $\ell_n$</th><th>Update $W_n$</th><th>Seq. analogue</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>Hebbian</td><td>$-\langle y_n, Wx_n \rangle$</td><td>$W_{n-1} + y_n x_n^\top$</td><td>Linear attention</td></tr>
-    <tr><td>SGD</td><td>$\frac{1}{2}\|y_n - Wx_n\|^2$</td><td>$W_{n-1} + \eta(y_n - W_{n-1}x_n) x_n^\top$</td><td>DeltaNet</td></tr>
-    <tr><td>SGD + wd</td><td>$\frac{1}{2}\|y - Wx\|^2 + \frac{\lambda}{2}\|W\|_F^2$</td><td>$(1 - \lambda\eta) W_{n-1} - \eta \nabla\ell_n$</td><td>Gated DeltaNet</td></tr>
-    <tr><td>Adam</td><td>any $\ell_n$</td><td>$m_n = \beta_1 m_{n-1} + (1-\beta_1) g_n$; &ensp; $W_n = W_{n-1} - \eta \hat{m}_n / \sqrt{\hat{v}_n}$</td><td>Titans</td></tr>
-    <tr><td>Muon</td><td>any $\ell_n$</td><td>$m_n = \beta m_{n-1} + (1-\beta) g_n$; &ensp; $W_n = W_{n-1} - \eta\, \text{polar}(m_n)$</td><td>&mdash;</td></tr>
-    <tr><td>Lion</td><td>any $\ell_n$</td><td>$c_n = \beta_1 m_{n-1} + (1-\beta_1) g_n$; &ensp; $W_n = (1-\lambda\eta)W_{n-1} - \eta\, \text{sign}(c_n)$; &ensp; $m_n = \beta_2 m_{n-1} + (1-\beta_2) g_n$</td><td>&mdash;</td></tr>
-    <tr><td>Natural grad.</td><td>any $\ell_n$</td><td>$W_n = W_{n-1} - \eta F_n^{-1} g_n$</td><td>Longhorn</td></tr>
-    <tr><td>CE + softmax</td><td>$-\log\frac{e^{w_{y_n}^\top x_n}}{\sum_c e^{w_c^\top x_n}}$</td><td>$W_n = W_{n-1} - \eta (p_n - e_{y_n}) x_n^\top$</td><td>Softmax attn</td></tr>
-  </tbody>
-</table>
-</div>
-
-<p>Reading across the last column makes the correspondences concrete: SGD <em>is</em> DeltaNet on the data axis; Adam <em>is</em> Titans with momentum; natural gradient <em>is</em> the Newton step (Longhorn). The cost form determines the update shape, and the same cost produces the same algorithmic structure on both axes.</p>
-
-
-<!-- ================================================================ -->
-<h2 id="depth">The depth axis</h2>
-
-<p>The depth axis has a fundamentally different character: it is an <em>inner loop</em> composed with the outer axes, and it has no independent cost function.</p>
-
-<p>At inference, each token triggers a complete forward pass through all layers. The residual stream $x^{(\ell)}$ is ephemeral &mdash; it exists only during this traversal. The persistent state lives on the sequence axis (KV cache). At training, the persistent state lives on the data axis (weights). The depth axis is the shared computational substrate through which both outer axes operate.</p>
-
-<p>Recent work has enriched the depth axis with richer state-update structure. Hyper-connections <a href="#ref9">[9]</a> generalize residual connections with learnable mixing matrices &mdash; a full matrix-valued transition operator $A_n \in \mathbb{R}^{n \times n}$ on the depth axis, acting via matrix product on $n$ parallel streams (not element-wise as on the sequence axis).</p>
-
-<p>The manifold constraint on this transition operator fits directly into the Bregman framework. Bistochastic (Sinkhorn) mixing projects $A_n$ onto the Birkhoff polytope via alternating Bregman projections with <em>entropic</em> $h$ &mdash; the same $h$ that gives softmax normalization on the sequence axis. Orthogonal (Cayley) mixing <a href="#ref29">[29]</a> projects onto $O(n)$ via Euclidean $h$ with a Stiefel manifold constraint &mdash; the same $(h, \mathcal{M})$ pair that gives Muon's polar decomposition on the data axis.</p>
-
-<div class="callout">
-  <strong>Why orthogonal beats bistochastic on the depth axis.</strong>
-  A doubly stochastic matrix has Perron eigenvalue 1, but generically $|\lambda_i| < 1$ for $i \geq 2$. Deep composition drives $|\lambda_i|^L \to 0$: the transition operator <em>forgets</em> early layers. On the sequence axis, such contraction is desirable (recency bias). On the depth axis, it is harmful &mdash; every layer should contribute to the output. Orthogonal matrices have $|\lambda| = 1$ for all eigenvalues, preserving information perfectly. Moreover, $O(n)$ is a <em>group</em> (invertible), while the Birkhoff polytope is only a <em>monoid</em>. The design principle: axes that need forgetting use monoids; axes that need preservation use groups.
-</div>
-
-<p>Residual matrix transformers <a href="#ref7">[7]</a> replace the residual stream with a matrix-valued state $M^{(\ell)} \in \mathbb{R}^{p \times q}$ updated via rank-one writes &mdash; making the depth axis structurally identical to the sequence axis. Attention Residuals <a href="#ref20">[20]</a> go further, replacing fixed residual accumulation with softmax attention over the depth axis, achieving ${\sim}1.25\times$ compute-equivalent improvement.</p>
-
-<div class="table-wrap">
-<table>
-  <thead>
-    <tr><th>Mode</th><th>Inner axis</th><th>Outer axis</th><th>Persistent state</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>Inference</td><td>Depth ($\ell$)</td><td>Sequence ($t$)</td><td>KV cache $S_t^{(\ell)}$</td></tr>
-    <tr><td>Training</td><td>Depth ($\ell$)</td><td>Data ($n$)</td><td>Weights $W^{(\ell)}$</td></tr>
-  </tbody>
-</table>
-</div>
-
-
-<!-- ================================================================ -->
-<h2 id="data">The data axis</h2>
-
-<p>The data axis is where the framework originates most naturally: optimization <em>is</em> the state update, and the training loss <em>is</em> the cost. What makes the data axis different is multiple epochs, the possibility of convergence, and the typically large scale of $N$.</p>
-
-<h3>Every gradient is an outer product</h3>
-
-<p>The correspondence between optimizers and sequence models is not merely an analogy &mdash; it is a structural identity. For <em>any</em> layer in a neural network, the gradient is an outer product:</p>
-
-$$\nabla_{W^{(\ell)}} \mathcal{L} = \underbrace{\delta^{(\ell)}}_{\text{value (backprop error)}} \underbrace{(z^{(\ell-1)})^\top}_{\text{key (input activation)}}$$
-
-<p>where $\delta^{(\ell)}$ is the error backpropagated to layer $\ell$ and $z^{(\ell-1)}$ is the input activation. Every weight matrix is therefore literally an associative memory, updated by outer products of (backpropagated errors, input activations) &mdash; exactly the $v_t k_t^\top$ write of the sequence axis. After $N$ gradient steps, $W_N = \sum_n \eta_n \delta_n (z_n)^\top$ is a sum of outer products. Feature learning means the keys evolve to improve storage and retrieval.</p>
-
-<div class="callout">
-  <strong>What optimizers do to outer products.</strong>
-  Each optimizer manipulates these outer products differently. Hebbian learning sums them raw (= linear attention). SGD corrects errors before writing (= DeltaNet). Weight decay adds scalar forgetting (= Gated DeltaNet). Momentum maintains a running average (= Titans). Adam adds element-wise normalization (= diagonal bilateral whitening). Muon applies polar decomposition (= Stiefel projection). Lion takes the sign of momentum (= $\ell_\infty$ steepest descent). A mini-batch of $B$ examples produces a rank-$B$ sum of outer products, exactly like a chunk of $C$ tokens in chunked linear attention.
-</div>
-
-<h3>Learning rate schedules = positional encoding</h3>
-
-<p>SGD with weight decay has a forget gate $(1 - \lambda\eta_n)I$. Unrolling from initialization, the influence of gradient $g_j$ on the current weights decays as $\rho(j,N) = \prod_{s=j+1}^{N}(1-\lambda\eta_s)$. In the log domain, the <em>data-positional distance</em> is $d(j,N) \approx \lambda \int_j^N \eta(s)\,ds$.</p>
-
-<p>The learning rate schedule $\eta(s)$ determines the metric geometry of training time:</p>
-
-<div class="table-wrap">
-<table>
-  <thead>
-    <tr><th>LR schedule</th><th>Data-axis geometry</th><th>Sequence-axis analogue</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>Constant $\eta_0$</td><td>Uniform exponential decay</td><td>ALiBi / RetNet</td></tr>
-    <tr><td>Per-param weight decay</td><td>Diagonal adaptive decay</td><td>FoX / Mamba2</td></tr>
-    <tr><td>Cosine annealing</td><td>Linear + sinusoidal</td><td>Sinusoidal PE</td></tr>
-    <tr><td>Curriculum learning</td><td>Input-dependent gating</td><td>Mamba / FoX</td></tr>
-  </tbody>
-</table>
-</div>
-
-<p>With $\lambda = 0.1$ and $\eta_0 = 10^{-3}$, gradients have a half-life of about 7,000 steps. Adam's bias correction $\hat{m}_n = m_n / (1 - \beta_1^n)$ is a schedule-free warmup built into the optimizer.</p>
-
-<h3>Critical batch size = memory capacity</h3>
-
-<p>On the data axis, the gradient SNR for a mini-batch of size $B$ is:</p>
-
-$$\mathrm{SNR}_{\text{grad}}(B) = \frac{B\,\|G\|^2}{\mathrm{tr}(\Sigma)}$$
-
-<p>The critical batch size <a href="#ref8">[8]</a> &mdash; where SNR = 1 &mdash; is the retrieval capacity of the data-axis memory:</p>
-
-$$B_{\text{crit}} = \frac{\mathrm{tr}(\Sigma)}{\|G\|^2}$$
-
-<p>The optimal batch size $B^* \sim B_{\text{crit}}$ corresponds to the optimal chunk size $C^* \sim d$ in chunked attention: both are where switching from parallel to recurrent mode becomes worthwhile. Natural gradient reduces the effective $B_{\text{crit}}$ &mdash; the data-axis analogue of softmax sharpening retrieval.</p>
-
-<p><strong>Gradient transmission bottleneck.</strong> Beyond gradient <em>estimation</em> noise, gradient <em>transmission</em> through low-rank layers is itself a capacity limit. The LM head $W \in \mathbb{R}^{V \times D}$ with $D \ll V$ compresses the $V$-dimensional logit gradient to rank at most $D$ during backpropagation. Godey and Artzi <a href="#ref-godey2026">[G&A 2026]</a> show that 95&ndash;99% of the gradient norm is destroyed by this projection, yielding update directions fundamentally misaligned with the optimum. This is a <em>hard</em> bottleneck analogous to $N_{\max} \sim d_k$ on the sequence axis: just as a rank-$d_k$ memory matrix cannot faithfully store more than $d_k$ patterns, the rank-$D$ LM head cannot transmit more than $D$ directions of supervision signal per step. The ratio $D/V$ plays the role of $d_k / N$.</p>
-
-<h3>Cross-entropy as data-axis softmax attention</h3>
-
-<div class="callout">
-  <strong>Cross-entropy training is the data-axis analogue of softmax attention.</strong>
-  Both arise from the log-sum-exp cost form, and both achieve exponential capacity. Cross-entropy's Fisher information concentrates on hard examples (where the model is uncertain), ignoring easy ones. This "attention to difficulty" is the data-axis analogue of softmax's exponential pattern separation.
-</div>
-
-<p>This may explain why cross-entropy dominates MSE for classification (it is the "softmax attention" of loss functions), and why Adam shows its biggest improvements with cross-entropy losses.</p>
-
-<h3>Adam as multi-state recurrence</h3>
-
-<p>Adam maintains two auxiliary states: momentum $m_n = \beta_1 m_{n-1} + (1-\beta_1)g_n$ and second moment $v_n = \beta_2 v_{n-1} + (1-\beta_2)g_n^2$. Each is a linear recurrence with its own forget gate. The effective update $m_n / \sqrt{v_n}$ is a nonlinear combination of two linear states, analogous to how attention combines KV states nonlinearly via softmax.</p>
-
-<p><strong>Adam as diagonal Shampoo.</strong> Since each gradient is an outer product $g_n = -e_n x_n^\top$, Adam's second moment accumulates element-wise squares: $(v_n)_{ij} \approx \mathbb{E}[(e_n)_i^2] \cdot \mathbb{E}[(x_n)_j^2]$. Dividing by $\sqrt{v_n}$ normalizes both the value (error) and key (input) dimensions, but only per component. Compare with Shampoo, which uses full correlation matrices $L^{-1/2} g\, R^{-1/2}$. Adam is the diagonal approximation to Shampoo &mdash; and on the sequence axis, diagonal gating (GLA, Mamba) is the diagonal approximation to full-matrix transitions (DeltaNet). This parallel extends to a normalization hierarchy:</p>
-
-<div class="table-wrap">
-<table>
-  <thead>
-    <tr><th>Normalization</th><th>Seq. axis</th><th>Data axis</th><th>Structure</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>None</td><td>Linear attention</td><td>Hebbian</td><td>Raw outer product</td></tr>
-    <tr><td>Diagonal</td><td>GLA / Mamba</td><td>Adam ($1/\sqrt{v}$)</td><td>Per-component</td></tr>
-    <tr><td>Rank-1 (Householder)</td><td>DeltaNet</td><td>SGD on MSE</td><td>Per-sample key</td></tr>
-    <tr><td>Full key-side</td><td>RLS-Net (predicted)</td><td>Shampoo ($R^{-1/2}$)</td><td>Key whitening</td></tr>
-    <tr><td>Bilateral</td><td>&mdash;</td><td>Shampoo ($L, R$)</td><td>Both-side whitening</td></tr>
-    <tr><td>Sign ($\ell_\infty$)</td><td>&mdash;</td><td>Lion (sign)</td><td>Entry-wise uniform step</td></tr>
-    <tr><td>Stiefel proj.</td><td>&mdash;</td><td>Muon (polar)</td><td>Isometry constraint</td></tr>
-  </tbody>
-</table>
-</div>
-
-<p>The missing entries in the sequence-axis column are predictions: "Shampoo-Net" (bilateral whitening of the state), "Muon-Net" (polar decomposition of the state), and "Adam-Net" (Titans + element-wise normalization by key/value statistics).</p>
-
-
-<!-- ================================================================ -->
-<h2 id="transfer">Cross-axis transfer</h2>
-
-<h3>Which aspects matter where</h3>
-
-<p>Although the tuple $(\mathcal{L}, h, \mathcal{M}, \mathcal{H})$ applies on every axis, the different framework dimensions are not equally important on all three:</p>
-
-<div class="table-wrap">
-<table>
-  <thead>
-    <tr><th>Aspect</th><th>Sequence</th><th>Depth</th><th>Data</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>PE / monoid</td><td>Central (RoPE, ALiBi)</td><td>Unexplored</td><td>Not applicable (i.i.d.)</td></tr>
-    <tr><td>Forgetting</td><td>Important (recency)</td><td>Harmful (want isometry)</td><td>Important (weight decay, LR)</td></tr>
-    <tr><td>Normalization</td><td>Relevant (softmax)</td><td>Crucial (RMSNorm every layer)</td><td>Relevant (Adam, Muon)</td></tr>
-    <tr><td>Cost $\mathcal{L}$</td><td>Implicit (optim. view)</td><td>None (inner loop)</td><td>Explicit (training loss)</td></tr>
-    <tr><td>Multi-head</td><td>Well studied (MHA, GQA)</td><td>Emerging ($n$ streams)</td><td>MoE, sharding</td></tr>
-    <tr><td>Capacity / SNR</td><td>Well studied</td><td>Less clear</td><td>Critical batch size</td></tr>
-  </tbody>
-</table>
-</div>
-
-<p><strong>Positional encoding</strong> is central on the sequence axis, where token order is fundamental. On the data axis, training examples are typically i.i.d., so ordering is a free choice rather than a constraint &mdash; curriculum learning being the exception. On the depth axis, positional encoding corresponds to inter-layer mixing geometry (hyper-connections), but this has barely been explored as a design dimension.</p>
-
-<p><strong>Forgetting</strong> shows the starkest asymmetry: desirable on the sequence axis (recency bias, finite capacity) and the data axis (plasticity via weight decay), but harmful on the depth axis (every layer should contribute). This is why the depth axis naturally favors group-valued transitions (orthogonal, isometric) while the outer axes use contractive monoids.</p>
-
-<p><strong>Normalization</strong> is ubiquitous but most critical on the depth axis, where it appears after every layer. On the sequence axis it appears as softmax in attention; on the data axis as gradient preconditioning. All three are Bregman projections under the appropriate $h$, but their <em>frequency</em> differs: once per layer vs. once per token vs. once per training step.</p>
-
-<p><strong>Step homogeneity</strong> reveals another fundamental asymmetry. On the sequence axis, the same model weights $W$ are applied at every step &mdash; this is what makes the computation a recurrence &mdash; and positional encoding breaks the resulting translation symmetry. On the data axis, the model weights $W_n$ are the <em>state</em> being updated; the shared element is the update rule (optimizer, loss function), and the LR schedule breaks that symmetry. On the depth axis, each layer has distinct parameters $W^{(\ell)}$: neither weights nor rule are shared, making depth a <em>composition</em> of distinct transformations rather than a recurrence. Weight-sharing architectures (Universal Transformers, ALBERT, Neural ODEs) make the depth axis structurally parallel to the others, turning composition into recurrence and making depth PE meaningful.</p>
-
-<h3>Unexplored combinations</h3>
-
-<p>The relevance map highlights that many natural combinations remain unexplored:</p>
-
-<ul style="margin-bottom: 1rem;">
-  <li>The rich positional encoding literature (RoPE, ALiBi, FoX) should directly inspire learning rate schedule design.</li>
-  <li>An "RLS-Net" that maintains the inverse key-correlation matrix as additional recurrent state could achieve optimal single-pass learning.</li>
-  <li><strong>"Muon-Net"</strong>: apply polar decomposition to the state matrix $S_t$ after each update, projecting onto the Stiefel manifold &mdash; transferring Muon's Stiefel projection to the sequence axis.</li>
-  <li><strong>"Shampoo-Net"</strong>: decorrelate both key and value spaces using accumulated correlations $L_t = \sum \beta^{T-t} v_t v_t^\top$ and $R_t = \sum \beta^{T-t} k_t k_t^\top$ &mdash; bilateral whitening, generalizing DeltaNet's key-only Householder.</li>
-  <li><strong>"Adam-Net"</strong>: combine Titans-style momentum with per-component normalization by accumulated key/value statistics &mdash; the sequence-axis transfer of Adam's adaptive learning rate.</li>
-  <li>Finding optimizers with rotational or reflective decay structure would complete the analogy with RoPE and PaTH on the sequence axis.</li>
-  <li>Entropic retention on the data axis (KL-regularized training with softmax-normalized weights) is an unexplored combination.</li>
-</ul>
-
-
-<!-- ================================================================ -->
-<h2 id="limits">Where the analogy breaks</h2>
-
-<p><strong>Exact vs. structural analogy.</strong> The SSD duality on the sequence axis is an exact algebraic identity. The depth-axis duality (Zhang <a href="#ref10">[10]</a>) is also exact. The data-axis duality (online SGD vs. batch gradient) is a structural analogy &mdash; the "batch attention" over the entire dataset is typically infeasible.</p>
-
-<p><strong>Single-pass vs. iterated.</strong> On the sequence axis, the model makes a single pass. On the data axis, multiple epochs allow convergence to solutions that a single pass can only approximate.</p>
-
-<p><strong>Depth has no independent cost.</strong> The depth axis has no per-step cost. The forward pass is inference, not optimization. The cost that shapes it is the global training loss, propagated backward through backprop.</p>
-
-<p><strong>Forgetting is asymmetric across axes.</strong> On the sequence and data axes, controlled forgetting is desirable (recency bias, plasticity). On the depth axis, forgetting is <em>harmful</em> &mdash; every layer should contribute. This is why bistochastic transitions ($|\lambda_i| < 1$) cause "spectral stalling" on the depth axis, while orthogonal transitions ($|\lambda| = 1$) preserve dynamical isometry. The framework's tuple applies on all axes, but the <em>optimal choice</em> of monoid differs: contractive monoids for the outer axes, isometric groups for the inner axis.</p>
-
-<p><strong>Weight sharing is asymmetric.</strong> On the sequence and data axes, each step applies the same shared rule &mdash; model weights (sequence) or update procedure (data) &mdash; to a varying input. This step homogeneity is what makes the computation a recurrence and PE / LR schedules meaningful as symmetry breakers. The depth axis breaks this pattern: each layer has distinct parameters $W^{(\ell)}$, making the forward pass a composition of $L$ different functions. Because $L$ is finite and fixed, distinct per-layer weights are feasible &mdash; unlike the sequence axis (unbounded $T$) or data axis (unbounded $N$) where sharing is forced. This explains why depth PE is only natural in weight-sharing architectures where the layer index is not already encoded in the parameters.</p>
-
-<p><strong>MLP memories go beyond matrix state.</strong> Titans <a href="#ref12">[12]</a> and TTT use multi-layer MLPs as the memory, updated by backpropagation on each token. The connection is direct: a matrix memory $S$ is a single-layer linear network $f_S(q) = Sq$. An MLP memory $f_\theta(q)$ generalizes this to a deeper, nonlinear function class.</p>
-
-<p>The <em>write operation is identical</em> in both cases: gradient descent on the per-step cost, $\theta_t = \theta_{t-1} - \eta_t \nabla_\theta \ell_t$. What changes is the gradient structure. For a linear memory, $\nabla_S \ell_t = -(v_t - Sk_t)\,k_t^\top$ is a rank-1 outer product &mdash; the clean algebraic structure that gives monoids and parallel scans. For an MLP, the gradient involves the chain rule through activations, breaking this rank-1 structure.</p>
-
-<p><em>What&rsquo;s preserved:</em> the regularized cost framework and the $(\ell, h, \mathcal{M}_{\text{norm}})$ triple apply unchanged &mdash; they are orthogonal to the function class. Forgetting acts on $\theta$ via weight decay: scalar retention, the same structure that Frank-Wolfe gives. <em>What breaks:</em> the semiseparable structure (nonlinear transition), the SNR capacity bound ($O(p/d_v)$ for $p$ parameters instead of $O(d_k)$), and the linear read operation. The MLP case illustrates a general principle: the optimization-based write framework transfers to <em>any</em> parameterized function class; the algebraic structure is specific to the linear case.</p>
-
-<p><strong>Nonlinearity complicates transfer.</strong> Hu et al. <a href="#ref22">[22]</a> show that SSD fails for softmax attention due to rank explosion. M&sup2;RNN <a href="#ref19">[19]</a> and COFFEE <a href="#ref25">[25]</a> introduce nonlinearities that break semiseparable structure but improve expressiveness.</p>
-
-
-<!-- ================================================================ -->
-<h2 id="open">Open questions</h2>
-
+<div class="toc"><strong>Contents</strong><ol>
+<li><a href="#hook">What is shared across three axes?</a></li>
+<li><a href="#sequence">Write, retain, and read</a></li>
+<li><a href="#framework">Optimization, geometry, and constraints</a></li>
+<li><a href="#capacity">Retrieval needs a criterion</a></li>
+<li><a href="#depth">Propagation through depth</a></li>
+<li><a href="#data">Training and optimizer states</a></li>
+<li><a href="#limits">Limits and open questions</a></li>
+</ol></div>
+
+<h2 id="hook">What is shared across three axes?</h2>
+<p>A model incorporates new information when a token arrives, when a layer transforms its representation, and when a training example changes its parameters. Calling these the <em>sequence</em>, <em>depth</em>, and <em>data</em> axes gives a useful comparison. The state, its persistence, and its read operation differ across the axes.</p>
+<div class="table-wrap"><table><thead><tr><th>Axis</th><th>State</th><th>New information</th></tr></thead><tbody>
+<tr><td>Sequence</td><td>Recurrent memory or stored keys and values</td><td>Token representations</td></tr>
+<tr><td>Depth</td><td>Residual representation, usually temporary</td><td>Layer output</td></tr>
+<tr><td>Data</td><td>Parameters and optimizer statistics</td><td>Loss gradients</td></tr>
+</tbody></table></div>
+<p>The clearest exact connection is the delta rule. Given a key $k$, a target value $v$, and a matrix $S$, gradient descent on $\tfrac12\|Sk-v\|^2$ gives</p>
+$$S^+=S+\eta(v-Sk)k^\top.$$
+<p>This is the classical <a href="#ref1">Widrow–Hoff update</a> and the write rule used in <a href="#ref2">DeltaNet</a>, with matching step sizes and key-normalization conventions. Applying it to tokens rather than training examples changes the role of the state, not this formula.</p>
+<p>The broader account is a synthesis of fast-weight memories, linear attention, structured state space duality, and optimization-based sequence memories. In particular, it builds on <a href="#ref12">Miras</a> and <a href="#ref13">test-time regression</a>. It does not assert a new universal capacity theorem.</p>
+<div class="table-wrap"><table><thead><tr><th>Comparison</th><th>Status</th></tr></thead><tbody>
+<tr><td>Delta rule / squared-error gradient step</td><td>Exact, with matching conventions</td></tr>
+<tr><td>Outer-product memory / unnormalized linear attention</td><td>Exact</td></tr>
+<tr><td>Retention / positional weights</td><td>Exact unrolling; scalar log decay is additive</td></tr>
+<tr><td>Random-key retrieval / capacity</td><td>Conditional on a distribution and success criterion</td></tr>
+<tr><td>Residual propagation / optimization</td><td>An analogy unless a suitable objective exists</td></tr>
+<tr><td>Gradient noise / retrieval interference</td><td>A statistical analogy, not the same task</td></tr>
+</tbody></table></div>
+
+<h2 id="sequence">Write, retain, and read</h2>
+<p>All vectors below are columns. Keys and queries lie in $\mathbb R^{d_k}$, values in $\mathbb R^{d_v}$, and the memory $S$ has shape $d_v\times d_k$. Set $K=[k_1,\ldots,k_N]$ and $V=[v_1,\ldots,v_N]$.</p>
+<p>Additive memory stores $S_N=\sum_i v_i k_i^\top=VK^\top$. Its read is</p>
+$$S_Nq=\sum_i v_i(k_i^\top q).$$
+<p>This is exactly unnormalized linear attention. Storing the full list and evaluating this read gives the same result as storing the matrix. Negative similarities can give negative coefficients; it is not a probability mixture.</p>
+<h3>A two-dimensional example</h3>
+<p>Take keys $e_1=(1,0)^\top$, $e_2=(0,1)^\top$ and scalar values $2,3$. The memory is $S=(2,3)$ and querying either coordinate key retrieves its value exactly. If both keys are $e_1$, additive memory instead becomes $(5,0)$: neither target is retrieved correctly. A unit-step delta write makes the second value replace the first, leaving $(3,0)$. No deterministic read can distinguish identical keys with different targets.</p>
+<h3>Transitions and effective keys</h3>
+<p>For the right-acting recurrence $S_t=S_{t-1}A_t+v_tk_t^\top$, define the chronological product $P_{j\to t}=A_{j+1}\cdots A_t$, with empty product $I$. Substitution gives</p>
+$$S_t=S_0P_{0\to t}+\sum_{j=1}^t v_jk_j^\top P_{j\to t}.$$
+<p>Thus $S_tq_t$ is a sum of values with coefficients $k_j^\top P_{j\to t}q_t$. This identity underlies recurrent/parallel descriptions; efficient algorithms require additional structure, as in <a href="#ref4">structured state space duality</a>. If coefficients depend on earlier states, the identity alone does not remove those dependencies.</p>
+<p>For a delta write, $A_t=I-\beta_t k_tk_t^\top$. When $k_t\ne0$ and $\beta_t=1/\|k_t\|^2$, it projects onto $k_t^\perp$; when $\beta_t=2/\|k_t\|^2$, it is a Householder reflection. A projection is not a reflection, and learned step sizes need not give either special case.</p>
+<p>The old effective key is $\widetilde k_j=P_{j\to t}^\top k_j$. Delta writes remove its component along the most recent unit key, but do not generally orthogonalize all old effective keys. For $k_1=e_1$, $k_2=(e_1+e_2)/\sqrt2$, $k_3=e_2$, unit-step writes give $\widetilde k_1=(1/2,0)^\top$ and $\widetilde k_2=(1/\sqrt2,0)^\top$: their inner product is nonzero.</p>
+<h3>When repeated delta writes converge</h3>
+<p>If the unit-key system $SK=V$ is consistent, cycling through all pairs with a fixed step $0&lt;\beta&lt;2$ and zero initialization converges to the minimum-norm solution $VK^+$, where $K^+$ is the Moore–Penrose pseudoinverse. This is the <a href="#ref28">cyclic Kaczmarz connection</a>. If the keys span the whole key space, the solution is unique. Otherwise an arbitrary initial state's action on the unobserved orthogonal complement is preserved.</p>
+<p>The proof tracks the squared Frobenius error, which decreases at each write by $\beta(2-\beta)\|Ek\|^2$. A whole cycle strictly contracts nonzero error on the span of the keys. Consistency matters: scalar keys $1,1$, targets $0,1$, and step $1$ alternate between $0$ and $1$, although the least-squares solution is $1/2$.</p>
+<h3>Scalar decay and positional bias</h3>
+<p>For $A_s=\alpha_s I$, $0&lt;\alpha_s\le1$, cumulative log decay is</p>
+$$d(j,t)=-\log\prod_{s=j+1}^t\alpha_s=\sum_{s=j+1}^t-\log\alpha_s.$$
+<p>It is additive along increasing positions. It can vanish between distinct positions, so it is not generally a metric. Multiplying an exponential attention weight by retention gives $e^{q_t^\top k_j/\tau-d(j,t)}$: decay is a <em>negative</em> logit bias.</p>
+<p>For matrices, $-\log\|A_{j+1}\cdots A_t\|_2$ is generally only bounded below by the sum of local negative log norms. For example, $A=\operatorname{diag}(1,1/2)$ and $B=\operatorname{diag}(1/2,1)$ each have norm one, but $AB$ has norm $1/2$. Diagonal gates have coordinatewise log decay; a single scalar bias cannot generally reproduce them. Orthogonal transitions preserve norms but may change pairwise similarities when different keys receive different rotations.</p>
+<p>A transition <em>monoid</em> contains the identity and is closed under multiplication. Individual rank-one projections or reflections do not form a closed family; their generated products do. Input dependence and norm preservation are separate properties.</p>
+
+<h2 id="framework">Optimization, geometry, and constraints</h2>
+<p>A loss specifies the desired association; an algorithm specifies how to move toward it. Geometry measures movement, and constraints specify allowed states. These choices do not determine one another automatically.</p>
+<h3>Implicit updates differ from gradient steps</h3>
+<p>For differentiable strictly convex $h$ on a convex domain, define</p>
+$$D_h(X,Y)=h(X)-h(Y)-\langle\nabla h(Y),X-Y\rangle.$$
+<p>An implicit update minimizes $\ell(X)+D_h(X,X^-)/\eta$ over an admissible set, assuming a minimizer exists. Mirror descent instead minimizes the linearized loss $\langle\nabla\ell(X^-),X\rangle+D_h(X,X^-)/\eta$. With Euclidean $h$, the latter is a gradient step. The former, for squared-error memory, gives</p>
+$$S^+=S^-+\frac{\eta}{1+\eta\|k\|^2}(v-S^-k)k^\top.$$
+<p>For scalar $S^-=0$, $k=v=1$, $\eta=1$, the explicit result is $1$ and the implicit result is $1/2$. Calling both the same write would hide a real difference.</p>
+<h3>Forgetting differs from ridge regression</h3>
+<p>If the loss is zero, a Bregman update leaves the old state unchanged. Forgetting requires a penalty or a separate decay operation. Discounted additive writes store a discounted cross moment, whereas ridge regression fits all observed pairs:</p>
+$$S_\lambda=VK^\top(KK^\top+\lambda I)^{-1},\qquad\lambda&gt;0.$$
+<p>Two scalar pairs with key and value $1$, and additive decay $1/2$, give memory $3/2$. Discounted ridge with the same observation weights gives $(3/2)/(3/2+\lambda)\le1$. The missing correlation inverse makes the operations different. Exact recursive least squares maintains that inverse as an additional state; the paper derives its update.</p>
+<h3>Normalization needs a domain and a constraint</h3>
 <ul>
-  <li><strong>The rotation monoid on the data axis.</strong> RoPE uses rotational transitions. What optimizer has a rotational forget gate?</li>
-  <li><strong>Quantifying exponential capacity.</strong> Can we verify the predicted exponential gap in $B_{\text{crit}}$ for cross-entropy vs. MSE?</li>
-  <li><strong>Depth-axis positional encoding.</strong> What geometry do hyper-connections induce across layers?</li>
-  <li><strong>The normalization&ndash;Bregman conjecture.</strong> Is every normalization in deep learning a Bregman projection $\nabla h^*$ whose generating function $h$ also determines retention?</li>
-  <li><strong>An RLS-Net.</strong> Can the pseudoinverse be achieved efficiently in a single-pass recurrent architecture?</li>
+<li><strong>Softmax.</strong> It maximizes $z^\top p-\tau\sum_i p_i\log p_i$ on the probability simplex $\{p\ge0:\sum_i p_i=1\}$. Equivalently, it normalizes positive weights $a_i=e^{z_i/\tau}$ by minimizing generalized relative entropy. It is not an idempotent projection of logits.</li>
+<li><strong>RMSNorm.</strong> Without learned gains or a numerical stabilizer, it sends nonzero $x\in\mathbb R^d$ to $\sqrt d\,x/\|x\|$, the nearest point on the radius-$\sqrt d$ sphere. Gains and a positive stabilizer change that exact interpretation.</li>
+<li><strong>Polar factor.</strong> For a full-column-rank $a\times b$ matrix $M$, $a\ge b$, its nearest matrix with orthonormal columns is $M(M^\top M)^{-1/2}$. Rank deficiency makes the completion nonunique; wide matrices use the transposed version. <a href="#ref-muon">Muon</a> approximately normalizes momentum in this way, not the weights.</li>
 </ul>
+<p>A sphere is nonconvex. Its nearest-point map is neither globally unique nor nonexpansive: the unit-sphere images of $0.1e_1$ and $-0.1e_1$ have distance $2$, although the original distance is $0.2$. Compactness bounds states but does not establish convergence or stability. Frank–Wolfe is a separate convex constrained algorithm, using a linear minimizer and a convex-combination update; it is not an exact constrained Bregman projection.</p>
+<p>A complete memory specification therefore includes the state, write objective, update algorithm, step sizes, transition, read, geometry, and constraint. A loss alone does not fix the read kernel or capacity.</p>
 
+<h2 id="capacity">Retrieval needs a criterion</h2>
+<p>For additive memory and query $q=k_*$, separate the target signal $s=\|k_*\|^2v_*$ from interference $n=\sum_{i\ne *}(k_i^\top k_*)v_i$. Define SNR as the ratio of expected squared norms.</p>
+<p>If keys are independent $\mathcal N(0,I_d/d)$, values are independent $\mathcal N(0,I_{d_v})$, and keys and values are independent, then for $N\ge2$</p>
+$$\operatorname{SNR}_{\rm linear}=\frac{d+2}{N-1}.$$
+<p>Signal power is $d_v(1+2/d)$ and noise power is $d_v(N-1)/d$. For independent isotropic unit keys, the ratio is $d/(N-1)$. These explain an order-$d$ scale at a fixed expected-power threshold; they are not simultaneous high-probability guarantees for every stored item.</p>
+<p>For softmax, condition on fixed keys and query, with the same independent zero-mean values. Writing $\Delta_i=q^\top k_*-q^\top k_i$ gives</p>
+$$\operatorname{SNR}_{\rm softmax}\mid K,q=\frac{w_*^2}{\sum_{i\ne *}w_i^2}=\frac1{\sum_{i\ne *}e^{-2\Delta_i/\tau}}.$$
+<p>The value dimension cancels. If every gap is at least $\delta$, this is at least $e^{2\delta/\tau}/(N-1)$. The formula depends on key norms, separation, and temperature. It does not assign a universal exponential capacity to transformers. As temperature tends to infinity, softmax becomes uniform averaging, not dot-product linear attention.</p>
+<h3>Retrieval energy is not a training loss</h3>
+<p><a href="#ref6">Modern Hopfield retrieval</a> uses $E(q)=\tfrac12\|q\|^2-\tau\log\sum_i e^{k_i^\top q/\tau}$. Its stationary equation is $q=K\operatorname{softmax}(K^\top q/\tau)$. Arbitrary attached values define a separate read. Exponential pattern-storage results require specific geometric and probabilistic assumptions and a pattern list that grows with the number stored.</p>
+<p>Cross-entropy instead has positive log-sum-exp: $\ell(z;c)=\log\sum_i e^{z_i}-z_c$. Its gradient is $\operatorname{softmax}(z)-e_c$. The shared calculus does not transfer Hopfield storage capacity to training weights or establish an exponential advantage over squared-error training.</p>
+<h3>Storage and features</h3>
+<p>Full attention stores $N(d_k+d_v)$ numbers. Linear memory stores $d_vd_k$ numbers. A finite feature kernel $\phi(q)^\top\phi(k)$ with feature dimension $D$ needs memory $\sum_i v_i\phi(k_i)^\top$ of size $d_vD$, and a further $D$ numbers for a normalization denominator. <a href="#ref-features">Random features</a> approximate exponential kernels; their error and denominator control matter. Degree-$p$ homogeneous polynomial features have dimension $\binom{d_k+p-1}{p}$, not an automatic retrieval capacity equal to that dimension.</p>
+<p>Hierarchical memories combine several states by the shape-correct read $o_t=\sum_r\lambda_t^{(r)}S_t^{(r)}q_t$. More levels affect storage and computation; their number alone does not determine an optimal hardware chunk size.</p>
 
-<div class="references">
-  <h2>References</h2>
-  <ol>
-    <li id="ref1">Widrow, B. and Hoff, M. E. (1960). Adaptive switching circuits. <em>IRE WESCON Convention Record</em>.</li>
-    <li id="ref2">Yang, S., Wang, B., Zhang, Y., Shen, Y., and Kim, Y. (2024). Parallelizing linear transformers with the delta rule over sequence length. <em>NeurIPS</em>.</li>
-    <li id="ref3">Zhong, S., Xu, M., Ao, T., and Shi, G. (2025). Understanding transformer from the perspective of associative memory. <em>arXiv:2505.19488</em>.</li>
-    <li id="ref4">Dao, T. and Gu, A. (2024). Transformers are SSMs: Generalized models and efficient algorithms through structured state space duality. <em>ICML</em>.</li>
-    <li id="ref5">Afzal, A. (2026). On the legacy of linear transformers in positional embeddings. <a href="https://arshiaafzal.github.io/blog/2026/pe/">arshiaafzal.github.io/blog/2026/pe/</a></li>
-    <li id="ref6">Ramsauer, H. et al. (2021). Hopfield networks is all you need. <em>ICLR</em>.</li>
-    <li id="ref7">Mak, B. and Flanigan, J. (2025). Residual matrix transformers. <em>ICML</em>. arXiv:2506.22696.</li>
-    <li id="ref8">McCandlish, S., Kaplan, J., Amodei, D., and OpenAI Dota Team (2018). An empirical model of large-batch training. <em>arXiv:1812.06162</em>.</li>
-    <li id="ref9">Zhu, D. et al. (2024). Hyper-connections. <em>arXiv:2409.19606</em>.</li>
-    <li id="ref10">Zhang, Y. (2026). Residual stream duality in modern transformer architectures. <em>arXiv:2603.16039</em>.</li>
-    <li id="ref11">Storkey, A. J. (1997). Increasing the capacity of a Hopfield network without sacrificing functionality. <em>ICANN</em>.</li>
-    <li id="ref12">Behrouz, A., Razaviyayn, M., Zhong, P., and Mirrokni, V. (2025). It's all connected: A journey through test-time memorization, attention, state space models, and recurrent neural networks. <em>arXiv:2504.13173</em>.</li>
-    <li id="ref13">Wang, K. A., Shi, J., and Fox, E. B. (2025). Test-time regression: A unifying framework. <em>arXiv:2501.12352</em>.</li>
-    <li id="ref14">von Oswald, J. et al. (2023). Transformers learn in-context by gradient descent. <em>arXiv:2212.07677</em>.</li>
-    <li id="ref15">Yang, S., Kautz, J., and Hatamizadeh, A. (2025). Gated Delta Networks. <em>ICLR</em>. arXiv:2412.06464.</li>
-    <li id="ref16">Lin, Z., Nikishin, E., He, X. O., and Courville, A. (2025). FoX: Forgetting Transformer. <em>ICLR</em>. arXiv:2503.02130.</li>
-    <li id="ref17">Yang, S. et al. (2025). PaTH: Positional encodings via accumulated Householder transformations. <em>NeurIPS</em>. arXiv:2505.16381.</li>
-    <li id="ref18">Lahoti, A. et al. (2026). Mamba-3. <em>ICLR</em>. arXiv:2603.15569.</li>
-    <li id="ref19">Mishra, M., Tan, S., Stoica, I., Gonzalez, J., and Dao, T. (2026). M&sup2;RNN: Matrix-valued recurrent neural networks for scalable language modeling. <em>arXiv:2603.14360</em>.</li>
-    <li id="ref20">Chen, G. et al. (2026). Attention Residuals. <em>arXiv:2603.15031</em>.</li>
-    <li id="ref21">Guo, H. et al. (2025). Log-linear attention. <em>ICLR 2026</em>. arXiv:2506.04761.</li>
-    <li id="ref22">Hu, J. Y.-C. et al. (2025). On structured state-space duality. <em>arXiv:2510.04944</em>.</li>
-    <li id="ref23">Bernstein, J. and Newhouse, L. (2024). Old optimizer, new norm: An anthology. <em>arXiv:2409.20325</em>.</li>
-    <li id="ref24">Duvvuri, S. S. et al. (2026). LUCID: Attention with preconditioned representations. <em>arXiv:2602.10410</em>.</li>
-    <li id="ref25">Zattra, R. et al. (2025). Context-selective state space models: Feedback is all you need. <em>arXiv:2510.14027</em>.</li>
-    <li id="ref26">Gu, A. (2025). On the tradeoffs of SSMs and Transformers. <a href="https://goombalab.github.io/blog/2025/tradeoffs/">goombalab.github.io</a>.</li>
-    <li id="ref27">Hwang, S., Lahoti, A., Dao, T., and Gu, A. (2024). Hydra: Bidirectional state space models through generalized matrix mixers. <em>arXiv:2407.09941</em>.</li>
-    <li id="ref28">Kaczmarz, S. (1937). Angen&auml;herte Aufl&ouml;sung von Systemen linearer Gleichungen. <em>Bull. Int. Acad. Pol. Sci. Lett.</em></li>
-    <li id="ref29">Sengupta, B., Wang, J., and Brunswic, L. (2025). JPmHC: Dynamical isometry via orthogonal hyper-connections. <em>arXiv:2602.18308</em>.</li>
-    <li id="ref-godey2026">Godey, N. and Artzi, Y. (2026). Lost in Backpropagation: The LM Head is a Gradient Bottleneck. <em>arXiv:2603.10145</em>.</li>
-    <li id="ref-lion">Chen, X. et al. (2024). Symbolic discovery of optimization algorithms. <em>NeurIPS</em>.</li>
-    <li id="ref-cautious">Liang, K. et al. (2024). Cautious optimizers. <em>arXiv:2411.16085</em>.</li>
-    <li id="ref-dragutinovic">Dragutinović, S. and Ranganath, R. (2025). To Use or not to Use Muon: How Simplicity Bias in Optimizers Matters. <em>arXiv:2603.00742</em>.</li>
-    <li id="ref-lionmuon">Anonymous (2026). Lions and Muons: Optimization via Stochastic Frank-Wolfe. <em>Under review at ICLR 2026</em>.</li>
-  </ol>
-</div>
+<h2 id="depth">Propagation through depth</h2>
+<p>A residual update $x^+=x+f(x)$ retains and adds, but $f$ need not be a negative gradient. For example, $f(x_1,x_2)=(-x_2,x_1)$ has a skew-symmetric Jacobian, whereas a smooth scalar energy has a symmetric Hessian. Consequently not every residual block is an optimization step.</p>
+<p><a href="#ref9">Hyper-connections</a> mix several residual streams. Doubly stochastic matrices are contractions but can also be norm-preserving permutations. Orthogonal mixing preserves the linear transition component; it does not by itself control the nonlinear block's full Jacobian. Whether contraction helps depends on the task and block, not merely on the axis.</p>
+<p><a href="#ref7">Residual matrix transformers</a> change the state and its structured interfaces. An outer-product layer write has the same algebra as an outer-product token write. This does not make every residual network a linear sequence model.</p>
+<p>Standard attention heads project the full residual input: $W_K^{(h)}$ has shape $d_h\times d$, not $d_h\times d_h$ on a disjoint slice. Grouped-query attention shares key/value heads; it does not impose disjoint input blocks or orthogonal raw keys.</p>
+<h3>Two ways to couple depth and sequence</h3>
+<p><a href="#ref-mor">Mixture-of-Recursions</a> reuses blocks and routes tokens to different recursion depths. Its router controls computation; it is analogous to, rather than identical with, a sequence forget gate.</p>
+<p>The <a href="#ref-rt">Recurrent Transformer</a> instead stores persistent keys and values computed from a layer's output, so later positions read representations already processed by that same layer. At the current position it uses temporary input-derived keys and values, avoiding a circular definition of the output. These architectures change different parts of the dependency structure.</p>
+
+<h2 id="data">Training and optimizer states</h2>
+<h3>Outer products in backpropagation</h3>
+<p>For one dense application $a=Wz$ and scalar loss $\mathcal L$, set $\delta=\nabla_a\mathcal L$. Then $\nabla_W\mathcal L=\delta z^\top$. If $z$ came through an activation, the corresponding activation derivative belongs in $\delta$. Batches and shared applications sum outer products. Nonlinear hidden layers preserve this local identity, while parameter-dependent factors generally prevent a fixed affine recurrence for the whole network.</p>
+<h3>Schedules weight realized writes</h3>
+<p>For $W_n=\alpha_nW_{n-1}-\eta_nG_n$, substitution yields</p>
+$$W_N=\left(\prod_{s=1}^N\alpha_s\right)W_0-\sum_{n=1}^N\eta_n\left(\prod_{s=n+1}^N\alpha_s\right)G_n.$$
+<p>Positive scalar retention gives log decay just as on the sequence axis. This is an exact identity for realized gradients. Changing the schedule also changes the trajectory and gradients, so the formula is not a counterfactual linear influence calculation. Learning rates weight writes; that supports an analogy to positional weighting, not a general identity with positional encodings.</p>
+<h3>Batch noise is a different SNR</h3>
+<p>Let independent per-example gradients have nonzero mean $G$ and finite covariance $\Sigma$, with positive trace. A batch average of size $B$ has noise covariance $\Sigma/B$, hence</p>
+$$\operatorname{SNR}_{\rm grad}=\frac{B\|G\|^2}{\operatorname{tr}\Sigma}.$$
+<p>The simple noise scale $\operatorname{tr}\Sigma/\|G\|^2$ is related to empirical <a href="#ref8">critical batch sizes</a> under further modeling. It is not a hard memory capacity or a universal optimal batch size. Sampling without replacement from a finite population changes the covariance by a finite-population factor.</p>
+<p>Preconditioning transforms both signal and noise. With $\Sigma=\operatorname{diag}(100,1)$, whitening changes the noise scale from $101$ to $200$ when $G=e_1$, but to $2$ when $G=e_2$. It can worsen or improve this coordinate-dependent ratio; convergence needs a separate analysis.</p>
+<h3>Optimizer states have different roles</h3>
+<p>Adam stores moving averages of gradients and squared gradients. Bias correction removes zero-initialization bias; it does not itself provide warmup. For a constant gradient, the bias-corrected states are constant at every step. Adam is not exactly diagonal Shampoo: second moments of products do not generally factor into products of second moments.</p>
+<p><a href="#ref-lion">Lion</a> uses one mixing coefficient to form the signed update direction and another to update momentum. Basic matrix <a href="#ref-shampoo">Shampoo</a> uses $L^{-1/4}GR^{-1/4}$, where $L,R$ accumulate left and right gradient products. Muon approximately takes a polar factor of momentum. Fisher natural gradient, Hessian preconditioning, and gradient-noise whitening are distinct constructions, even when particular models relate them.</p>
+
+<h2 id="limits">Limits and open questions</h2>
+<span id="transfer"></span><span id="open"></span>
+<p>The useful common language is a precise list of operations: what is stored, how it is written and read, which transition acts, and which geometry and constraints are imposed. Exact identities justify translations; conditional bounds need their assumptions; design analogies suggest experiments.</p>
+<ul>
+<li>Can an efficient approximation to recursive least squares improve retrieval under measured key correlations at a fixed state budget?</li>
+<li>How do finite-feature errors and small normalization denominators affect retrieval?</li>
+<li>Which assumptions on nonlinear depth blocks let transition-norm bounds control the full Jacobian?</li>
+<li>When does a preconditioner improve optimization under a specified relationship between signal and noise?</li>
+</ul>
+<p>These questions have explicit operations and criteria. They do not assume that loss shape determines a universal capacity hierarchy or that normalization alone ensures stability.</p>
+
+<div class="references"><h2>References</h2><ol>
+<li id="ref1">Widrow, B. and Hoff, M. E. (1960). Adaptive switching circuits. <em>IRE WESCON Convention Record</em>.</li>
+<li id="ref2">Yang, S. et al. (2024). Parallelizing linear transformers with the delta rule over sequence length. <em>NeurIPS</em>.</li>
+<li id="ref4">Dao, T. and Gu, A. (2024). <a href="https://arxiv.org/abs/2405.21060">Transformers are SSMs: Generalized models and efficient algorithms through structured state space duality.</a> <em>ICML</em>.</li>
+<li id="ref6">Ramsauer, H. et al. (2021). <a href="https://arxiv.org/abs/2008.02217">Hopfield networks is all you need.</a> <em>ICLR</em>.</li>
+<li id="ref7">Mak, B. and Flanigan, J. (2025). <a href="https://arxiv.org/abs/2506.22696">Residual matrix transformers.</a> <em>ICML</em>.</li>
+<li id="ref8">McCandlish, S. et al. (2018). <a href="https://arxiv.org/abs/1812.06162">An empirical model of large-batch training.</a></li>
+<li id="ref9">Zhu, D. et al. (2024). <a href="https://arxiv.org/abs/2409.19606">Hyper-connections.</a></li>
+<li id="ref12">Behrouz, A. et al. (2025). <a href="https://arxiv.org/abs/2504.13173">It's all connected: A journey through test-time memorization, attention, state space models, and recurrent neural networks.</a></li>
+<li id="ref13">Wang, K. A., Shi, J., and Fox, E. B. (2025). <a href="https://arxiv.org/abs/2501.12352">Test-time regression: A unifying framework.</a></li>
+<li id="ref28">Kaczmarz, S. (1937). Angenäherte Auflösung von Systemen linearer Gleichungen. <em>Bull. Int. Acad. Pol. Sci. Lett.</em></li>
+<li id="ref-muon">Kim, G.-Y. and Oh, M.-h. (2026). <a href="https://arxiv.org/abs/2601.19156">Convergence of Muon with Newton-Schulz.</a> <em>ICLR</em>.</li>
+<li id="ref-features">Choromanski, K. et al. (2021). <a href="https://arxiv.org/abs/2009.14794">Rethinking attention with Performers.</a> <em>ICLR</em>.</li>
+<li id="ref-mor">Bae, S. et al. (2025). <a href="https://arxiv.org/abs/2507.10524">Mixture-of-Recursions: Learning dynamic recursive depths for adaptive token-level computation.</a></li>
+<li id="ref-rt">Oncescu, C.-A. et al. (2026). <a href="https://arxiv.org/abs/2604.21215">The Recurrent Transformer: Greater effective depth and efficient decoding.</a></li>
+<li id="ref-lion">Chen, X. et al. (2023). <a href="https://arxiv.org/abs/2302.06675">Symbolic discovery of optimization algorithms.</a> <em>NeurIPS</em>.</li>
+<li id="ref-shampoo">Gupta, V., Koren, T., and Singer, Y. (2018). <a href="https://proceedings.mlr.press/v80/gupta18a.html">Shampoo: Preconditioned stochastic tensor optimization.</a> <em>ICML</em>.</li>
+</ol></div>
 
 </article>
 </body>
