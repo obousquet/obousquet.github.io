@@ -192,6 +192,7 @@ This exposition distinguishes exact update identities, results with explicit ass
 <li><a href="#depth">Propagation through depth</a></li>
 <li><a href="#data">Training and optimizer states</a></li>
 <li><a href="#limits">Limits and open questions</a></li>
+<li id="ref-triadic">Sieberling, O., Runwal, B., Jin, D., Chin, R., Panda, R., and Kim, Y. (2026). <a href="https://arxiv.org/abs/2609.36529">Triadic Linear Attention: Three-Dimensional Recurrent States for Long-Context Sequence Modeling.</a> arXiv:2609.36529, v1.</li>
 </ol></div>
 
 <h2 id="hook">What is shared across three axes?</h2>
@@ -221,6 +222,13 @@ $$S_Nq=\sum_i v_i(k_i^\top q).$$
 <p>This is exactly unnormalized linear attention. Storing the full list and evaluating this read gives the same result as storing the matrix. Negative similarities can give negative coefficients; it is not a probability mixture.</p>
 <h3>A two-dimensional example</h3>
 <p>Take keys $e_1=(1,0)^\top$, $e_2=(0,1)^\top$ and scalar values $2,3$. The memory is $S=(2,3)$ and querying either coordinate key retrieves its value exactly. If both keys are $e_1$, additive memory instead becomes $(5,0)$: neither target is retrieved correctly. A unit-step delta write makes the second value replace the first, leaving $(3,0)$. No deterministic read can distinguish identical keys with different targets.</p>
+<h3 id="triadic">Triadic linear attention: two keys for one value</h3>
+<p><a href="#ref-triadic">Triadic linear attention</a> adds a second key $r_t\in\mathbb R^E$ and query $s_t\in\mathbb R^E$. Its tensor state has shape $d_v\times d_k\times E$. Define joint features $z_t=k_t\otimes r_t$ and $u_t=q_t\otimes s_t$, where $(k\otimes r)_{(b-1)E+c}=k_b r_c$. Flattening the two key axes gives a matrix $M_t$ with $d_v$ rows and $d_kE$ columns:</p>
+$$M_t=M_{t-1}+v_tz_t^\top,\qquad M_tu_t=\sum_{j\le t}v_j(k_j^\top q_t)(r_j^\top s_t),\qquad M_0=0.$$
+<p>The read weights each value by two similarities multiplied together. In the collision example, keep both first keys equal to $e_1$ but choose second keys $f_1,f_2$, the two coordinate vectors in $\mathbb R^2$. Querying $(e_1,f_1)$ retrieves $2$ and querying $(e_1,f_2)$ retrieves $3$. The $d_kE$ joint coordinate keys $e_b\otimes f_c$ are orthonormal, so this construction can retrieve $d_kE$ arbitrary values exactly. Learned keys need not realize that construction.</p>
+<p>The delta rule also acts on the joint key. With slice gates $0\le\alpha_{t,c}\le1$ and $D_t=I_{d_k}\otimes\operatorname{diag}(\alpha_{t,1},\ldots,\alpha_{t,E})$, decay before the delta write gives</p>
+$$M_t=M_{t-1}D_t(I-\beta_tz_tz_t^\top)+\beta_tv_tz_t^\top,\qquad y_t=M_tu_t.$$
+<p>The residual is $v_t-M_{t-1}D_tz_t$, and the order of decay and projection matters. For nonzero $z_t$, a step $\beta_t=1/\|z_t\|^2$ fits the new association exactly. Ordinary linear attention is recovered when $E=1$ and $r_t=s_t=1$. This connects the tensor construction directly to the same feature-memory and squared-error framework.</p>
 <h3>Transitions and effective keys</h3>
 <p>For the right-acting recurrence $S_t=S_{t-1}A_t+v_tk_t^\top$, define the chronological product $P_{j\to t}=A_{j+1}\cdots A_t$, with empty product $I$. Substitution gives</p>
 $$S_t=S_0P_{0\to t}+\sum_{j=1}^t v_jk_j^\top P_{j\to t}.$$
@@ -271,6 +279,7 @@ $$\operatorname{SNR}_{\rm softmax}\mid K,q=\frac{w_*^2}{\sum_{i\ne *}w_i^2}=\fra
 <p>Cross-entropy instead has positive log-sum-exp: $\ell(z;c)=\log\sum_i e^{z_i}-z_c$. Its gradient is $\operatorname{softmax}(z)-e_c$. The shared calculus does not transfer Hopfield storage capacity to training weights or establish an exponential advantage over squared-error training.</p>
 <h3>Storage and features</h3>
 <p>Full attention stores $N(d_k+d_v)$ numbers. Linear memory stores $d_vd_k$ numbers. A finite feature kernel $\phi(q)^\top\phi(k)$ with feature dimension $D$ needs memory $\sum_i v_i\phi(k_i)^\top$ of size $d_vD$, and a further $D$ numbers for a normalization denominator. <a href="#ref-features">Random features</a> approximate exponential kernels; their error and denominator control matter. Degree-$p$ homogeneous polynomial features have dimension $\binom{d_k+p-1}{p}$, not an automatic retrieval capacity equal to that dimension.</p>
+<p>The triadic state uses $d_vd_kE$ numbers, an $E$-fold increase over the original state. The paper reports improved long-context modeling and recall with relatively few extra parameters, but storage and computation still increase. Factoring the product kernel saves work when forming interactions within a chunk; it does not eliminate the larger-state cost. Its state- and parameter-budget comparisons support specific architectural choices, rather than a capacity guarantee for arbitrary learned keys.</p>
 <p>Hierarchical memories combine several states by the shape-correct read $o_t=\sum_r\lambda_t^{(r)}S_t^{(r)}q_t$. More levels affect storage and computation; their number alone does not determine an optimal hardware chunk size.</p>
 
 <h2 id="depth">Propagation through depth</h2>
