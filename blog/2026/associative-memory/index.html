@@ -186,13 +186,14 @@ This exposition distinguishes exact update identities, results with explicit ass
 </div>
 <div class="toc"><strong>Contents</strong><ol>
 <li><a href="#hook">What is shared across three axes?</a></li>
+<li><a href="#memories">Three memories: storage, retrieval, and computation</a></li>
 <li><a href="#sequence">Write, retain, and read</a></li>
 <li><a href="#framework">Optimization, geometry, and constraints</a></li>
 <li><a href="#capacity">Retrieval needs a criterion</a></li>
 <li><a href="#depth">Propagation through depth</a></li>
 <li><a href="#data">Training and optimizer states</a></li>
 <li><a href="#limits">Limits and open questions</a></li>
-<li id="ref-triadic">Sieberling, O., Runwal, B., Jin, D., Chin, R., Panda, R., and Kim, Y. (2026). <a href="https://arxiv.org/abs/2609.36529">Triadic Linear Attention: Three-Dimensional Recurrent States for Long-Context Sequence Modeling.</a> arXiv:2609.36529, v1.</li>
+
 </ol></div>
 
 <h2 id="hook">What is shared across three axes?</h2>
@@ -214,6 +215,23 @@ $$S^+=S+\eta(v-Sk)k^\top.$$
 <tr><td>Residual propagation / optimization</td><td>An analogy unless a suitable objective exists</td></tr>
 <tr><td>Gradient noise / retrieval interference</td><td>A statistical analogy, not the same task</td></tr>
 </tbody></table></div>
+
+<h2 id="memories">Three memories: storage, retrieval, and computation</h2>
+<p>The three axes give three kinds of memory: long-term information in weights, short-term context in sequence states or attention caches, and intermediate inference results in the residual stream. Their distinction is persistence and use; all three can be tensors. Training writes weights, while the forward pass reads those weights and reads or writes the other memories.</p>
+<div class="table-wrap"><table><thead><tr><th>Memory / axis</th><th>Storage</th><th>Retrieval</th><th>Computation using the read</th></tr></thead><tbody>
+<tr><td>Weights / data</td><td>Loss gradients and an optimizer update parameters</td><td>Forward evaluation: $Wz$, embedding lookup, tensor contraction</td><td>Learned transformations, nonlinearities, and compositions form queries, representations, and predictions</td></tr>
+<tr><td>Sequence / tokens</td><td>Append keys/values or update a recurrent state</td><td>Attention over cached pairs or a read $Sq$</td><td>Combine context and project it into a new residual contribution</td></tr>
+<tr><td>Residual / depth</td><td>Initialize from input, then add or mix layer outputs</td><td>The next sublayer reads the stream, often through normalization and projections</td><td>Attention and feedforward sublayers compute new intermediate results and write them back</td></tr>
+</tbody></table></div>
+<p>Retrieval here means an input-dependent read of retained information; it need not recover one named fact exactly. Computation forms queries, combines reads, transforms results, and produces further writes. These roles overlap: $Wz$ is both a learned transformation and a read of weight memory. A delta write itself reads the old sequence state through $Sk$. The architecture fixes whether a read happens before or after a write.</p>
+<h3>A block makes the interaction explicit</h3>
+<p>Take an unnormalized single-head linear-attention block, omitting biases and normalization. For residual $h\in\mathbb R^d$, weight matrices $Q,K\in\mathbb R^{d_k\times d}$, $V\in\mathbb R^{d_v\times d}$, $O\in\mathbb R^{d\times d_v}$, $W_1\in\mathbb R^{p\times d}$, and $W_2\in\mathbb R^{d\times p}$, one possible forward block is</p>
+$$q=Qh,\quad k=Kh,\quad v=Vh,\quad S^+=U_{\rm seq}(S;k,v),\quad a=S^+q,$$
+$$\bar h=h+Oa,\qquad h^+=\bar h+W_2\sigma(W_1\bar h).$$
+<p>Here $\sigma$ acts coordinatewise, $S\in\mathbb R^{d_v\times d_k}$, and $U_{\rm seq}$ can be an additive or delta write. The projections read weight and residual memory to form a query and write inputs. The state read retrieves sequence context, which $O$ transforms into a residual write. The feedforward sublayer reads the modified residual through its weights, transforms it, and writes another contribution. Ordinary softmax attention uses a cache read instead.</p>
+<h3>Training closes the loop</h3>
+<p>During ordinary inference the weights remain fixed; layer-specific sequence memories persist across tokens, and each token starts a new residual traversal. During training the forward pass uses the current weights, the loss evaluates its output, backward differentiation computes gradients from weights and saved or recomputed activations, and the optimizer writes the next weights. Optimizer moments influence that write and are usually absent from inference. Test-time adaptation can add weight writes inside inference.</p>
+<p>Thus weight memory determines how sequence writes, queries, and residual computations are formed, while their outputs determine later training writes. Persistence and update frequency are separate properties. The framing complements <a href="#ref12">Miras</a>, <a href="#ref13">test-time regression</a>, and <a href="#ref-nested">Nested Learning</a>; it does not require every residual update to optimize an objective or every parameter to store a separately recoverable fact.</p>
 
 <h2 id="sequence">Write, retain, and read</h2>
 <p>All vectors below are columns. Keys and queries lie in $\mathbb R^{d_k}$, values in $\mathbb R^{d_v}$, and the memory $S$ has shape $d_v\times d_k$. Set $K=[k_1,\ldots,k_N]$ and $V=[v_1,\ldots,v_N]$.</p>
@@ -284,6 +302,10 @@ $$\operatorname{SNR}_{\rm softmax}\mid K,q=\frac{w_*^2}{\sum_{i\ne *}w_i^2}=\fra
 
 <h2 id="depth">Propagation through depth</h2>
 <p>A residual update $x^+=x+f(x)$ retains and adds, but $f$ need not be a negative gradient. For example, $f(x_1,x_2)=(-x_2,x_1)$ has a skew-symmetric Jacobian, whereas a smooth scalar energy has a symmetric Hessian. Consequently not every residual block is an optimization step.</p>
+<h3>The residual stream retains intermediate computation</h3>
+<p>For a traversal with initial representation $h^{(0)}$ and realized sublayer contributions $c_j=f_j(h^{(j-1)})$, additive residual writes give</p>
+$$h^{(\ell)}=h^{(0)}+\sum_{j=1}^{\ell}c_j,\qquad Bh^{(\ell)}=Bh^{(0)}+\sum_{j=1}^{\ell}Bc_j$$
+<p>for any compatible linear read $B$. Later sublayers read this working memory, often through normalization and learned maps. Nonlinear reads need not distribute over the sum. The stream stores a superposition rather than a separate record for every layer: writes $u,-u$ leave the same final state as two zero writes. Keeping layer histories or additional streams changes storage and addressing.</p>
 <p><a href="#ref9">Hyper-connections</a> mix several residual streams. Doubly stochastic matrices are contractions but can also be norm-preserving permutations. Orthogonal mixing preserves the linear transition component; it does not by itself control the nonlinear block's full Jacobian. Whether contraction helps depends on the task and block, not merely on the axis.</p>
 <p><a href="#ref7">Residual matrix transformers</a> change the state and its structured interfaces. An outer-product layer write has the same algebra as an outer-product token write. This does not make every residual network a linear sequence model.</p>
 <p>Standard attention heads project the full residual input: $W_K^{(h)}$ has shape $d_h\times d$, not $d_h\times d_h$ on a disjoint slice. Grouped-query attention shares key/value heads; it does not impose disjoint input blocks or orthogonal raw keys.</p>
@@ -298,6 +320,11 @@ $$\operatorname{SNR}_{\rm softmax}\mid K,q=\frac{w_*^2}{\sum_{i\ne *}w_i^2}=\fra
 <p>For $W_n=\alpha_nW_{n-1}-\eta_nG_n$, substitution yields</p>
 $$W_N=\left(\prod_{s=1}^N\alpha_s\right)W_0-\sum_{n=1}^N\eta_n\left(\prod_{s=n+1}^N\alpha_s\right)G_n.$$
 <p>Positive scalar retention gives log decay just as on the sequence axis. This is an exact identity for realized gradients. Changing the schedule also changes the trajectory and gradients, so the formula is not a counterfactual linear influence calculation. Learning rates weight writes; that supports an analogy to positional weighting, not a general identity with positional encodings.</p>
+<h3>The forward pass retrieves weight memory</h3>
+<p>For a dense SGD update with realized gradient $G_n=\delta_nz_n^\top$, define $\gamma_{n,N}=\prod_{s=n+1}^N\alpha_s$ for $0\le n\le N$. Right-multiplying the accumulated writes by a later forward input $q$ gives</p>
+$$W_Nq=\gamma_{0,N}W_0q-\sum_{n=1}^N\eta_n\gamma_{n,N}\delta_n(z_n^\top q).$$
+<p>The historical activations act as keys, signed error corrections as values, and the current activation as query. Batch/shared gradients add a sum over applications. This identity describes the realized trajectory; it does not guarantee recoverability of training examples, and other optimizers require their actual update directions. In a nonlinear network the feature representation also changes during training.</p>
+<p>For a small example, train a linear map from zero on $e_1,e_2$ with targets $2,3$ using unit-step squared-error updates. The weight matrix is $W=(2,3)$. Its frozen forward pass gives $We_1=2$, $We_2=3$, and $W(e_1+e_2)=5$. The last read computes a new combination, and a subsequent nonlinearity transforms it further.</p>
 <h3>Batch noise is a different SNR</h3>
 <p>Let independent per-example gradients have nonzero mean $G$ and finite covariance $\Sigma$, with positive trace. A batch average of size $B$ has noise covariance $\Sigma/B$, hence</p>
 $$\operatorname{SNR}_{\rm grad}=\frac{B\|G\|^2}{\operatorname{tr}\Sigma}.$$
@@ -335,6 +362,8 @@ $$\operatorname{SNR}_{\rm grad}=\frac{B\|G\|^2}{\operatorname{tr}\Sigma}.$$
 <li id="ref-rt">Oncescu, C.-A. et al. (2026). <a href="https://arxiv.org/abs/2604.21215">The Recurrent Transformer: Greater effective depth and efficient decoding.</a></li>
 <li id="ref-lion">Chen, X. et al. (2023). <a href="https://arxiv.org/abs/2302.06675">Symbolic discovery of optimization algorithms.</a> <em>NeurIPS</em>.</li>
 <li id="ref-shampoo">Gupta, V., Koren, T., and Singer, Y. (2018). <a href="https://proceedings.mlr.press/v80/gupta18a.html">Shampoo: Preconditioned stochastic tensor optimization.</a> <em>ICML</em>.</li>
+<li id="ref-triadic">Sieberling, O., Runwal, B., Jin, D., Chin, R., Panda, R., and Kim, Y. (2026). <a href="https://arxiv.org/abs/2609.36529">Triadic Linear Attention: Three-Dimensional Recurrent States for Long-Context Sequence Modeling.</a> arXiv:2609.36529, v1.</li>
+<li id="ref-nested">Behrouz, A., Razaviyayn, M., Zhong, P., and Mirrokni, V. (2025). <a href="https://arxiv.org/abs/2512.24695">Nested Learning: The Illusion of Deep Learning Architectures.</a> arXiv:2512.24695, v1.</li>
 </ol></div>
 
 </article>
