@@ -187,6 +187,7 @@ This exposition distinguishes exact update identities, results with explicit ass
 <div class="toc"><strong>Contents</strong><ol>
 <li><a href="#hook">What is shared across three axes?</a></li>
 <li><a href="#memories">Three memories: storage, retrieval, and computation</a></li>
+<li><a href="#transport">Which writes reach future reads?</a></li>
 <li><a href="#sequence">Write, retain, and read</a></li>
 <li><a href="#framework">Optimization, geometry, and constraints</a></li>
 <li><a href="#capacity">Retrieval needs a criterion</a></li>
@@ -279,6 +280,37 @@ $$\bar h=h+Oa,\qquad h^+=\bar h+W_2\sigma(W_1\bar h).$$
 <h3>Training closes the loop</h3>
 <p>During ordinary inference the weights remain fixed; layer-specific sequence memories persist across tokens, and each token starts a new residual traversal. During training the forward pass uses the current weights, the loss evaluates its output, backward differentiation computes gradients from weights and saved or recomputed activations, and the optimizer writes the next weights. Optimizer moments influence that write and are usually absent from inference. Test-time adaptation can add weight writes inside inference.</p>
 <p>Thus weight memory determines how sequence writes, queries, and residual computations are formed, while their outputs determine later training writes. Persistence and update frequency are separate properties. The framing complements <a href="#ref12">Miras</a>, <a href="#ref13">test-time regression</a>, and <a href="#ref-nested">Nested Learning</a>; it does not require every residual update to optimize an objective or every parameter to store a separately recoverable fact.</p>
+
+<h2 id="transport">Which writes reach future reads?</h2>
+<p>A common update notation is useful, but a stronger comparison asks which written directions can affect later outputs—and which can receive credit from a later loss. The same operator answers both questions.</p>
+<h3>Forward influence and backward credit</h3>
+<p>Fix the external inputs and update schedule. Let $m_{n+1}=\Phi_n(m_n,u_n)$ and $o_n=\Gamma_n(m_n,u_n)$, and include every evolving state whose feedback is to be differentiated. A declared write intervention adds $B_n\xi_n$ after update $n$. Along the unperturbed trajectory, define $J_n=D_m\Phi_n$ and $H_n=D_m\Gamma_n$. For $j&lt;t$, the response is</p>
+$$K_{t,j}=H_tJ_{t-1}\cdots J_{j+1}B_j.$$
+<p>The empty product is the identity: write $j$ enters state $m_{j+1}$ and first affects output $o_{j+1}$ in this convention. Read-after-update outputs can be indexed at the new state. A direct simultaneous effect on output requires its own derivative.</p>
+<p>The chain rule gives $D_{\xi_j}o_t=K_{t,j}$. For a loss $\mathcal L=\sum_t\ell_t(o_t)$ with $g_t=\nabla\ell_t(o_t)$, the reverse relation is</p>
+$$\nabla_{\xi_j}\mathcal L=\sum_{t&gt;j}K_{t,j}^\top g_t=B_j^\top\lambda_{j+1},\qquad\lambda_n=H_n^\top g_n+J_n^\top\lambda_{n+1},\quad\lambda_N=H_N^\top g_N.$$
+<p>A perturbation travels forward through the update maps and read; a loss gradient travels backward through their transposes. This is an exact derivative identity. With fixed affine updates and reads, it also describes arbitrary finite output changes exactly. In nonlinear models it describes first-order response, and $J_n$ must include state-dependent write feedback.</p>
+<p>On the sequence axis, an SSM has $K_{t,j}=CA^{t-j-1}B$. A delta memory transports a perturbation as $\Delta S(I-\beta kk^\top)$ for fixed keys. On the depth axis, a residual sublayer has $J=I+D\Phi_\ell(a)D\operatorname{Norm}(h)$. On the data axis, plain SGD on a twice continuously differentiable loss has $J=I-\eta\nabla^2\mathcal L_n(\theta)$, and a later prediction reads through $D_\theta f_\theta(q)$. Optimizer moments and other changing memories belong in the state when their feedback is included.</p>
+<h3>Written, retained, and observable are different properties</h3>
+<p>Choose a cut $s$. Let $\mathcal C_s$ map earlier write controls to state perturbations at that cut, and let $\mathcal O_{s:N}$ map those perturbations to the chosen future outputs, with future controls zero. The complete response is</p>
+$$\delta\boldsymbol o=\mathcal M_{s:N}\boldsymbol\xi,\qquad\mathcal M_{s:N}=\mathcal O_{s:N}\mathcal C_s.$$
+<p>The reachable directions are $\mathcal R_s=\operatorname{range}\mathcal C_s$. The invisible directions are $\mathcal N_{s:N}=\ker\mathcal O_{s:N}$. Rank–nullity gives</p>
+$$\operatorname{rank}\mathcal M_{s:N}=\dim\mathcal R_s-\dim(\mathcal R_s\cap\mathcal N_{s:N}).$$
+<p>This counts reachable distinctions visible in the specified future outputs. A write direction is invisible to these outputs exactly when every differentiable loss of them has zero directional derivative in that direction. A particular task loss may ignore a direction that other losses could detect. Across all linear losses of the chosen outputs, the possible write gradients form $\operatorname{range}\mathcal M^\top$, with the same dimension as the readable write distinctions.</p>
+<div class="table-wrap"><table><thead><tr><th>Two-dimensional case</th><th>State gain at cut</th><th>Output gain</th><th>Response rank</th><th>Chosen loss derivative</th></tr></thead><tbody>
+<tr><td>Written direction erased</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>Retained direction missed by read</td><td>1</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>Readable direction</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+<tr><td>Weak read</td><td>1</td><td>1/100</td><td>1</td><td>1/100</td></tr>
+<tr><td>Readable direction ignored by loss</td><td>1</td><td>1</td><td>1</td><td>0</td></tr>
+</tbody></table></div>
+<p>These are exact examples with a unit scalar write and Euclidean norms. For instance, writing along $e_1$ and reading along $e_2$ preserves the state contribution but misses it. Adding the $e_1$ read reveals it. A visible output change $(\xi,0)$ still receives no gradient from a loss depending only on the second output. Rank alone also misses how weak a readable direction can be.</p>
+<h3>Minimum memory and response gains</h3>
+<p>If a differentiable state summary with $k$ coordinates reproduces the chosen future outputs near the current state, its derivative factors the response matrix through $\mathbb R^k$. Therefore $k\ge\operatorname{rank}\mathcal M_{s:N}$. This is a local lower bound for the declared intervention and read family. A factorization at one cut alone need not define a compatible compressed recurrence.</p>
+<p>For a linear time-invariant system initialized at zero, the stronger global result is classical: the minimum state dimension preserving outputs for every finite input sequence is the rank of the block Hankel matrix with blocks $CA^{i+j}B$. A reachable/unobservable quotient attains the bound. The paper supplies the proof and cites <a href="https://lall.stanford.edu/engr207c/lectures/realization_2008_11_15_03.pdf">Lall’s state-space realization notes, Theorem 8 and Corollary 9</a>.</p>
+<p>With fixed external write and output norms, a singular mode $\mathcal Mv_i=\sigma_i u_i$ obeys $\mathcal M^\top u_i=\sigma_i v_i$. Forward response and backward credit have the same gain for these paired directions. The actual task gradient need not select the corresponding output direction. Intermediate state-coordinate changes cancel between $\mathcal C$ and $\mathcal O$, leaving $\mathcal M$ unchanged.</p>
+<p>Truncating the singular value decomposition gives the best rank-$k$ approximation of this single response map, with operator-norm error $\sigma_{k+1}$. This quantifies local accessibility after norms are fixed. It does not establish retrieval capacity or trained-model performance. Nonlinear reads can contain information invisible to their first derivative: $o=m^2$ at $m=0$ has zero derivative yet changes under finite perturbations.</p>
+<p>A useful diagnostic compares state response at successive cuts, future output response, and the chosen loss response. Fix write magnitude and external inputs, extend the future read set before declaring a retained direction irrelevant, and check finite perturbations before extrapolating a local calculation.</p>
 
 <h2 id="sequence">Write, retain, and read</h2>
 <p>All vectors below are columns. Keys and queries lie in $\mathbb R^{d_k}$, values in $\mathbb R^{d_v}$, and the memory $S$ has shape $d_v\times d_k$. Set $K=[k_1,\ldots,k_N]$ and $V=[v_1,\ldots,v_N]$.</p>
