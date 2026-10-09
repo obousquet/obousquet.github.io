@@ -37,6 +37,7 @@
       color: var(--text);
       background: var(--bg);
       line-height: 1.75;
+      overflow-wrap: anywhere;
       padding: 0 1.5rem;
     }
 
@@ -187,12 +188,12 @@ This exposition distinguishes exact update identities, results with explicit ass
 <div class="toc"><strong>Contents</strong><ol>
 <li><a href="#hook">What is shared across three axes?</a></li>
 <li><a href="#memories">Three memories: storage, retrieval, and computation</a></li>
-<li><a href="#transport">Which writes reach future reads?</a></li>
 <li><a href="#sequence">Write, retain, and read</a></li>
 <li><a href="#framework">Optimization, geometry, and constraints</a></li>
-<li><a href="#capacity">Retrieval needs a criterion</a></li>
+<li><a href="#capacity">Retrieval accuracy and storage cost</a></li>
 <li><a href="#depth">Propagation through depth</a></li>
 <li><a href="#data">Training and optimizer states</a></li>
+<li><a href="#transport">Which writes reach future reads?</a></li>
 <li><a href="#limits">Limits and open questions</a></li>
 
 </ol></div>
@@ -209,9 +210,9 @@ $$\begin{aligned}(a,b)&=\underbrace{R(m,u)}_{\text{read/extract}},\qquad o=\unde
 <tr><td>Data</td><td>Parameters and optimizer statistics</td><td>Loss gradients</td></tr>
 </tbody></table></div>
 <h3>Three axes as instances of this structure</h3>
-<p><strong>Data axis.</strong> For one dense application with $W\in\mathbb R^{d_{\rm out}\times d_{\rm in}}$ and input $z\in\mathbb R^{d_{\rm in}}$, the state is $m=W$. The read $a=Wz$ supplies downstream data; retaining $b=(a,z)$ also supplies the activation and input needed for the weight write. Let $f_{\rm rest}$ be the rest of the forward computation and $\ell(\cdot,y^\star)$ the scalar loss against target $y^\star$. For a plain SGD step of size $\eta&gt;0$, read, compute, retain/transform, and write are</p>
+<p><strong>Data axis.</strong> First take a dense layer whose weight matrix is used once, with $W\in\mathbb R^{d_{\rm out}\times d_{\rm in}}$ and input $z\in\mathbb R^{d_{\rm in}}$, the state is $m=W$. The read $a=Wz$ supplies downstream data; retaining $b=(a,z)$ also supplies the activation and input needed for the weight write. Let $f_{\rm rest}$ be the rest of the forward computation and $\ell(\cdot,y^\star)$ a differentiable scalar loss against target $y^\star$. Assume the remaining computation and loss are differentiable at the current activations. A plain SGD step has size $\eta&gt;0$.</p>
 <p>Here $o=f_{\rm rest}(a)$, $\mathcal L=\ell(o,y^\star)$, and $\delta=\nabla_a\mathcal L$. The write is $w=-\eta\delta z^\top$, and the update is $W^+=W+w$.</p>
-<p>For a sequence of length $N$, a Transformer reuses the same matrix at many token positions, so backpropagation adds the contribution from each use:</p>
+<p>In a Transformer the same matrix is reused at many token positions. For a sequence of length $N$, with one use per token and no other uses of $W$, backpropagation adds the contribution from each use:</p>
 $$a_t=Wz_t,\qquad\delta_t=\frac{\partial\mathcal L}{\partial a_t},\qquad\nabla_W\mathcal L=\sum_{t=1}^N\delta_tz_t^\top.$$
 <p>Each $\delta_t$ comes from the full sequence loss and includes downstream effects. With mini-batches, gradient contributions from the examples are accumulated (and averaged if required by the loss) before the update is applied. SGD writes the negative summed gradient; adaptive optimizers modify that rule. In the common structure, $F$ continues the forward pass, $G$ computes the backward derivatives and negative gradient step, and $T(W)=W$.</p>
 <p><strong>Sequence axis.</strong> At the sequence-memory boundary, the read produces a contextual output and the write retains information for future tokens. Preparing the query/write inputs and transforming the retrieved output are surrounding computations using weight and residual memory.</p>
@@ -222,17 +223,15 @@ $$\bar a_t=\frac{N_t+\gamma_t v_t}{D_t+\gamma_t},\qquad o_t=W_O\bar a_t.$$
 <p>Here $W_O\in\mathbb R^{d\times d_v}$. The write is $w_t=b_t e_t^\top$ and the update is $X_t=[X_{t-1}\ \ 0]+w_t$, where $e_t$ is the last basis vector in $\mathbb R^t$ and $X_0$ is the empty $(d_k+d_v)\times0$ matrix. At $t=1$, both past sums are zero and $\bar a_1=v_1$. Equivalently, append first and retrieve the entire contextual output from the updated cache. These are two valid retrieval boundaries. The cache stores the new pair, and the projected contextual output is written into the residual stream.</p>
 <p>For a simple linear SSM, let $s_t\in\mathbb R^{d_s}$, input $z_t\in\mathbb R^d$, $A\in\mathbb R^{d_s\times d_s}$, $B\in\mathbb R^{d_s\times d}$, and $C\in\mathbb R^{d_v\times d_s}$. Separate the transformed past-state read from the current contribution:</p>
 $$a_t=CAs_{t-1},\qquad b_t=Bz_t,\qquad o_t=a_t+Cb_t,\qquad w_t=b_t,\qquad s_t=As_{t-1}+w_t.$$
-<p>Both attention and the SSM combine past context with the current input while updating state. The SSM can instead update once and read $Cs_t$; linearity makes the outputs identical. Unrolling gives</p>
-$$o_t=CA^t s_0+\sum_{j=1}^t CA^{t-j}Bz_j.$$
-<p>For $A=I_{d_s}$, its update has the same retain-and-add form as residual propagation, across tokens instead of sublayers. Linear attention supplies an intermediate example with outer-product writes and a compressed read.</p>
-<p><strong>Depth axis.</strong> For a pre-normalized Transformer sublayer, $\operatorname{Norm}:\mathbb R^d\to\mathbb R^d$ and $\Phi_\ell:\mathbb R^d\to\mathbb R^d$ give</p>
-<p>The read is $a_\ell=b_\ell=\operatorname{Norm}(h^{(\ell-1)})$, the sublayer computes $o_\ell=\Phi_\ell(a_\ell)$, and $w_\ell=o_\ell$ is added to give $h^{(\ell)}=h^{(\ell-1)}+w_\ell$.</p>
+<p>Both attention and the SSM combine past context with the current input while updating state. The SSM can instead update once and read $Cs_t$; linearity makes the outputs identical. Attention grows a list of records while this SSM retains a fixed-size state. Linear attention supplies an intermediate example with outer-product writes and a compressed read.</p>
+<p><strong>Depth axis.</strong> For a pre-normalized Transformer sublayer, $\operatorname{Norm}:\mathbb R^d\to\mathbb R^d$ and $F_\ell:\mathbb R^d\to\mathbb R^d$ be the normalization and sublayer maps.</p>
+<p>The read is $a_\ell=b_\ell=\operatorname{Norm}(h^{(\ell-1)})$, the sublayer computes $o_\ell=F_\ell(a_\ell)$, and $w_\ell=o_\ell$ is added to give $h^{(\ell)}=h^{(\ell-1)}+w_\ell$.</p>
 <p>The same extracted activation serves both branches: the computed sublayer output $o_\ell$ is also the write $w_\ell$. The retention map $T$ is the identity, and the updated stream is passed to the next sublayer. These examples share the read-and-update structure but use different storage operations. A Transformer couples them: weight reads form attention inputs, attention retrieves contextual data, and its projection is written into the residual stream.</p>
 <div class="table-wrap"><table><thead><tr><th>Axis</th><th>Read/extract</th><th>Downstream compute</th><th>Write compute</th><th>Update</th></tr></thead><tbody>
 <tr><td>General</td><td>$(a,b)=R(m,u)$</td><td>$o=F(u,a)$</td><td>$w=G(u,b,o)$</td><td>$m^+=T(m;u,b)+w$</td></tr>
 <tr><td>Data</td><td>$a=Wz$, $b=(a,z)$</td><td>$o=f_{\rm rest}(a)$</td><td>$\delta=\nabla_a\mathcal L$<br>$w=-\eta\delta z^\top$</td><td>$W^+=W+w$</td></tr>
 <tr><td>Sequence</td><td><em>Attention:</em><br>$a_t=(N_t,D_t)$, $b_t=x_t$<br><br><em>SSM:</em><br>$a_t=CAs_{t-1}$, $b_t=Bz_t$</td><td><em>Attention:</em><br>$\bar a_t=(N_t+\gamma_t v_t)/(D_t+\gamma_t)$<br>$o_t=W_O\bar a_t$<br><br><em>SSM:</em><br>$o_t=a_t+Cb_t$</td><td><em>Attention:</em><br>$w_t=b_t e_t^\top$<br><br><em>SSM:</em><br>$w_t=b_t$</td><td><em>Attention:</em><br>$X_t=[X_{t-1}\ \ 0]+w_t$<br><br><em>SSM:</em><br>$s_t=As_{t-1}+w_t$</td></tr>
-<tr><td>Depth</td><td>$a_\ell=b_\ell=\operatorname{Norm}(h^{(\ell-1)})$</td><td>$o_\ell=\Phi_\ell(a_\ell)$</td><td>$w_\ell=o_\ell$</td><td>$h^{(\ell)}=h^{(\ell-1)}+w_\ell$</td></tr>
+<tr><td>Depth</td><td>$a_\ell=b_\ell=\operatorname{Norm}(h^{(\ell-1)})$</td><td>$o_\ell=F_\ell(a_\ell)$</td><td>$w_\ell=o_\ell$</td><td>$h^{(\ell)}=h^{(\ell-1)}+w_\ell$</td></tr>
 </tbody></table></div>
 <p>For the data row, $\mathcal L=\ell(o,y^\star)$; shared weight applications add their gradient contributions. The sequence row compares a growing attention cache with a fixed-size SSM state. Identity computations pass through extracted data or computed outputs.</p>
 
@@ -240,26 +239,30 @@ $$o_t=CA^t s_0+\sum_{j=1}^t CA^{t-j}Bz_j.$$
 $$S^+=S+\eta(v-Sk)k^\top.$$
 <p>This is the classical <a href="#ref1">Widrow–Hoff update</a> and the write rule used in <a href="#ref2">DeltaNet</a>, with matching step sizes and key-normalization conventions. Applying it to tokens rather than training examples changes the role of the state, not this formula.</p>
 <p>The broader account is a synthesis of fast-weight memories, linear attention, structured state space duality, and optimization-based sequence memories. In particular, it builds on <a href="#ref12">Miras</a> and <a href="#ref13">test-time regression</a>. It does not assert a new universal capacity theorem.</p>
-<div class="table-wrap"><table><thead><tr><th>Comparison</th><th>Status</th></tr></thead><tbody>
-<tr><td>Delta rule / squared-error gradient step</td><td>Exact, with matching conventions</td></tr>
-<tr><td>Outer-product memory / unnormalized linear attention</td><td>Exact</td></tr>
-<tr><td>Retention / positional weights</td><td>Exact unrolling; scalar log decay is additive</td></tr>
-<tr><td>Random-key retrieval / capacity</td><td>Conditional on a distribution and success criterion</td></tr>
-<tr><td>Residual propagation / optimization</td><td>An analogy unless a suitable objective exists</td></tr>
-<tr><td>Gradient noise / retrieval interference</td><td>A statistical analogy, not the same task</td></tr>
+<div class="table-wrap"><table><thead><tr><th>Connection</th><th>Content and assumptions</th></tr></thead><tbody>
+<tr><td>State compression</td><td>Preserve outputs and subsequent summary updates</td></tr>
+<tr><td>Sequence update identities</td><td>Linear attention reads, delta gradients, ordered retention products</td></tr>
+<tr><td>Optimization-based writes</td><td>Specify the loss, algorithm, geometry, and constraints</td></tr>
+<tr><td>Retrieval accuracy</td><td>Expected-power bounds under a declared distribution and query</td></tr>
+<tr><td>Residual and weight reads</td><td>Unroll realized writes whose factors may depend on earlier states</td></tr>
+<tr><td>Write responses and gradients</td><td>Adjoint identity: finite affine responses or nonlinear derivatives</td></tr>
+<tr><td>Minimum linear state</td><td>Reachable and observable directions for zero-initialized linear time-invariant maps</td></tr>
 </tbody></table></div>
 
 <h2 id="memories">Three memories: storage, retrieval, and computation</h2>
-<p>The three axes give three kinds of memory: long-term information in weights, short-term context in sequence states or attention caches, and intermediate inference results in the residual stream. Their distinction is persistence and use; all three can be tensors. Training writes weights, while the forward pass reads those weights and reads or writes the other memories.</p>
-<p>The common structure above separates the downstream and update uses of extracted data. A block can perform these operations on several memories at once.</p>
-<p>The transformed state and written quantity belong to the same next-state vector space, which may have a larger dimension than the old one. In attention, this is exact cache concatenation in matrix coordinates: $[x_1\ \ 0]+[0\ \ x_2]=[x_1\ \ x_2]$. In a residual sublayer, the normalized activation supplies the layer computation and its additive write. In SGD, forward activations support both predictions and the backward computation of $-\eta\nabla_W\mathcal L$. Computing the write may include downstream computation and its derivatives.</p>
-<div class="table-wrap"><table><thead><tr><th>Memory / axis</th><th>Read</th><th>Compute</th><th>Retain/transform and write</th></tr></thead><tbody>
-<tr><td>Weights / data</td><td>Forward evaluation: $Wz$, embedding lookup, tensor contraction</td><td>Compose forward reads into predictions; during training compute the loss, backward derivatives, and update direction</td><td>Keep or decay weights and apply the computed optimizer step</td></tr>
-<tr><td>Sequence / tokens</td><td>Retrieve context by attention or a state readout</td><td>Prepare projections or input contributions and optionally transform the retrieved output</td><td>Keep records and append new pairs, or transform the old state and add a contribution</td></tr>
-<tr><td>Residual / depth</td><td>Read the current stream, often after normalization</td><td>Apply the attention or feedforward operator using weights and context</td><td>Carry or mix the old stream and add the computed sublayer output</td></tr>
-</tbody></table></div>
-<p>Retrieval here means an input-dependent read of retained information; it need not recover one named fact exactly. Computation forms queries, combines reads, transforms results, and produces further writes. These roles overlap: $Wz$ is both a learned transformation and a read of weight memory. A delta write itself reads the old sequence state through $Sk$. The extracted parts can share data, but the write need not depend on the contextual output: a basic attention cache stores the newly prepared pair. Extraction takes both the old state and current inputs; it does not imply that all write data were already stored. Either computation branch can pass through an already computed quantity. The architecture fixes execution order, and the additive form alone implies neither linearity nor optimization.</p>
-<h3>What is intrinsic to the memory operation?</h3>
+<p>The introductory examples treat each memory separately. A forward block shows how they interact: weight reads prepare sequence writes and queries, sequence reads supply context, and residual writes store the computed result.</p>
+<p>Retrieval means an input-dependent read of retained information. The same matrix-vector product can be a read and a computation. Weights normally persist across examples, sequence states across tokens, and residual representations across sublayers. Activations saved for backward computation and optimizer statistics have their own lifetimes. Update frequency and persistence must be specified separately.</p>
+<h3>A block makes the interaction explicit</h3>
+<p>Take an unnormalized single-head linear-attention block, omitting biases and normalization. For residual $h\in\mathbb R^d$, weight matrices $W_Q,W_K\in\mathbb R^{d_k\times d}$, $W_V\in\mathbb R^{d_v\times d}$, $W_O\in\mathbb R^{d\times d_v}$, $W_1\in\mathbb R^{p\times d}$, and $W_2\in\mathbb R^{d\times p}$, one possible forward block is</p>
+$$q=W_Qh,\quad k=W_Kh,\quad v=W_Vh,\quad S^+=U_{\rm seq}(S;k,v),\quad a=S^+q,$$
+$$\bar h=h+W_Oa,\qquad h^+=\bar h+W_2\sigma(W_1\bar h).$$
+<p>Here $\sigma$ acts coordinatewise, $S\in\mathbb R^{d_v\times d_k}$, and $U_{\rm seq}$ can be an additive or delta write. The projections read weight and residual memory to form a query and write inputs. The state read retrieves sequence context, which $W_O$ transforms into a residual write. The feedforward sublayer reads the modified residual through its weights, transforms it, and writes another contribution. Ordinary softmax attention uses a cache read instead.</p>
+<h3>Training closes the loop</h3>
+<p>During ordinary inference the weights remain fixed; layer-specific sequence memories persist across tokens, and each token starts a new residual traversal. During training the forward pass uses the current weights, the loss evaluates its output, backward differentiation computes gradients from weights and saved or recomputed activations, and the optimizer writes the next weights. Optimizer moments influence that write and are usually absent from inference. Test-time adaptation can add weight writes inside inference.</p>
+<p>Thus weight memory determines how sequence writes, queries, and residual computations are formed, while their outputs determine later training writes. Persistence and update frequency are separate properties. The framing complements <a href="#ref12">Miras</a>, <a href="#ref13">test-time regression</a>, and <a href="#ref-nested">Nested Learning</a>; it does not require every residual update to optimize an objective or every parameter to store a separately recoverable fact.</p>
+
+
+<h3>State transitions and exact compression</h3>
 <p>A general module is a state-and-output map $\Psi_n(m,u)=(\Phi_n(m,u),\Gamma_n(m,u))$, where $\Phi_n$ updates state and $\Gamma_n$ produces output. State includes whatever is needed to determine future behavior, including optimizer statistics when relevant. The read/write decomposition is an implementation choice. Without restrictions, every vector-space update can be written $\Phi_n=T_n+(\Phi_n-T_n)$; useful comparisons specify properties such as new-slot support, low rank, input-only retention, or a gradient objective.</p>
 <p>The delta rule makes the choice visible:</p>
 $$S^+=S+\beta(v-Sk)k^\top=S(I-\beta kk^\top)+\beta vk^\top.$$
@@ -268,49 +271,8 @@ $$S^+=S+\beta(v-Sk)k^\top=S(I-\beta kk^\top)+\beta vk^\top.$$
 <p>A stronger comparison asks whether one state representation exactly summarizes another. For a summary $\pi_n(m)$ and an alternative implementation $(\widehat\Phi_n,\widehat\Gamma_n)$, require</p>
 $$\pi_{n+1}(\Phi_n(m,u))=\widehat\Phi_n(\pi_n(m),u),\qquad\Gamma_n(m,u)=\widehat\Gamma_n(\pi_n(m),u).$$
 <p>Starting from corresponding initial states, induction gives corresponding states and identical outputs for every finite input sequence. Linear attention supplies a concrete example: the cache summary $\sum_jv_jk_j^\top$ updates by adding $vk^\top$ and retrieves through a matrix-vector product. A normalized finite-feature read additionally retains its denominator state. These are the exact summaries behind the recurrent formulation of <a href="https://proceedings.mlr.press/v119/katharopoulos20a.html">linear attention</a>.</p>
-<p>Two states are equivalent for future outputs when every admissible finite input continuation produces the same output sequence. A valid exact summary can merge such states. Usable memory is therefore specified by future inputs, reads, and updates, rather than by tensor shape alone.</p>
+<p>Two states are equivalent for future outputs when every finite continuation from the specified input domains produces the same output sequence. A valid exact summary can merge such states. Usable memory is therefore specified by future inputs, reads, and updates, rather than by tensor shape alone.</p>
 <p>The softmax statistics $(N_t,D_t)$ in our table are different: they depend on the current query and are temporary extracted data. Preserving one read does not imply preserving later reads or updates. An arbitrary SSM and softmax attention do not become equivalent merely by fitting the general map; <a href="https://arxiv.org/abs/2405.21060">structured state space duality</a> identifies a more specific operator class.</p>
-<p>For differentiable maps with input and other memory states fixed, information transport uses the complete update Jacobian $J_n=D_m\Phi_n$, and read sensitivity uses $H_n=D_m\Gamma_n$. To first order, $\delta m_{n+1}=J_n\delta m_n$ and $\delta o_n=H_n\delta m_n$. The SSM has $J=A$; the residual update has $J=I+D\Phi_\ell(a)D\operatorname{Norm}(h)$; plain SGD on a twice differentiable loss has $J=I-\eta\nabla^2\mathcal L(\theta)$. Identity retention therefore does not imply identity information transport or stable dynamics.</p>
-
-<h3>A block makes the interaction explicit</h3>
-<p>Take an unnormalized single-head linear-attention block, omitting biases and normalization. For residual $h\in\mathbb R^d$, weight matrices $Q,K\in\mathbb R^{d_k\times d}$, $V\in\mathbb R^{d_v\times d}$, $O\in\mathbb R^{d\times d_v}$, $W_1\in\mathbb R^{p\times d}$, and $W_2\in\mathbb R^{d\times p}$, one possible forward block is</p>
-$$q=Qh,\quad k=Kh,\quad v=Vh,\quad S^+=U_{\rm seq}(S;k,v),\quad a=S^+q,$$
-$$\bar h=h+Oa,\qquad h^+=\bar h+W_2\sigma(W_1\bar h).$$
-<p>Here $\sigma$ acts coordinatewise, $S\in\mathbb R^{d_v\times d_k}$, and $U_{\rm seq}$ can be an additive or delta write. The projections read weight and residual memory to form a query and write inputs. The state read retrieves sequence context, which $O$ transforms into a residual write. The feedforward sublayer reads the modified residual through its weights, transforms it, and writes another contribution. Ordinary softmax attention uses a cache read instead.</p>
-<h3>Training closes the loop</h3>
-<p>During ordinary inference the weights remain fixed; layer-specific sequence memories persist across tokens, and each token starts a new residual traversal. During training the forward pass uses the current weights, the loss evaluates its output, backward differentiation computes gradients from weights and saved or recomputed activations, and the optimizer writes the next weights. Optimizer moments influence that write and are usually absent from inference. Test-time adaptation can add weight writes inside inference.</p>
-<p>Thus weight memory determines how sequence writes, queries, and residual computations are formed, while their outputs determine later training writes. Persistence and update frequency are separate properties. The framing complements <a href="#ref12">Miras</a>, <a href="#ref13">test-time regression</a>, and <a href="#ref-nested">Nested Learning</a>; it does not require every residual update to optimize an objective or every parameter to store a separately recoverable fact.</p>
-
-<h2 id="transport">Which writes reach future reads?</h2>
-<p>A common update notation is useful, but a stronger comparison asks which written directions can affect later outputs—and which can receive credit from a later loss. The same operator answers both questions.</p>
-<h3>Forward influence and backward credit</h3>
-<p>Fix the external inputs and update schedule. Let $m_{n+1}=\Phi_n(m_n,u_n)$ and $o_n=\Gamma_n(m_n,u_n)$, and include every evolving state whose feedback is to be differentiated. A declared write intervention adds $B_n\xi_n$ after update $n$. Along the unperturbed trajectory, define $J_n=D_m\Phi_n$ and $H_n=D_m\Gamma_n$. For $j&lt;t$, the response is</p>
-$$K_{t,j}=H_tJ_{t-1}\cdots J_{j+1}B_j.$$
-<p>The empty product is the identity: write $j$ enters state $m_{j+1}$ and first affects output $o_{j+1}$ in this convention. Read-after-update outputs can be indexed at the new state. A direct simultaneous effect on output requires its own derivative.</p>
-<p>The chain rule gives $D_{\xi_j}o_t=K_{t,j}$. For a loss $\mathcal L=\sum_t\ell_t(o_t)$ with $g_t=\nabla\ell_t(o_t)$, the reverse relation is</p>
-$$\nabla_{\xi_j}\mathcal L=\sum_{t&gt;j}K_{t,j}^\top g_t=B_j^\top\lambda_{j+1},\qquad\lambda_n=H_n^\top g_n+J_n^\top\lambda_{n+1},\quad\lambda_N=H_N^\top g_N.$$
-<p>A perturbation travels forward through the update maps and read; a loss gradient travels backward through their transposes. This is an exact derivative identity. With fixed affine updates and reads, it also describes arbitrary finite output changes exactly. In nonlinear models it describes first-order response, and $J_n$ must include state-dependent write feedback.</p>
-<p>On the sequence axis, an SSM has $K_{t,j}=CA^{t-j-1}B$. A delta memory transports a perturbation as $\Delta S(I-\beta kk^\top)$ for fixed keys. On the depth axis, a residual sublayer has $J=I+D\Phi_\ell(a)D\operatorname{Norm}(h)$. On the data axis, plain SGD on a twice continuously differentiable loss has $J=I-\eta\nabla^2\mathcal L_n(\theta)$, and a later prediction reads through $D_\theta f_\theta(q)$. Optimizer moments and other changing memories belong in the state when their feedback is included.</p>
-<h3>Written, retained, and observable are different properties</h3>
-<p>Choose a cut $s$. Let $\mathcal C_s$ map earlier write controls to state perturbations at that cut, and let $\mathcal O_{s:N}$ map those perturbations to the chosen future outputs, with future controls zero. The complete response is</p>
-$$\delta\boldsymbol o=\mathcal M_{s:N}\boldsymbol\xi,\qquad\mathcal M_{s:N}=\mathcal O_{s:N}\mathcal C_s.$$
-<p>The reachable directions are $\mathcal R_s=\operatorname{range}\mathcal C_s$. The invisible directions are $\mathcal N_{s:N}=\ker\mathcal O_{s:N}$. Rank–nullity gives</p>
-$$\operatorname{rank}\mathcal M_{s:N}=\dim\mathcal R_s-\dim(\mathcal R_s\cap\mathcal N_{s:N}).$$
-<p>This counts reachable distinctions visible in the specified future outputs. A write direction is invisible to these outputs exactly when every differentiable loss of them has zero directional derivative in that direction. A particular task loss may ignore a direction that other losses could detect. Across all linear losses of the chosen outputs, the possible write gradients form $\operatorname{range}\mathcal M^\top$, with the same dimension as the readable write distinctions.</p>
-<div class="table-wrap"><table><thead><tr><th>Two-dimensional case</th><th>State gain at cut</th><th>Output gain</th><th>Response rank</th><th>Chosen loss derivative</th></tr></thead><tbody>
-<tr><td>Written direction erased</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
-<tr><td>Retained direction missed by read</td><td>1</td><td>0</td><td>0</td><td>0</td></tr>
-<tr><td>Readable direction</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
-<tr><td>Weak read</td><td>1</td><td>1/100</td><td>1</td><td>1/100</td></tr>
-<tr><td>Readable direction ignored by loss</td><td>1</td><td>1</td><td>1</td><td>0</td></tr>
-</tbody></table></div>
-<p>These are exact examples with a unit scalar write and Euclidean norms. For instance, writing along $e_1$ and reading along $e_2$ preserves the state contribution but misses it. Adding the $e_1$ read reveals it. A visible output change $(\xi,0)$ still receives no gradient from a loss depending only on the second output. Rank alone also misses how weak a readable direction can be.</p>
-<h3>Minimum memory and response gains</h3>
-<p>If a differentiable state summary with $k$ coordinates reproduces the chosen future outputs near the current state, its derivative factors the response matrix through $\mathbb R^k$. Therefore $k\ge\operatorname{rank}\mathcal M_{s:N}$. This is a local lower bound for the declared intervention and read family. A factorization at one cut alone need not define a compatible compressed recurrence.</p>
-<p>For a linear time-invariant system initialized at zero, the stronger global result is classical: the minimum state dimension preserving outputs for every finite input sequence is the rank of the block Hankel matrix with blocks $CA^{i+j}B$. A reachable/unobservable quotient attains the bound. The paper supplies the proof and cites <a href="https://lall.stanford.edu/engr207c/lectures/realization_2008_11_15_03.pdf">Lall’s state-space realization notes, Theorem 8 and Corollary 9</a>.</p>
-<p>With fixed external write and output norms, a singular mode $\mathcal Mv_i=\sigma_i u_i$ obeys $\mathcal M^\top u_i=\sigma_i v_i$. Forward response and backward credit have the same gain for these paired directions. The actual task gradient need not select the corresponding output direction. Intermediate state-coordinate changes cancel between $\mathcal C$ and $\mathcal O$, leaving $\mathcal M$ unchanged.</p>
-<p>Truncating the singular value decomposition gives the best rank-$k$ approximation of this single response map, with operator-norm error $\sigma_{k+1}$. This quantifies local accessibility after norms are fixed. It does not establish retrieval capacity or trained-model performance. Nonlinear reads can contain information invisible to their first derivative: $o=m^2$ at $m=0$ has zero derivative yet changes under finite perturbations.</p>
-<p>A useful diagnostic compares state response at successive cuts, future output response, and the chosen loss response. Fix write magnitude and external inputs, extend the future read set before declaring a retained direction irrelevant, and check finite perturbations before extrapolating a local calculation.</p>
 
 <h2 id="sequence">Write, retain, and read</h2>
 <p>All vectors below are columns. Keys and queries lie in $\mathbb R^{d_k}$, values in $\mathbb R^{d_v}$, and the memory $S$ has shape $d_v\times d_k$. Set $K=[k_1,\ldots,k_N]$ and $V=[v_1,\ldots,v_N]$.</p>
@@ -323,7 +285,7 @@ $$S_Nq=\sum_i v_i(k_i^\top q).$$
 <p><a href="#ref-triadic">Triadic linear attention</a> adds a second key $r_t\in\mathbb R^E$ and query $s_t\in\mathbb R^E$. Its tensor state has shape $d_v\times d_k\times E$. Define joint features $z_t=k_t\otimes r_t$ and $u_t=q_t\otimes s_t$, where $(k\otimes r)_{(b-1)E+c}=k_b r_c$. Flattening the two key axes gives a matrix $M_t$ with $d_v$ rows and $d_kE$ columns:</p>
 $$M_t=M_{t-1}+v_tz_t^\top,\qquad M_tu_t=\sum_{j\le t}v_j(k_j^\top q_t)(r_j^\top s_t),\qquad M_0=0.$$
 <p>The read weights each value by two similarities multiplied together. In the collision example, keep both first keys equal to $e_1$ but choose second keys $f_1,f_2$, the two coordinate vectors in $\mathbb R^2$. Querying $(e_1,f_1)$ retrieves $2$ and querying $(e_1,f_2)$ retrieves $3$. The $d_kE$ joint coordinate keys $e_b\otimes f_c$ are orthonormal, so this construction can retrieve $d_kE$ arbitrary values exactly. Learned keys need not realize that construction.</p>
-<p>The delta rule also acts on the joint key. With slice gates $0\le\alpha_{t,c}\le1$ and $D_t=I_{d_k}\otimes\operatorname{diag}(\alpha_{t,1},\ldots,\alpha_{t,E})$, decay before the delta write gives</p>
+<p>The delta rule also acts on the joint key. With gates on each second-key slice (the matrix obtained by fixing the third index $c$), $0\le\alpha_{t,c}\le1$ and $D_t=I_{d_k}\otimes\operatorname{diag}(\alpha_{t,1},\ldots,\alpha_{t,E})$, decay before the delta write gives</p>
 $$M_t=M_{t-1}D_t(I-\beta_tz_tz_t^\top)+\beta_tv_tz_t^\top,\qquad y_t=M_tu_t.$$
 <p>The residual is $v_t-M_{t-1}D_tz_t$, and the order of decay and projection matters. For nonzero $z_t$, a step $\beta_t=1/\|z_t\|^2$ fits the new association exactly. Ordinary linear attention is recovered when $E=1$ and $r_t=s_t=1$. This connects the tensor construction directly to the same feature-memory and squared-error framework.</p>
 <h3>Transitions and effective keys</h3>
@@ -347,14 +309,14 @@ $$d(j,t)=-\log\prod_{s=j+1}^t\alpha_s=\sum_{s=j+1}^t-\log\alpha_s.$$
 <h3>Implicit updates differ from gradient steps</h3>
 <p>For differentiable strictly convex $h$ on a convex domain, define</p>
 $$D_h(X,Y)=h(X)-h(Y)-\langle\nabla h(Y),X-Y\rangle.$$
-<p>An implicit update minimizes $\ell(X)+D_h(X,X^-)/\eta$ over an admissible set, assuming a minimizer exists. Mirror descent instead minimizes the linearized loss $\langle\nabla\ell(X^-),X\rangle+D_h(X,X^-)/\eta$. With Euclidean $h$, the latter is a gradient step. The former, for squared-error memory, gives</p>
+<p>An implicit update minimizes $\ell(X)+D_h(X,X^-)/\eta$ over an admissible set, assuming a minimizer exists. For a loss differentiable at $X^-$, mirror descent minimizes the linearized loss $\langle\nabla\ell(X^-),X\rangle+D_h(X,X^-)/\eta$. With Euclidean $h$, the latter is a gradient step. The former, for squared-error memory, gives</p>
 $$S^+=S^-+\frac{\eta}{1+\eta\|k\|^2}(v-S^-k)k^\top.$$
 <p>For scalar $S^-=0$, $k=v=1$, $\eta=1$, the explicit result is $1$ and the implicit result is $1/2$. Calling both the same write would hide a real difference.</p>
-<h3>Forgetting differs from ridge regression</h3>
+<h3>Decay and cumulative regression</h3>
 <p>If the loss is zero, a Bregman update leaves the old state unchanged. Forgetting requires a penalty or a separate decay operation. Discounted additive writes store a discounted cross moment, whereas ridge regression fits all observed pairs:</p>
 $$S_\lambda=VK^\top(KK^\top+\lambda I)^{-1},\qquad\lambda&gt;0.$$
 <p>Two scalar pairs with key and value $1$, and additive decay $1/2$, give memory $3/2$. Discounted ridge with the same observation weights gives $(3/2)/(3/2+\lambda)\le1$. The missing correlation inverse makes the operations different. Exact recursive least squares maintains that inverse as an additional state; the paper derives its update.</p>
-<h3>Normalization needs a domain and a constraint</h3>
+<h3>Normalization and constraints</h3>
 <ul>
 <li><strong>Softmax.</strong> It maximizes $z^\top p-\tau\sum_i p_i\log p_i$ on the probability simplex $\{p\ge0:\sum_i p_i=1\}$. Equivalently, it normalizes positive weights $a_i=e^{z_i/\tau}$ by minimizing generalized relative entropy. It is not an idempotent projection of logits.</li>
 <li><strong>RMSNorm.</strong> Without learned gains or a numerical stabilizer, it sends nonzero $x\in\mathbb R^d$ to $\sqrt d\,x/\|x\|$, the nearest point on the radius-$\sqrt d$ sphere. Gains and a positive stabilizer change that exact interpretation.</li>
@@ -363,15 +325,15 @@ $$S_\lambda=VK^\top(KK^\top+\lambda I)^{-1},\qquad\lambda&gt;0.$$
 <p>A sphere is nonconvex. Its nearest-point map is neither globally unique nor nonexpansive: the unit-sphere images of $0.1e_1$ and $-0.1e_1$ have distance $2$, although the original distance is $0.2$. Compactness bounds states but does not establish convergence or stability. Frank–Wolfe is a separate convex constrained algorithm, using a linear minimizer and a convex-combination update; it is not an exact constrained Bregman projection.</p>
 <p>A complete memory specification therefore includes the state, write objective, update algorithm, step sizes, transition, read, geometry, and constraint. A loss alone does not fix the read kernel or capacity.</p>
 
-<h2 id="capacity">Retrieval needs a criterion</h2>
+<h2 id="capacity">Retrieval accuracy and storage cost</h2>
 <p>For additive memory and query $q=k_*$, separate the target signal $s=\|k_*\|^2v_*$ from interference $n=\sum_{i\ne *}(k_i^\top k_*)v_i$. Define SNR as the ratio of expected squared norms.</p>
 <p>If keys are independent $\mathcal N(0,I_d/d)$, values are independent $\mathcal N(0,I_{d_v})$, and keys and values are independent, then for $N\ge2$</p>
 $$\operatorname{SNR}_{\rm linear}=\frac{d+2}{N-1}.$$
 <p>Signal power is $d_v(1+2/d)$ and noise power is $d_v(N-1)/d$. For independent isotropic unit keys, the ratio is $d/(N-1)$. These explain an order-$d$ scale at a fixed expected-power threshold; they are not simultaneous high-probability guarantees for every stored item.</p>
 <p>For softmax, condition on fixed keys and query, with the same independent zero-mean values. Writing $\Delta_i=q^\top k_*-q^\top k_i$ gives</p>
 $$\operatorname{SNR}_{\rm softmax}\mid K,q=\frac{w_*^2}{\sum_{i\ne *}w_i^2}=\frac1{\sum_{i\ne *}e^{-2\Delta_i/\tau}}.$$
-<p>The value dimension cancels. If every gap is at least $\delta$, this is at least $e^{2\delta/\tau}/(N-1)$. The formula depends on key norms, separation, and temperature. It does not assign a universal exponential capacity to transformers. As temperature tends to infinity, softmax becomes uniform averaging, not dot-product linear attention.</p>
-<h3>Retrieval energy is not a training loss</h3>
+<p>The value dimension cancels. If every gap is at least $\delta$, this is at least $e^{2\delta/\tau}/(N-1)$. This inequality holds for any real $\delta$; only a positive gap lower bound guarantees suppression as temperature decreases. The formula depends on key norms, separation, and temperature. It does not assign a universal exponential capacity to transformers. As temperature tends to infinity, softmax becomes uniform averaging, not dot-product linear attention.</p>
+<h3>Retrieval energy and training loss</h3>
 <p><a href="#ref6">Modern Hopfield retrieval</a> uses $E(q)=\tfrac12\|q\|^2-\tau\log\sum_i e^{k_i^\top q/\tau}$. Its stationary equation is $q=K\operatorname{softmax}(K^\top q/\tau)$. Arbitrary attached values define a separate read. Exponential pattern-storage results require specific geometric and probabilistic assumptions and a pattern list that grows with the number stored.</p>
 <p>Cross-entropy instead has positive log-sum-exp: $\ell(z;c)=\log\sum_i e^{z_i}-z_c$. Its gradient is $\operatorname{softmax}(z)-e_c$. The shared calculus does not transfer Hopfield storage capacity to training weights or establish an exponential advantage over squared-error training.</p>
 <h3>Storage and features</h3>
@@ -393,7 +355,7 @@ $$h^{(\ell)}=h^{(0)}+\sum_{j=1}^{\ell}c_j,\qquad Bh^{(\ell)}=Bh^{(0)}+\sum_{j=1}
 <p>The access mechanism matters. Depth attention selects among separately stored outputs. Multiple residual streams propagate and mix them. In our row-stream convention, $H_i=A_iH_{i-1}+b_ic_i^\top$ and $z_\ell=H_{\ell-1}^\top r_\ell$ give the realized coefficient</p>
 $$w_{i\to\ell}=r_\ell^\top A_{\ell-1}\cdots A_{i+1}b_i.$$
 <p>Here $H_i\in\mathbb R^{a\times d}$, $A_i\in\mathbb R^{a\times a}$, $b_i,r_\ell\in\mathbb R^a$, and $c_i,z_\ell\in\mathbb R^d$; empty products are $I_a$. This connects depth reads to the unrolled sequence read. Changing a write can also change later learned mixing, so the coefficient alone is not a counterfactual causal effect.</p>
-<p>Contraction can preserve a stream mean while erasing distinctions. For $J=\mathbf1\mathbf1^\top/a$ and $0\le\rho&lt;1$, $A=J+\rho(I-J)$ has $A^n=J+\rho^n(I-J)$. This illustrates the paper's mixing-product observations; it does not prove that all doubly stochastic products collapse, and new writes continue to enter. Its block-storage analysis also illustrates how stored outputs may receive little read weight under a particular boundary schedule.</p>
+<p>Contraction can preserve a stream mean while erasing distinctions. For $J=\mathbf1\mathbf1^\top/a$ and $0\le\rho&lt;1$, $A=J+\rho(I-J)$ has $A^n=J+\rho^n(I-J)$ for every integer $n\ge1$. This illustrates the paper's mixing-product observations; it does not prove that all doubly stochastic products collapse, and new writes continue to enter. Its block-storage analysis also illustrates how stored outputs may receive little read weight under a particular boundary schedule.</p>
 <p>Layer sensitivity alone does not establish useful computation: skipping can disrupt inputs, an absolute swap-loss difference also records improvement, and normalized changes require nonzero reference updates. These diagnostics should accompany held-out performance. Equal weight budgets also do not equalize sequence caches, depth histories, or runtime: at approximately fixed backbone size $P\propto Ld^2$, the quantity $Ld$ grows as $\sqrt{PL}$, affecting cache storage of order $TLd$ in the benchmark's attention setting.</p>
 <h3>Two ways to couple depth and sequence</h3>
 <p><a href="#ref-mor">Mixture-of-Recursions</a> reuses blocks and routes tokens to different recursion depths. Its router controls computation; it is analogous to, rather than identical with, a sequence forget gate.</p>
@@ -401,7 +363,7 @@ $$w_{i\to\ell}=r_\ell^\top A_{\ell-1}\cdots A_{i+1}b_i.$$
 
 <h2 id="data">Training and optimizer states</h2>
 <h3>Outer products in backpropagation</h3>
-<p>For one dense application $a=Wz$ and scalar loss $\mathcal L$, set $\delta=\nabla_a\mathcal L$. Then $\nabla_W\mathcal L=\delta z^\top$. If $z$ came through an activation, the corresponding activation derivative belongs in $\delta$. Batches and shared applications sum outer products. Nonlinear hidden layers preserve this local identity, while parameter-dependent factors generally prevent a fixed affine recurrence for the whole network.</p>
+<p>For one dense application $a=Wz$ and differentiable scalar loss $\mathcal L$, set $\delta=\nabla_a\mathcal L$. Then $\nabla_W\mathcal L=\delta z^\top$. If $a$ is followed by an activation differentiable at the current point, its derivative belongs in $\delta$. Batches and shared applications sum outer products. Nonlinear hidden layers preserve this local identity, while parameter-dependent factors generally prevent a fixed affine recurrence for the whole network.</p>
 <h3>Schedules weight realized writes</h3>
 <p>For $W_n=\alpha_nW_{n-1}-\eta_nG_n$, substitution yields</p>
 $$W_N=\left(\prod_{s=1}^N\alpha_s\right)W_0-\sum_{n=1}^N\eta_n\left(\prod_{s=n+1}^N\alpha_s\right)G_n.$$
@@ -414,11 +376,42 @@ $$W_Nq=\gamma_{0,N}W_0q-\sum_{n=1}^N\eta_n\gamma_{n,N}\delta_n(z_n^\top q).$$
 <h3>Batch noise is a different SNR</h3>
 <p>Let independent per-example gradients have nonzero mean $G$ and finite covariance $\Sigma$, with positive trace. A batch average of size $B$ has noise covariance $\Sigma/B$, hence</p>
 $$\operatorname{SNR}_{\rm grad}=\frac{B\|G\|^2}{\operatorname{tr}\Sigma}.$$
-<p>The simple noise scale $\operatorname{tr}\Sigma/\|G\|^2$ is related to empirical <a href="#ref8">critical batch sizes</a> under further modeling. It is not a hard memory capacity or a universal optimal batch size. Sampling without replacement from a finite population changes the covariance by a finite-population factor.</p>
+<p>The simple noise scale $\operatorname{tr}\Sigma/\|G\|^2$ is related to empirical <a href="#ref8">critical batch sizes</a> under further modeling. It is not a hard memory capacity or a universal optimal batch size. For $1\le B\le M$, sampling without replacement from a population of $M&gt;1$ gradients gives covariance $(M-B)\Sigma/[B(M-1)]$, with population covariance defined using factor $1/M$.</p>
 <p>Preconditioning transforms both signal and noise. With $\Sigma=\operatorname{diag}(100,1)$, whitening changes the noise scale from $101$ to $200$ when $G=e_1$, but to $2$ when $G=e_2$. It can worsen or improve this coordinate-dependent ratio; convergence needs a separate analysis.</p>
 <h3>Optimizer states have different roles</h3>
 <p>Adam stores moving averages of gradients and squared gradients. Bias correction removes zero-initialization bias; it does not itself provide warmup. For a constant gradient, the bias-corrected states are constant at every step. Adam is not exactly diagonal Shampoo: second moments of products do not generally factor into products of second moments.</p>
 <p><a href="#ref-lion">Lion</a> uses one mixing coefficient to form the signed update direction and another to update momentum. Basic matrix <a href="#ref-shampoo">Shampoo</a> uses $L^{-1/4}GR^{-1/4}$, where $L,R$ accumulate left and right gradient products. Muon approximately takes a polar factor of momentum. Fisher natural gradient, Hessian preconditioning, and gradient-noise whitening are distinct constructions, even when particular models relate them.</p>
+
+<h2 id="transport">Which writes reach future reads?</h2>
+<p>The concrete mechanisms above specify how each memory is written and read. We now ask which written directions can affect later outputs and receive credit from later losses. The same operator answers both questions.</p>
+<h3>Forward influence and backward credit</h3>
+<p>Fix the external inputs and update schedule. Let $m_{n+1}=\Phi_n(m_n,u_n)$ and $o_n=\Gamma_n(m_n,u_n)$, and assume the maps are continuously differentiable in state near the trajectory for each fixed input. Inputs may be discrete; no input derivative is required. Include every evolving state whose feedback is to be differentiated. A declared write intervention adds $B_n\xi_n$ after update $n$. Along the unperturbed trajectory, define $J_n=D_m\Phi_n$ and $H_n=D_m\Gamma_n$. For $j&lt;t$, the response is</p>
+$$K_{t,j}=H_tJ_{t-1}\cdots J_{j+1}B_j.$$
+<p>The empty product is the identity: write $j$ enters state $m_{j+1}$ and first affects output $o_{j+1}$ in this convention. Read-after-update outputs can be indexed at the new state. A direct simultaneous effect on output requires its own derivative.</p>
+<p>The chain rule gives $D_{\xi_j}o_t=K_{t,j}$. For a loss $\mathcal L=\sum_t\ell_t(o_t)$ with $g_t=\nabla\ell_t(o_t)$, the reverse relation is</p>
+$$\nabla_{\xi_j}\mathcal L=\sum_{t&gt;j}K_{t,j}^\top g_t=B_j^\top\lambda_{j+1},\qquad\lambda_n=H_n^\top g_n+J_n^\top\lambda_{n+1},\quad\lambda_N=H_N^\top g_N.$$
+<p>A perturbation travels forward through the update maps and read; a loss gradient travels backward through their transposes. This is an exact derivative identity. With fixed affine updates and reads, it also describes arbitrary finite output changes exactly. In nonlinear models it describes first-order response, and $J_n$ must include state-dependent write feedback.</p>
+<p>On the sequence axis, an SSM has $K_{t,j}=CA^{t-j-1}B$. A delta memory transports a perturbation as $\Delta S(I-\beta kk^\top)$ for fixed keys. On the depth axis, a residual sublayer has $J=I+DF_\ell(a)D\operatorname{Norm}(h)$. On the data axis, plain SGD on a twice continuously differentiable loss has $J=I-\eta\nabla^2\mathcal L_n(\theta)$, and a later prediction reads through $D_\theta f_\theta(q)$. Optimizer moments and other changing memories belong in the state when their feedback is included.</p>
+<h3>Written, retained, and observable are different properties</h3>
+<p>Choose a cut $s$. Let $\mathcal C_s$ map earlier write controls to state perturbations at that cut, and let $\mathcal O_{s:N}$ map those perturbations to the chosen future outputs, with future controls zero. The complete response is</p>
+$$\delta\boldsymbol o=\mathcal M_{s:N}\boldsymbol\xi,\qquad\mathcal M_{s:N}=\mathcal O_{s:N}\mathcal C_s.$$
+<p>The reachable directions are $\mathcal R_s=\operatorname{range}\mathcal C_s$. The invisible directions are $\mathcal N_{s:N}=\ker\mathcal O_{s:N}$. Rank–nullity gives</p>
+$$\operatorname{rank}\mathcal M_{s:N}=\dim\mathcal R_s-\dim(\mathcal R_s\cap\mathcal N_{s:N}).$$
+<p>This counts reachable distinctions visible in the specified future outputs. A write direction is invisible to these outputs exactly when every differentiable loss of them has zero directional derivative in that direction. A particular task loss may ignore a direction that other losses could detect. Across all linear losses of the chosen outputs, the possible write gradients form $\operatorname{range}\mathcal M^\top$, with the same dimension as the readable write distinctions.</p>
+<div class="table-wrap"><table><thead><tr><th>Two-dimensional case</th><th>State gain at cut</th><th>Output gain</th><th>Response rank</th><th>Chosen loss derivative</th></tr></thead><tbody>
+<tr><td>Written direction erased</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>Retained direction missed by read</td><td>1</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>Readable direction</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+<tr><td>Weak read</td><td>1</td><td>1/100</td><td>1</td><td>1/100</td></tr>
+<tr><td>Readable direction ignored by loss</td><td>1</td><td>1</td><td>1</td><td>0</td></tr>
+</tbody></table></div>
+<p>These are exact examples with a unit scalar write and Euclidean norms. For instance, writing along $e_1$ and reading along $e_2$ preserves the state contribution but misses it. Adding the $e_1$ read reveals it. A visible output change $(\xi,0)$ still receives no gradient from a loss depending only on the second output. Rank alone also misses how weak a readable direction can be.</p>
+<h3>Minimum memory and response gains</h3>
+<p>If a differentiable state summary with $k$ coordinates reproduces the chosen future outputs near the current state, its derivative factors the response matrix through $\mathbb R^k$. Therefore $k\ge\operatorname{rank}\mathcal M_{s:N}$. This is a local lower bound for the declared intervention and read family. A factorization at one cut alone need not define a compatible compressed recurrence.</p>
+<p>For a linear time-invariant system initialized at zero, the stronger global result is classical: the minimum state dimension preserving outputs for every finite input sequence is the rank of the block Hankel matrix with blocks $CA^{i+j}B$. A reachable/unobservable quotient attains the bound. The paper supplies the proof and cites <a href="https://lall.stanford.edu/engr207c/lectures/realization_2008_11_15_03.pdf">Lall’s state-space realization notes, Theorem 8 and Corollary 9</a>.</p>
+<p>With fixed external write and output norms, a singular mode $\mathcal Mv_i=\sigma_i u_i$ obeys $\mathcal M^\top u_i=\sigma_i v_i$. Forward response and backward credit have the same gain for these paired directions. The actual task gradient need not select the corresponding output direction. Intermediate state-coordinate changes cancel between $\mathcal C$ and $\mathcal O$, leaving $\mathcal M$ unchanged.</p>
+<p>Truncating the singular value decomposition gives the best rank-$k$ approximation of this single response map, with operator-norm error $\sigma_{k+1}$. This quantifies local response gains after norms are fixed. It does not establish retrieval capacity or trained-model performance. Nonlinear reads can contain information invisible to their first derivative: $o=m^2$ at $m=0$ has zero derivative yet changes under finite perturbations.</p>
+<p>A useful diagnostic compares state response at successive cuts, future output response, and the chosen loss response. Fix write magnitude and external inputs, extend the future read set before declaring a retained direction irrelevant, and check finite perturbations before extrapolating a local calculation.</p>
 
 <h2 id="limits">Limits and open questions</h2>
 <span id="transfer"></span><span id="open"></span>
@@ -429,7 +422,7 @@ $$\operatorname{SNR}_{\rm grad}=\frac{B\|G\|^2}{\operatorname{tr}\Sigma}.$$
 <li>Which assumptions on nonlinear depth blocks let transition-norm bounds control the full Jacobian?</li>
 <li>When does a preconditioner improve optimization under a specified relationship between signal and noise?</li>
 </ul>
-<p>These questions have explicit operations and criteria. They do not assume that loss shape determines a universal capacity hierarchy or that normalization alone ensures stability.</p>
+<p>These questions specify operations and criteria that can be tested and analyzed.</p>
 
 <div class="references"><h2>References</h2><ol>
 <li id="ref1">Widrow, B. and Hoff, M. E. (1960). Adaptive switching circuits. <em>IRE WESCON Convention Record</em>.</li>
