@@ -19,7 +19,8 @@ or a crux lemma needs stress testing.
 
 ## Numerical Evidence
 
-- Robust numerics are necessary, not sufficient.
+- When relying on numerical evidence, check robustness on relevant adversaries. Numerics are not a
+  prerequisite for an exact proof and do not substitute for one.
 - Prefer “proved core + numerics for remainder” to “numerics for everything.”
 - Cross-check evaluation methods at overlap points.
 - Use symmetry reduction for exact large-parameter computations when possible.
@@ -49,9 +50,10 @@ retarget closer to `A` instead of proving a false proxy bound.
 
 ### Proxy Ladder
 
-Several increasingly faithful proxies can fail one rung at a time. When a rung fails, name what
-structure it discarded: signs, weights, cancellations, orthogonality, geometry, degree, topology, or
-admissibility. The next crux should preserve that structure.
+Several increasingly faithful proxies can fail one rung at a time. Record what the failed encoding
+could not distinguish and the precise claim excluded. Before climbing another rung, use the campaign
+strategy review: does the repair test a live explanation or merely refine a known failure? A failure
+of this encoding does not prove that every method must explicitly preserve the same data.
 
 ### Exact Dual Before Sufficient Proxy
 
@@ -64,8 +66,8 @@ case`, or `heuristic`.
 
 - **Minimal counterexample via hereditary operation:** if restrictions preserve the target property,
   reduce to minimal bad objects.
-- **Kill cheap-invariant characterizations early:** find witnesses showing cheap necessary
-  invariants are not sufficient.
+- **Test proposed cheap-invariant characterizations early:** find discriminating witnesses when a
+  plausible characterization is part of a live route. Do not invent such claims solely to refute them.
 - **Exact recursion:** derive how the invariant transforms under deletion, restriction, link, minor,
   product, or quotient.
 - **Saturation shortcut:** before local casework, ask whether Sauer, Helly, Kruskal-Katona,

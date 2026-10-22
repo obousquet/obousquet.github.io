@@ -1,217 +1,120 @@
 ---
 name: proof-developer
-description: Develop rigorous mathematical proofs from validated conjectures. Use this skill when a conjecture has been tested computationally and the user wants to construct a formal proof. Guides the process from proof strategy selection through step-by-step development to publication-ready LaTeX. Handles strategy identification, lemma decomposition, gap checking, and iterative refinement. Works for proofs in combinatorics, topology, algebra, and related areas of pure mathematics.
+description: Develop rigorous mathematical proofs of precisely stated conjectures. Use when the user wants a proof or a campaign has selected a substantive proof step; prior computational testing is helpful when informative, but not required. Guides the process from proof strategy selection through step-by-step development to publication-ready LaTeX. Handles strategy identification, lemma decomposition, gap checking, and iterative refinement. Works for proofs in combinatorics, topology, algebra, and related areas of pure mathematics.
 ---
 
-# Proof Developer: From Conjecture to Rigorous Proof
+# Proof Developer
 
-Systematically develop a complete, rigorous proof of a validated mathematical conjecture. This skill guides the full process: choosing a proof strategy, decomposing into lemmas, developing each step with full justification, checking for gaps, and producing publication-ready LaTeX.
+Develop complete mathematical arguments with explicit hypotheses and justified steps. In a campaign,
+`honest-conjecture-resolution` selects routes and reviews their value; this skill constructs and
+checks the selected proof. Keep proof correctness distinct from relevance to the original goal.
 
-## How to Use This Skill
+## Understand The Statement And Its Role
 
-The user provides a conjecture (ideally with computational evidence) and wants a rigorous proof. Follow the workflow below.
+Restate the claim with all objects, quantifiers, and conditions defined. Identify whether it asks for
+an implication, equivalence, construction, exhaustive classification, or bound. Review available
+examples, counterexamples, and exact source theorems. Look up literature when an unfamiliar theorem
+or plausible known result could discharge the difficult step; do not substitute vague name matching
+for checking its hypotheses.
 
-### Step 0: Understand the Statement
+For an auxiliary claim, identify its place in a sufficient proof route and the assumptions still
+needed afterward. Mark arrows as equivalent, necessary, sufficient, or special-case. A strengthened
+claim can be unnecessarily hard or false even when the original target is true.
 
-1. **Restate the conjecture** in precise mathematical language with all quantifiers, conditions, and definitions explicit.
-2. **Identify what we need to show**: What is the logical structure? (implication, equivalence, existence, universality, bound)
-3. **Review the evidence**: What computational testing has been done? What patterns were observed? What do the small cases look like?
-4. **Check the literature**: Does the user know of related results, partial results, or proof techniques that apply in this area?
+For a construction from auxiliary data, write both implications: the hypotheses supply admissible
+data, and those data produce the desired witness. Identify which theorem supplies each input and
+whether the inputs can be chosen jointly. Separately existing witnesses need not be compatible.
+Compare choices permitted by the target with those frozen by the construction; failure for a fixed
+reference or boundary assignment need not refute existence after reselection.
 
----
+A selected claim may instead develop general theory: a new operation, structural law, representation,
+or comparison on a natural class. Give its independent mathematical purpose; do not demand a known
+implication to the initiating conjecture. Develop its proof with the same rigor, and assess a possible
+standalone paper by the coherent contribution of the theory.
 
-## Step 1: Identify Proof Strategies
+## Work Backward Before Filling In Details
 
-### 1.1 List Candidate Strategies
+Outline how the conclusion would follow. Identify the most uncertain indispensable implication;
+attempt to prove or falsify it before proving routine supporting lemmas. Check cheap prerequisites
+and known counterexamples first. Do not work in exposition order merely because notation and easy
+lemmas come first on the page.
 
-Consider which approaches fit the statement:
+If no strategy is selected, compare a few approaches by their hardest step and its plausibility:
+direct argument, induction or minimal counterexample, construction, extremal counting, duality,
+algebra, geometry, or topology. Different technique names do not make independent routes when they
+all require the same unresolved implication. Select and proceed without asking the user to decide
+routine proof tactics.
 
-| Strategy | When to consider |
-|----------|-----------------|
-| Direct proof | The conclusion follows naturally from definitions and known results |
-| Induction | The statement is parameterized (by n, by size, by dimension) and has recursive structure |
-| Contradiction | The negation leads to a clearly absurd situation |
-| Contrapositive | The contrapositive is easier to prove than the original |
-| Bijection/counting | We need to show two quantities are equal, or establish a correspondence |
-| Construction | We need to exhibit an object with certain properties |
-| Case analysis | The hypothesis splits naturally into cases |
-| Double counting | A quantity can be computed two ways, yielding the result |
-| Pigeonhole/extremal | An extremal argument or counting argument gives the result |
-| Topological/algebraic | The structure admits tools from topology, algebra, or homological algebra |
+A toy case is useful when it isolates this difficult mechanism. Explain what its proof would teach
+about the full statement; avoid solving successively easier variants with no transfer back.
 
-### 1.2 Evaluate and Select
+## Build A Sufficient Proof Architecture
 
-For each candidate strategy:
-- **Feasibility**: Can we see how the proof would start and what the key step would be?
-- **Hints from computation**: Did the small cases suggest a particular structure (e.g., inductive decomposition, bijection)?
-- **Known techniques**: Are there standard proof techniques for this type of result?
+State needed intermediate claims precisely and check that together they imply the conclusion.
+Expose hidden assumptions, circular dependencies, and degenerate cases before investing in the
+individual proofs. If a reduction introduces a new central lemma, explain what makes that lemma
+more accessible; equivalence alone does not make the problem easier.
 
-Present the 2-3 most promising strategies to the user with a recommended approach and reasoning.
+For induction or minimal-counterexample arguments, give the strictly decreasing quantity, verify
+closure of hypotheses, and state exactly what the smaller-instance theorem supplies. Existence of
+some witness on a smaller object does not grant arbitrary prescribed boundary values. Prove that
+stronger extension property separately if the assembly requires it.
 
----
+Develop a proof in the most informative order, then write it in the reader's logical order. A single
+substantive lemma may deserve sustained work. Do not fragment every nontrivial sentence into a named
+lemma or add generalizations merely to increase the number of finished results.
 
-## Step 2: Decompose into Lemmas
+## Develop And Challenge The Argument
 
-### 2.1 Identify the Proof Skeleton
+For every step:
 
-Break the proof into a sequence of logically ordered steps:
+- state what is proved and justify it from definitions, proved lemmas, or an exact cited theorem;
+- keep quantifiers, implication direction, and dependence on parameters explicit;
+- handle all cases, including boundary and degenerate cases;
+- preserve the data used by the target when passing to a proxy, quotient, or auxiliary object;
+- test the proposed inference against discriminating examples where useful.
 
-```
-PROOF SKELETON:
+Challenge the step most likely to fail. A small computational test can be decisive for a dubious
+subclaim, but successful tests do not discharge it. A proof does not require a ritual computational
+replay of every consequence when no unresolved concern motivates one.
 
-Goal: [Main theorem statement]
+If stuck, check whether the claim is false, too strong, or simply beyond the current technique. Try a
+contrapositive, different representation, exact literature match, or a weaker statement that still
+suffices. Do not repeatedly weaken the conclusion or strengthen assumptions without rechecking the
+connection to the original goal. Report the exact unresolved implication and follow the campaign's
+cumulative route review; a new lemma name does not reset that review.
 
-Step 1 (Setup): [Establish notation, recall definitions]
-Step 2 (Key Lemma): [State the main technical lemma]
-Step 3 (Lemma Proof): [Prove the key lemma]
-Step 4 (Assembly): [Combine to get the main result]
+## Assemble And Audit
 
-Dependencies: Step 4 uses Steps 2-3. Step 3 uses Step 1.
-```
+Write the argument so the reader can reconstruct every inference. For a long proof, give a roadmap,
+then the details. Verify:
 
-### 2.2 Formulate Lemmas
+- every object and assumption is defined before use;
+- intermediate claims imply exactly the stated conclusion without circularity;
+- theorem citations match the actual hypotheses, conventions, and scope;
+- every case is proved, or its reduction to a proved case is explained precisely;
+- boundary cases and any examples used to check the proof agree with the argument;
+- provisional claims and computational evidence are not silently used as theorems.
 
-For each intermediate result:
-- State it as a self-contained lemma with precise hypotheses and conclusions.
-- Check that the lemmas chain together to give the main result.
-- Verify that no circular dependencies exist.
-- Consider whether any lemma is independently interesting (worth highlighting).
+Correctness fixes remain necessary even when they produce no new result. If the proof fails, preserve
+what is justified and state the gap; do not call the theorem essentially proved. A failed route says
+nothing conclusive about the truth or ultimate tractability of the original problem by itself.
 
-### 2.3 Check for Missing Pieces
+## Write At The Appropriate Fidelity
 
-Before proceeding to write proofs:
-- Are all the lemmas sufficient to conclude the main result?
-- Are there implicit assumptions that need their own justification?
-- Are there edge cases or degenerate cases that need separate handling?
+When the user requests a finished proof or manuscript, provide a complete, readable argument. For
+campaign work, preserve a full auditable proof of any relied-on lemma, then decide whether its role
+warrants promotion into the curated paper or a standalone theory paper. A substantial general theory
+need not remain a side note because the initiating conjecture is open. An isolated local result can
+remain a research note.
+Do not automatically add sections, corollaries, or examples after every successful attempt.
 
----
+For promoted material, follow the project's LaTeX conventions and the relevant writing skill:
+introduce definitions and intuition, give useful examples, state the theorem precisely, and provide
+a proof sketch when length warrants it followed by the full proof. Match macros, notation, labels,
+and cross-references. Keep required PDFs current with SyncTeX when source changes warrant a build.
 
-## Step 3: Develop Each Step
-
-### 3.1 Write Proofs Incrementally
-
-For each lemma/step, develop the proof with full rigor:
-
-1. **State what we prove** at the start.
-2. **Justify every step**: cite the definition, lemma, or known result used.
-3. **Handle all cases**: if there is case analysis, enumerate all cases and prove each.
-4. **Be explicit about quantifiers**: "for all", "there exists" — never ambiguous.
-5. **Flag any step that feels non-trivial**: if a step requires more than one line of justification, it may need its own sub-lemma.
-
-### 3.2 Verify Each Step
-
-After writing each proof:
-- **Re-read from the reader's perspective**: can someone follow this without filling in gaps?
-- **Check logical direction**: are implications going the right way?
-- **Test against examples**: does this step hold for the concrete examples from computational testing?
-- **Check boundary cases**: does the argument work for the smallest/degenerate cases?
-
-### 3.3 When Stuck
-
-If a step resists proof:
-- **Go back to computation**: test the specific sub-claim on small cases. Is it actually true?
-- **Try the contrapositive**: sometimes the reverse direction is easier.
-- **Strengthen or weaken**: can we prove a slightly stronger/weaker statement that suffices?
-- **Look for a different decomposition**: maybe the lemma structure needs adjustment.
-- **Report honestly**: tell the user which step is problematic and what we've tried.
-
----
-
-## Step 4: Assemble and Verify
-
-### 4.1 Write the Complete Proof
-
-Combine all steps into a single, flowing proof. Ensure:
-- The logical flow is clear from start to finish.
-- Cross-references between lemmas are correct.
-- Notation is consistent throughout.
-- The proof sketch (if included) accurately reflects the full proof.
-
-### 4.2 Gap Check
-
-Systematically verify:
-
-```
-GAP CHECK:
-
-□ Every quantifier is explicit
-□ Every step cites its justification
-□ All cases are handled (no "similarly" without verification)
-□ No circular reasoning
-□ Boundary/degenerate cases addressed
-□ Definitions used consistently with their statements
-□ The conclusion matches the theorem statement exactly
-```
-
-### 4.3 Test Against Computational Evidence
-
-- Verify that the proof is consistent with all tested examples.
-- Walk through the proof on one concrete small example to check it works.
-- If the proof implies something stronger than the conjecture, verify that computationally too.
-
----
-
-## Step 5: Produce LaTeX
-
-### 5.1 Structure the Output
-
-```latex
-\begin{theorem}[Descriptive name]\label{thm:name}
-[Precise statement with all hypotheses]
-\end{theorem}
-
-\begin{proof}[Proof sketch]
-[High-level roadmap: 3-5 sentences covering the main ideas and key steps]
-\end{proof}
-
-\begin{lemma}\label{lem:key-lemma}
-[Key technical lemma]
-\end{lemma}
-
-\begin{proof}
-[Complete proof with all steps justified]
-\end{proof}
-
-\begin{proof}[Proof of Theorem~\ref{thm:name}]
-[Full proof, referencing lemmas]
-\end{proof}
-```
-
-### 5.2 Add Supporting Content
-
-- **Examples** illustrating the theorem (before or after the proof).
-- **Remarks** connecting to other results in the paper.
-- **Corollaries** that follow immediately.
-- **Remark on sharpness**: can any assumption be weakened? Is the bound tight?
-
-### 5.3 Match Paper Style
-
-- Use the existing macro and notation conventions from the paper.
-- Place the result in the appropriate section.
-- Add labels consistent with the paper's labeling scheme.
-- Add cross-references to related definitions and results.
-
----
-
-## Guidelines
-
-### Intellectual Honesty
-- If a step cannot be rigorously justified, say so explicitly. Never hide a gap.
-- Distinguish between "we believe this is true based on evidence" and "this is proved."
-- If the proof only works under additional assumptions, state them clearly.
-
-### Proof Quality Standards
-- **No hand-waving**: every "clearly", "obviously", "it follows that" must be backed by a specific justification.
-- **No "similarly"**: if two cases are claimed to be similar, either prove both or explain precisely what changes.
-- **No implicit assumptions**: if the proof requires a property, it must appear in the hypotheses or be proved.
-
-### When the Proof Fails
-- If a gap cannot be closed, this is valuable information.
-- Report what was proved (partial result) and what remains open.
-- Suggest whether the conjecture should be weakened, the approach changed, or more computational evidence gathered.
-- A failed proof attempt that identifies the precise difficulty is more useful than no attempt.
-
-### Iterative Development
-- Proofs rarely come out perfect on the first attempt.
-- After writing a draft proof, review it critically, then refine.
-- The user may spot issues or suggest alternative approaches — incorporate these and iterate.
+Conclude with what is proved, its general theoretical contribution, any effect on the original
+conjecture, and what remains open. A proof of a
+substantial sufficient lemma can be real progress even before the final theorem closes; make the
+remaining dependencies explicit rather than demanding an immediate complete solution.

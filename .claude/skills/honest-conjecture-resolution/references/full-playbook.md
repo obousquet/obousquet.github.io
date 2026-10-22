@@ -394,7 +394,7 @@ Next decisive move:
 
 ### Repeated-campaign lessons
 
-These are the methodological lessons that repeatedly paid for themselves in long YangDim-style
+These are the methodological lessons that repeatedly paid for themselves in long mathematical
 campaigns with several false routes, side quests, subagents, and consolidation passes.
 
 - **Treat reconsolidation frequency as evidence.** If the same campaign repeatedly needs cleanup,
@@ -472,7 +472,7 @@ campaigns with several false routes, side quests, subagents, and consolidation p
   speed unless it chooses the next proof attempt, counterexample search, theorem import, or route
   retirement with a clear success/failure criterion.
 
-### Systematicity upgrades from long YangDim campaigns
+### Systematicity upgrades from long mathematical campaigns
 
 Use these rules when a campaign starts alternating between proof attempts, false routes,
 re-consolidations, side-method detours, and subagent batches.  The point is to convert accumulated
@@ -1495,11 +1495,7 @@ If a branch asks you to prove that no additional object can satisfy the same loc
 a sharp global theorem: Sauer, Helly, Kruskal--Katona, Euler characteristic, rank-nullity,
 dimension, or a matroid/LP bound. Try the contrapositive: "if the extra object were addable, what
 larger class or complex would still avoid the forbidden pattern?" A one-line saturation
-contradiction is often better than a large table of local witnesses. In the YangDim
-`(m,d)=(6,2)` bridge route, ten oriented outside rows plus one oriented dual row would give `23`
-concepts on six coordinates shattering no triple, contradicting Sauer's bound `1+6+15=22`; this
-closed the row-local NAE/nonaddability branch and made the bad-partner/no-bad witness taxonomy only
-explanatory.
+contradiction is often better than a large table of local witnesses. Keep concrete saturation certificates and their campaign consequences in the project ledger.
 
 ## Plateau protocol: step back without drifting
 

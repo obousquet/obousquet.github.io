@@ -32,13 +32,24 @@ truth records after a research round.
 
 ## Draft / TeX Rules
 
-- Convert route ledgers into readable mathematics when the ledger becomes fragmented or after a
-  route status changes.
+- Preserve sufficient reasoning and evidence to audit a result. A scratch attempt needs a compact
+  record; a verified reusable result may need a research note; the curated manuscript needs selected
+  results that serve its argument or an explicitly chosen standalone contribution.
+- Mathematical correctness does not automatically justify manuscript promotion. Explain the
+  result's role before expanding the paper. Keep a full proof available when relying on a result,
+  even when it is not promoted to the main narrative.
+- A coherent general theory can warrant its own active branch and full journal paper while the
+  initiating conjecture remains open. Give the paper its own central question, general statements,
+  substantive proofs, examples, and relation to existing literature. Its independent mathematical
+  contribution can justify promotion without a known implication back to the conjecture. Use the
+  appropriate research-writing and review skills; preserve the original conjecture's separate status.
+- Consolidate research notes into readable mathematics at a meaningful milestone, or when the user
+  requests a writeup. A route status change alone need not trigger a new manuscript section.
 - Start with definitions, notation, standing hypotheses, and target statement.
-- Promote durable facts as `Definition`, `Lemma`, `Proposition`, `Conjecture`, `Question`,
-  `Example`, `Counterexample`, or `Remark`, with status labels.
-- Write killed routes as real mathematics: construction, failed claim, mechanism, growth rate or
-  smallest witness.
+- When promoting material, use `Definition`, `Lemma`, `Proposition`, `Conjecture`, `Question`,
+  `Example`, `Counterexample`, or `Remark` as appropriate, with status labels.
+- For a failed route, record the precise claim, verified witness, and failure mechanism. Develop a
+  full expository section only if its significance warrants one; minimization is not mandatory.
 - Move raw logs, tables, and scratch scripts out of the narrative; cite the stable script or
   inventory entry.
 - Add dependency maps: “Target follows from A+B; A proved; B reduces to C; D refuted by W.”
@@ -49,7 +60,8 @@ Use the `conjecture-dashboard` skill for format and rendering details.
 
 - The authored manifest (`dashboard.json` or another `*dashboard*.json`) is the route-tree source of
   truth for the dashboard.
-- Update the manifest when ledger/TeX route status changes.
+- Update the manifest when a displayed route status or claim changes. A local record update that
+  does not alter the dashboard's claims does not require rewriting its summaries.
 - Show theorem-level routes and smallest active cruxes; avoid local atom clutter.
 - Link every node to the relevant ledger, draft, script, or theorem.
 - Active/proved/refuted/stalled/parked status should be visible at a glance.
@@ -60,8 +72,9 @@ Use the `conjecture-dashboard` skill for format and rendering details.
 - Maintain a root inventory such as `EXPLORATION_INVENTORY.md` when a repo has many route artifacts.
 - Track durable literature packets in the inventory when a paper contributes a proof input, route
   obstruction, terminology choice, or exact comparison theorem.
-- Every reusable finite certificate or diagnostic should have three things: script command,
-  human-readable statement/table, and inventory entry.
+- A certificate used as evidence needs a reproducible command and a human-readable statement of
+  exactly what was checked. Index reusable evidence at consolidation; exploratory scratch output
+  does not need an inventory row for every attempt.
 - When a script becomes evidence, label it as active diagnostic, verifier, regression check, finite
   certificate, or historical scratch.
 - Preserve runnable entry points when moving scripts.
@@ -90,7 +103,12 @@ Commit packet changes and indexes in the library's owning repository; links in
 project views do not stage their targets. Link the shared index or packet from the
 relevant dashboard. Keep project-specific interpretation separate from reusable results.
 
-## Round Update Order
+## Update Only The Affected Records
+
+Keep one authoritative current-state record and link to it. Avoid copying the same detailed update
+into multiple ledgers, route notes, and dashboard nodes. Derived summaries must remain accurate, but
+need not mention every new local lemma. Batch archival indexing and presentation work at milestones;
+record changed mathematical claims, invalidated evidence, and active status promptly.
 
 Before:
 
@@ -104,14 +122,14 @@ During:
 
 After proof:
 
-- promote theorem-level material to TeX/side draft;
-- update ledger and dashboard;
+- preserve the proof and decide whether it merits manuscript promotion;
+- update the authoritative ledger and any views whose claims changed;
 - demote scripts to verifier/regression if appropriate;
 - remove closed active debt.
 
 After failure:
 
-- record smallest witness, failed claim, and mechanism once;
+- record a verified witness, failed claim, and mechanism once;
 - stop reopening the exact route unless new evidence changes the claim.
 
 After plateau:
@@ -127,8 +145,8 @@ After plateau:
   artifact unless explicitly asked to preserve or share it.
 - Do not generate HTML from `.tex` files as a standing artifact; these builds are slow and brittle
   in the current research repos.
-- When generated PDF artifacts are tracked, commit and push them with the source changes that
-  produced them.
+- When committing/pushing source changes is authorized and generated PDF artifacts are tracked,
+  include the corresponding PDFs. Artifact upkeep does not independently authorize publication.
 - Keep dashboard HTML generated from the manifest and committed with it when the dashboard is part
   of repo state. Regenerate it whenever `dashboard.json` or another `*dashboard*.json` manifest
   changes.

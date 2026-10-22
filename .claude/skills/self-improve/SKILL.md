@@ -26,10 +26,17 @@ unless the user separately asks for those actions.
 ## Establish The Session
 
 Use the conversation already in context, but also identify its persisted source
-when one is available. For the current session, run:
+when one is available. When app thread tools are available, list metadata first,
+select only relevant sessions, and read bounded pages from those sessions. Extract
+user requests, visible actions, failures, corrections and outcomes; do not dump raw
+thread responses or hidden reasoning. Page further only to resolve a concrete
+evidence gap. Record selection criteria and truncated or incomplete coverage.
+
+For local transcript discovery, use the helper relative to the skill directory
+you actually loaded; do not assume a particular installation alias exists:
 
 ```bash
-python3 ~/.agents/skills/self-improve/scripts/find_session.py --cwd "$PWD"
+python3 <skill-directory>/scripts/find_session.py --cwd "$PWD"
 ```
 
 The helper checks supported project/session layouts under `.claude`, `.agents`,
@@ -43,7 +50,7 @@ If the user specifies a directory or asks to review the `k` most recent sessions
 from a location, use the explicit scan mode instead:
 
 ```bash
-python3 ~/.agents/skills/self-improve/scripts/find_session.py --sessions-dir <path> --limit <k>
+python3 <skill-directory>/scripts/find_session.py --sessions-dir <path> --limit <k>
 ```
 
 This mode recursively scans the given directory or JSONL file path(s), returns

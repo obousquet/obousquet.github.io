@@ -1,120 +1,75 @@
 ---
 name: conjecture-explorer
-description: Explore and test mathematical conjectures computationally before attempting proofs. Use this skill when the user formulates a conjecture, hypothesis, or pattern and wants to test it on small cases, search for counterexamples, enumerate structures, or build computational evidence. Guides the cycle of conjecture → code → test → refine until the statement is sharp enough to prove. Essential for the exploratory phase of mathematical research.
+description: Explore and test mathematical conjectures computationally before attempting proofs. Use this skill when the user formulates a conjecture, hypothesis, or pattern and wants to test it on small cases, search for counterexamples, enumerate structures, or build computational evidence. Designs bounded, decision-relevant experiments, distinguishes exact evidence from unresolved searches, and connects computational findings to proof attempts.
 ---
 
-# Conjecture Explorer: Computational Testing of Mathematical Hypotheses
+# Conjecture Explorer
 
-Systematically test mathematical conjectures through computation. Write Python scripts that check small cases, search for counterexamples, enumerate relevant structures, and surface patterns — building confidence and sharpening statements before proof attempts.
+Use computation to learn something that changes the mathematical next step. In a campaign,
+`honest-conjecture-resolution` owns strategy selection, progress accounting, and route reviews.
+Computation can help formulate or falsify a conjecture; it is not a prerequisite for every proof.
 
-## How to Use This Skill
+## Define The Experiment Before Coding
 
-The user provides a conjecture, hypothesis, or observed pattern. Follow the workflow below.
+State the claim with its quantifiers, input class, parameters, and conclusion. Identify what is
+already known and the unresolved decision. For each possible result, say what action it would support.
+If success and failure would both lead to the same larger search, reconsider the experiment.
 
-### Step 0: Understand the Conjecture
+Choose ranges and resource limits from the task and known costs; clarify only when missing user
+information matters. Distinguish these purposes:
 
-1. **Parse the statement**: Restate the conjecture precisely in mathematical notation. Identify all objects, quantifiers, and conditions.
-2. **Identify the parameters**: What can be varied? (e.g., dimension n, graph size, group order)
-3. **Clarify scope**: Ask the user (if not obvious):
-   - What parameter ranges are tractable to test?
-   - Are there known special cases or boundary cases to check first?
-   - Is there a related conjecture or weaker version to test alongside?
+| Purpose | Suitable experiment | What it can establish |
+|---------|---------------------|-----------------------|
+| Refute a universal claim | Targeted adversaries and boundary cases; exhaustive small cases when useful | One verified counterexample refutes the exact claim. Passing cases do not prove it. |
+| Find an existence witness | Structured construction or bounded search | A verified witness proves existence under the checked hypotheses. |
+| Distinguish mechanisms | Examples on which candidate explanations predict different outcomes | Evidence for selecting or rejecting those explanations. |
+| Solve a finite reduction | Complete enumeration with justified coverage | The finite claim, if all cases and checks are exact and complete. |
+| Explore asymptotics | Parameter families that distinguish proposed growth laws | Finite-range evidence, not an asymptotic theorem. |
+| Test a correspondence | Explicit maps and inverse tests on small instances | Diagnostics; equal counts alone do not establish a bijection. |
 
----
+For an agent-proposed auxiliary claim, explain why it is plausible and how it serves the conjecture
+or a general theory objective. Experiments may test the laws of a new operation, natural scope of a
+representation, or consequences of an emerging invariant before a return to the conjecture is known.
+Do not invent easily refuted shortcuts just to produce another counterexample.
 
-## Step 1: Design the Computational Test
+## Check Cheap Preconditions First
 
-### 1.1 Choose the Testing Strategy
+Before an expensive search, verify that the selected input actually belongs to the intended class
+and lacks any easy certificate that makes the question moot. Try cheap exact identities, invariants,
+and witness constructions before branching over many dependent cases.
 
-Select one or more approaches based on the conjecture type:
+A greedy procedure may supply a valid positive certificate; its failure need not certify a negative
+answer. A timeout, state limit, heuristic failure, incomplete enumeration, or memory limit is
+`unknown`, not `false`. Keep these outcomes distinct in output and downstream decisions.
 
-| Conjecture type | Strategy |
-|----------------|----------|
-| Universal ("for all X, P(X) holds") | Enumerate all X up to feasible size, check P(X). Any failure is a counterexample. |
-| Existential ("there exists X such that P(X)") | Search for a witness. Try structured search before random. |
-| Asymptotic ("P(n) grows like f(n)") | Compute P(n) for increasing n, fit against candidate functions, plot. |
-| Equality/inequality ("A(X) ≤ B(X)") | Compute both sides for all feasible X, report the gap distribution. |
-| Pattern ("the sequence satisfies recurrence R") | Compute terms, check the recurrence, look up in OEIS if applicable. |
-| Structural ("objects of type A biject with type B") | Enumerate both sides, compare counts, attempt explicit matching. |
+For an existence target, record which choices the search permits changing. Distinguish failure for
+fixed auxiliary data from exclusion of every allowed choice; the latter needs complete coverage or
+a valid nonexistence certificate. Known-positive inputs can calibrate a new construction or falsify
+a stronger supplier claim, but passing them does not enlarge the known positive domain.
 
-### 1.2 Plan the Enumeration
+## Implement The Mathematical Test
 
-- Identify the mathematical objects to enumerate (e.g., graphs, simplicial complexes, partitions, permutations).
-- Determine the feasible range: what sizes can be exhaustively checked?
-- Decide on representation: how to encode the objects in Python.
-- Plan the output: what to print to make patterns visible.
+Use `explore_<topic>.py` for working scripts and run them with `uv run python`. Prioritize transparent
+mathematical logic over software polish. Reuse a trusted representation when possible.
 
----
+- State the conjecture, tested domain, coverage assumptions, and stop condition in the script.
+- Validate on simple positive, negative, and degenerate examples before scaling.
+- Check target and proxy separately. Preserve data the claim depends on.
+- Report concise summaries; save enough detail to reconstruct any witness and inspect why it works.
+- For random experiments, record the seed and sampling restrictions. For exhaustive claims, explain
+  completeness and any symmetry reduction.
+- Stop at a decisive result unless additional computation serves a separately stated question.
 
-## Step 2: Write the Exploration Script
+When a computation becomes proof evidence, replay the certificate or check the result through a
+meaningfully different formulation where feasible. Repeating the same predicate twice is not
+independent verification. Match verification effort to the claim's importance; do not build a large
+test suite around disposable exploratory code.
 
-### 2.1 Script Structure
+## Execute Within Resource Limits
 
-Follow this template:
+Start with small parameters to check implementation and estimate growth. Scale only when the next
+range could change the decision or is required for the specified finite coverage.
 
-```python
-"""
-Conjecture: [precise statement]
-Test: [what this script checks]
-"""
-
-# 1. Generate/enumerate the objects
-# 2. For each object, compute the relevant quantities
-# 3. Check the conjecture condition
-# 4. Report results: confirmations, counterexamples, patterns
-
-# Print a summary table at the end
-# If counterexample found, print it with full detail
-```
-
-### 2.2 Coding Priorities
-
-- **Correctness over speed** — a wrong test is worse than a slow one.
-- **Clarity of mathematical logic** — the code should read like the math. Name variables after the mathematical objects they represent.
-- **Verbose output** — print intermediate results so patterns are visible. Use tables, sorted output, and summaries.
-- **Counterexample detail** — when a counterexample is found, print everything about it: the object, the quantities computed, why it fails.
-- **Progressive parameter sizes** — start with the smallest non-trivial case and increase.
-
-### 2.3 Output Format
-
-Structure the output to make patterns jump out:
-
-```
-=== Testing conjecture: [short name] ===
-
-n=2: [result] ✓
-n=3: [result] ✓
-n=4: [result] ✓
-n=5: COUNTEREXAMPLE FOUND
-  Object: [description]
-  LHS = [value], RHS = [value]
-  Details: [why it fails]
-
-Summary: Conjecture holds for n ≤ 4, fails at n=5.
-```
-
-Or for pattern discovery:
-
-```
-=== Sequence values ===
-n=1: 1
-n=2: 3
-n=3: 7
-n=4: 15
-n=5: 31
-
-Pattern: 2^n - 1 (confirmed up to n=10)
-```
-
----
-
-## Step 3: Run and Analyze
-
-### 3.1 Execute the Script
-
-- Run with `uv run python explore_<topic>.py`
-- Start with small parameters to validate the code itself.
-- Increase parameter size gradually.
 - Be a good EC2 citizen: do not saturate CPU or memory with unconstrained searches. Start with small
   limits, estimate memory growth before scaling, and avoid launching several heavy jobs at once.
 - Before any numerical run that could grow beyond a trivial toy case, check current RAM with
@@ -132,67 +87,32 @@ Pattern: 2^n - 1 (confirmed up to n=10)
 - If a job starts swapping, consuming all cores for a long time, or threatening the shared web/server
   workload, stop it and restart with smaller parameters, chunking, checkpointing, or a sampled search.
 
-### 3.2 Interpret Results
+## Interpret And Act
 
-**If the conjecture holds for all tested cases:**
-- Report the range tested and any patterns in the data.
-- Identify the hardest cases (closest to failure, largest gap, etc.).
-- Suggest whether the tested range is convincing or if larger tests are needed.
-- Note any patterns that might hint at a proof strategy.
+**A counterexample:** verify all hypotheses and the failed conclusion, then revisit the claim's role
+in the proof. Minimize it only if minimality matters to the user's goal, the explanation, or a next
+experiment. A repair needs a structural reason and a surviving implication toward the goal; do not
+automatically add conditions until a formerly useful conjecture becomes irrelevant.
 
-**If a counterexample is found:**
-- Analyze the counterexample: what makes it special? Is it minimal?
-- Search for the minimal counterexample.
-- Suggest how to refine the conjecture: can we add a condition that excludes the counterexample while preserving the interesting cases?
-- Test the refined conjecture.
+**No counterexample within the tested domain:** report the exact domain, whether coverage was
+exhaustive, and which plausible failure mechanisms were tested. Use the observed structure to attempt
+a proof or design a qualitatively different adversary. Do not extend the range merely because all
+previous cases passed.
 
-**If the data suggests a different pattern:**
-- Propose the alternative conjecture.
-- Test the new conjecture with the same rigor.
+**Unknown or inconclusive:** report the limit and remaining uncertainty. Consider a better certificate,
+representation, or proof argument before allocating more compute. Further search needs a reason to
+expect useful information; running out of resources does not prove nonexistence.
 
-### 3.3 Iterate
+**A new pattern:** state a conjecture and its purpose. Test it against examples that could distinguish
+it from existing explanations before treating it as a new active route.
 
-The conjecture-test-refine loop may run several rounds:
+## Stop And Hand Off
 
-```
-Conjecture v1 → test → counterexample found
-Conjecture v2 (refined) → test → holds for n ≤ 8
-Conjecture v2 → larger test → holds for n ≤ 12
-→ Ready for proof attempt
-```
+Stop when the decision is resolved, the stated allowance is exhausted, or more of the same experiment
+would only repeat existing evidence. User-requested enumeration and proved finite reductions remain
+valid reasons to complete an entire range.
 
-Report clearly which version of the conjecture is the current best.
-
----
-
-## Step 4: Prepare for Proof
-
-Once the conjecture is computationally validated:
-
-1. **State the final conjecture** precisely, incorporating all refinements.
-2. **Summarize the evidence**: range tested, number of cases checked, notable patterns.
-3. **Identify proof hints** from the computation:
-   - Did the proof of small cases suggest an inductive structure?
-   - Did the enumeration reveal a bijection or structural decomposition?
-   - Are there invariants that the computation surfaced?
-4. **Flag edge cases** the proof must handle.
-5. **Save the script** as `explore_<descriptive_name>.py` for future reference.
-
----
-
-## Guidelines
-
-### Script Naming
-- Use `explore_<topic>.py` for exploration scripts.
-- These are working tools, not production code — but they must be correct.
-
-### When to Stop Testing
-- The conjecture has been tested over a range large enough that patterns are clear.
-- Or a counterexample has been found and the conjecture refined.
-- Or computational limits are reached and the evidence is as strong as feasible.
-
-### Common Pitfalls
-- Testing only "nice" cases (e.g., only prime dimensions, only connected graphs).
-- Not checking boundary cases (n=0, n=1, empty set, trivial group).
-- Assuming the conjecture is true because the first few cases work — always push to larger cases.
-- Not printing enough detail to understand why a counterexample fails.
+Preserve the precise claim, evidence scope, script command, useful witnesses, and any mechanism
+suggested for a proof. State what advanced in the conjecture, reusable theory, or route selection. For a
+promising proof step, use `proof-developer`; do not wait for an arbitrary amount of computational
+confirmation. Record negative routes compactly so a renamed variant does not restart the same search.

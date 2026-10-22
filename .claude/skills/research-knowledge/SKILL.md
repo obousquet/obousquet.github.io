@@ -14,10 +14,17 @@ navigation and reusable summaries, not independent proof certification.
 1. Run `python3 scripts/research_knowledge.py sync` from the campaign repo. Configuration is found
    through `.research-knowledge.json`, `RESEARCH_KNOWLEDGE_CONFIG`, or the shared library binding.
    An explicit `--config /path/to/knowledge/workspace.json` also works. Inspect coverage issues.
+   Let sync finish using the tool's running-process/polling support; do not kill it with a few-second
+   process timeout. First builds and migrations can take minutes; progress is printed to stderr.
 2. Run `python3 scripts/research_knowledge.py context --campaign . --task 'current question'` and
    actually read its output. Rebuild this context after compaction or a change of research direction.
    `--budget` uses conservative UTF-8 byte units to bound token use without a model dependency;
    increase it when necessary. The output lists omitted records and marks partial raw excerpts.
+   Keep the campaign profile short: current conventions and source pointers, not an appended history
+   of rounds. Pin the authoritative current packet and retrieve history selectively. If profile/task
+   text exceeds its share of the budget, context explicitly omits the whole profile while preserving
+   retrieved evidence. Read the full profile with `profile --campaign ID` when needed; do not
+   repeatedly trim a few characters while leaving an oversized historical summary.
 3. Search the proposed claim and its failure mechanism with
    `python3 scripts/research_knowledge.py search 'terms' --campaign .`. Campaign synonyms and
    related sibling repos influence ranking; global sources remain available. Search reformulations
@@ -28,6 +35,17 @@ refutations and superseding cards accompany known IDs; uncurated archive correct
 require direct searches. An empty result or incomplete index does not establish novelty. When the
 registry is unavailable, use targeted `rg` searches of campaign and sibling sources and report the
 coverage limit. Use `shared-literature` for external paper acquisition and identity reservations.
+
+Use `status` to diagnose retrieval trouble: it cheaply reports index age, schema/registry status,
+coverage issues and a running writer. Readers can query the previous committed snapshot during sync;
+returned hits check source drift and corrections. The default lock allowance is 300 seconds; use
+`--lock-timeout 600 sync` when a longer wait fits the task budget. Check helper versions if a campaign
+copy lacks these commands. Repair or finish synchronization before treating retrieval as unavailable;
+do not launch duplicate rebuilds or repeat unchanged short timeouts. Do not remove a shared lock or
+terminate another campaign's job. If the checkout/index is actually unavailable or cannot be repaired
+within scope, record the failure and coverage limit before using direct-source retrieval. That is
+an exceptional recovery path, not the normal campaign startup. Retrieval failure never establishes
+that a mathematical result is absent.
 
 ## Maintain reusable findings
 
