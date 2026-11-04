@@ -1,0 +1,4 @@
+interface:
+  display_name: "LaTeX Jargon Auditor"
+  short_description: "Audit and replace misleading mathematical jargon"
+  default_prompt: "Use $latex-jargon-auditor to audit this mathematical manuscript and replace nonstandard jargon with precise terminology."

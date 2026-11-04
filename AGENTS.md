@@ -39,3 +39,41 @@ project symlinks do not stage their target files. Preserve restricted views.
 - Keep a compact, searchable result map in the existing ledger or inventory: statements and aliases,
   status, proof/source links, known failures, and relevant related-repo links. Preserve these links in
   handoffs. Reuse recent checks for unchanged work; search again when the target or evidence changes.
+
+### Choosing And Integrating Work
+
+For a mathematical campaign, use `honest-conjecture-resolution` as the main driver.
+It recovers prior work, chooses the research mode and next assignment, routes to
+specialists, reviews their evidence, and updates the existing campaign state.
+Its [specialist map](.claude/skills/honest-conjecture-resolution/references/skill-routing.md)
+is the maintained source for detailed routing; load only the skills needed now.
+
+Literature, conjecture formulation, computation, proof, theory development,
+writing, and review can inform one another in any useful order. Computation is
+not a prerequisite for proof, and theory-building need not wait for a proof route
+to fail. Distinguish direct conjecture progress from independent theory value.
+Use the selected theory mode's cumulative review criteria while retaining the
+driver's correctness standards and the user's actual scope and resource limits.
+
+## Skills
+
+Choose the entry point by the task:
+
+| Task | Entry point |
+|------|-------------|
+| Start, resume, or coordinate a mathematical campaign | [honest-conjecture-resolution](.claude/skills/honest-conjecture-resolution/SKILL.md), then its specialist map |
+| A focused proof, computation, search, explanation, edit, or review | The corresponding specialist directly; no campaign machinery required |
+| Biomedical evidence research | [biomed-research](.claude/skills/biomed-research/SKILL.md), which routes to domain specialists |
+| A requested session retrospective or process review | [self-improve](.claude/skills/self-improve/SKILL.md) |
+
+Specialists inherit the assigned question, sources, assumptions, and scope. They
+own execution details and return statements, evidence, limitations, and possible
+new questions to the driver. They do not start competing campaign ledgers or
+reset resource allowances. Skill selection does not authorize subagent spawning.
+
+`research-knowledge` and `shared-literature` support all relevant research modes:
+the former retrieves campaign and sibling results and maintains internal result
+records; the latter owns common source packets and source identity. Manuscripts,
+proofs, and experiments remain authoritative in their owning campaign. Update
+result records after substantive changes and derived views when displayed claims
+change. Do not rerun every skill or rebuild every artifact after each lemma.

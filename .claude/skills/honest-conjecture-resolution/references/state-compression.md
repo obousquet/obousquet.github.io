@@ -34,7 +34,8 @@ quantifiers, admissibility, and coverage, not by an easier surrogate such as rec
 
 ## Select Work Backward From The Goal
 
-At a strategy checkpoint, compare a small number of genuinely different approaches. For each, ask:
+For a direct proof or search objective, compare a small number of genuinely different approaches
+at a strategy checkpoint. For each, ask:
 
 - If it succeeds, what remains between its conclusion and the conjecture, or what general
   mathematical capability or structural understanding will it establish?
@@ -57,10 +58,16 @@ by an assumption and count the resulting reformulation as its resolution.
 
 ## Develop Intermediate Theory Objectives
 
+Theory-building can also be the primary mode from the outset. Route to
+`grothendieck-rising-sea`, `proof-calculus`, or `mathematical-framework-design` according to the
+mathematical objective; use `skill-routing.md` for their distinct responsibilities. Evaluate
+foundations, examples, and emerging connections cumulatively. Do not impose the proof-route
+requirement of a cheapest decisive test or a known reduction to the initiating conjecture.
+
 During a proof attempt, notice when the objects lack a useful calculus, operation, representation,
 invariant, or comparison theorem. Developing it can become an intermediate research objective even
 if it is neither a special case of the conjecture nor an established prerequisite for its proof.
-Give it a precise mathematical target and judge it on its own merits as well as its possible use
+Give it a mathematical question or evolving scope and judge it on its own merits as well as its possible use
 for the original problem. These opportunities can arise before a route stalls.
 
 Look for evidence of value such as:
@@ -96,7 +103,7 @@ Persist the route's mechanism, preserved information, effort since review, and r
 across turns and compactions. Renaming a construction, changing a parameter, refining a counterexample,
 or switching external terminology does not create a new route when the same obstacle remains.
 
-At the agreed checkpoint (default: four substantive attempts), inspect cumulative results across the
+At the agreed checkpoint (for direct proof/search routes, default: four substantive attempts), inspect cumulative results across the
 campaign as well as within its routes, even if all attempts produced a lemma. Switching routes does
 not restart this counter. Review earlier after a decisive refutation, repeated identical failure,
 or an exhausted effort allowance. Ask:
@@ -110,7 +117,9 @@ or an exhausted effort allowance. Ask:
 
 End the review with an actionable choice and use it in the next assignment:
 
-- Continue: name what made the indispensable step more tractable and the next informative test.
+- Continue: for a proof route, name what made the indispensable step more tractable and the next
+  informative test; for a theory programme, synthesize what is developing and choose the next
+  construction, foundational question, or connection worth pursuing.
 - Change approach: name the new operation or structural input, and how it changes the unresolved
   implication. A renamed formulation is insufficient by itself.
 - Pursue independent theory: state the mathematical question being funded on its own merits and
@@ -128,6 +137,12 @@ Do not enforce literal deletion of an old lemma for every new idea. Necessary pr
 increase the number of intermediate claims. The question is whether the dependencies become better
 understood and more tractable, not whether a dashboard has fewer nodes.
 
+In sustained theory mode, reviews consolidate the emerging mathematics at natural milestones.
+They are not automatic expiry dates. A useful foundation need not have a standalone application,
+and lack of a known return to the conjecture alone is not a reason to terminate the programme.
+Redirect for mathematical reasons such as artificial constructions, repeatedly unsupported laws,
+or disconnected elaboration, and respect actual scope and resource limits.
+
 ## Separate Discovery From Commitment
 
 Use a bounded discovery pass when a promising theory opportunity arises or no credible route is
@@ -137,10 +152,12 @@ models. It need not produce a theorem on every turn. At the end, select one prom
 an adversarial check, or record that the pass was inconclusive. Do not dress inconclusive exploration
 up as a new counterexample or a proliferation of conditional lemmas.
 
-A new framework should make a concrete prediction, expose a usable comparison or operation, unify
-phenomena, or identify a worthwhile structural problem. Assess its first relevant consequence before
-funding substantial additional machinery. A missing transfer lemma can be the original difficulty in disguise: explain why it is
-now more tractable before treating it as a promising reduction.
+A new framework may make a concrete prediction, expose a comparison or operation, unify phenomena,
+or identify a worthwhile structural problem. In a short discovery pass, use these to choose further
+work; in a sustained theory programme, allow its definitions and central theorems to emerge through
+substantial development. A missing transfer lemma can be the original difficulty in disguise:
+explain why it is more tractable before calling it a promising reduction, while assessing any
+independent theory value separately.
 
 ## Restart From A Short Problem Packet
 

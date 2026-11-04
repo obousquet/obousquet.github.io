@@ -1,0 +1,4 @@
+interface:
+  display_name: "arXiv Prep"
+  short_description: "Prepare and validate LaTeX arXiv submissions."
+  default_prompt: "Use $arxiv-prep to prepare this LaTeX paper and its source bundle for arXiv submission."

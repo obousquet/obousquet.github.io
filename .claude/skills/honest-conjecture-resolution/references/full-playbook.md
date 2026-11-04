@@ -1,20 +1,11 @@
----
-name: honest-conjecture-resolution
-description: >-
-  Drive a hard mathematical conjecture toward resolution across many competing
-  proof routes while staying epistemically honest — testing computationally,
-  distinguishing a lossy bound from a false claim, choosing adversarial test
-  cases that actually reveal obstructions, reducing to crux lemmas without
-  over-trusting them, documenting dead ends, and calibrating claims to evidence.
-  Use this skill for the multi-week lifecycle of attacking an open problem: when
-  you are juggling several candidate routes, deciding whether a route is alive or
-  dead, converting route ledgers into readable mathematical drafts, stepping
-  back after a plateau to broaden the search for proof angles, or at risk of
-  declaring victory from numerics alone. Complements conjecture-explorer (which
-  writes the test scripts), proof-developer (which writes a proof once the
-  statement is sharp), literature-reviewer (which searches after the obstruction
-  is named), and latex-paper-completer (which can polish a consolidated draft).
----
+# Historical Playbook — Non-operative Archive
+
+This file preserves earlier research-process material for provenance. It is not a
+second skill or a current checklist. The parent `SKILL.md` and its focused
+references supersede its rules, including historical demands for immediate native
+exports, deletion dividends, and fixed side-route gates. Do not use those rules
+to terminate sustained theory-building or bypass current skill routing. Read an
+archived passage only for a specific historical question.
 
 # Honest Conjecture Resolution
 

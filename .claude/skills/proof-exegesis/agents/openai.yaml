@@ -1,0 +1,4 @@
+interface:
+  display_name: "Proof Exegesis"
+  short_description: "Recover mechanisms and reusable ideas from proofs."
+  default_prompt: "Use $proof-exegesis to explain the mechanism of this proof, extract reusable methods, and assess structural generalizations while preserving its hypotheses and proof status."

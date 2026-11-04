@@ -27,6 +27,12 @@ important than, the initiating conjecture. Contributions beyond its original sco
 are desirable outcomes in their own right, including when the conjecture remains
 open. Actively look for them as the theory develops.
 
+In a campaign, `honest-conjecture-resolution` coordinates objectives, assignments,
+and integration; this skill supplies the theory-development and review criteria
+for the chosen mode. Return foundations, structural understanding, open questions,
+and conjecture status to the same campaign state. A directly requested theory
+exploration can use this skill without establishing a full campaign.
+
 ## Organizing Principle
 
 Let the objects and their natural relationships guide the development. Seek a
@@ -89,6 +95,12 @@ must be passed before work may continue.
 For analogies and a worked research pattern, read `references/examples.md`.
 Use `alon-method` when an external technique helps; in this mode, developing the
 bridge to another subject can itself be a substantial mathematical project.
+Use `proof-calculus` when natural operations suggest a family of arguments and a
+theorem making their use reliable. Use `mathematical-framework-design` when the
+objects or ambient setting need reconstruction, or a two-way correspondence
+becomes a research objective. Use `proof-exegesis` to recover mechanisms and
+structural questions from existing proofs. These are focused directions within
+the broader programme, not requirements to choose a master theorem in advance.
 
 ## Aim For A Coherent And Extensible Picture
 

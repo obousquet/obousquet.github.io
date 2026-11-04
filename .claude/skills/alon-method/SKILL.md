@@ -20,6 +20,11 @@ and refine the encoding until the original obstruction becomes accessible.
 This skill broadens the proof toolkit. In a campaign, `honest-conjecture-resolution` owns progress
 accounting, route reviews, and effort limits; use its rules rather than a second checklist here.
 
+When the objective becomes inventing operations and proving that their compositions generate
+valid arguments, use `proof-calculus`. When the bridge itself requires a new setting or a
+substantial two-way correspondence, use `mathematical-framework-design`. These developments
+can be worthwhile theories before an existing theorem becomes directly importable.
+
 ## Core Principle
 
 Do not ask "how do we prove this in the native language?" first. Ask:

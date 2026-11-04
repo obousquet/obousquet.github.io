@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mathematical Framework Design"
+  short_description: "Build mathematical settings and comparison theorems."
+  default_prompt: "Use $mathematical-framework-design to construct a setting or correspondence that supports the needed operations and prove what transfers to the original mathematics."

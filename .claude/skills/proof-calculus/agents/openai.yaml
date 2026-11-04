@@ -1,0 +1,4 @@
+interface:
+  display_name: "Proof Calculus"
+  short_description: "Build operations that generate reliable arguments."
+  default_prompt: "Use $proof-calculus to develop reusable proof operations, their concrete models and composition laws, and the theorem that makes their use reliable."

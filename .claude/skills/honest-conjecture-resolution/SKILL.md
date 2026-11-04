@@ -1,7 +1,9 @@
 ---
 name: honest-conjecture-resolution
 description: >-
-  Drive a hard mathematical conjecture toward resolution across competing proof
+  Main driver for mathematical research campaigns: choose and coordinate proof,
+  computation, method import, theory-building, knowledge retrieval, and writing
+  skills. Drive a hard mathematical conjecture toward resolution across competing proof
   routes while staying epistemically honest: test the right adversaries,
   distinguish false claims from lossy tools, reduce to named crux lemmas,
   calibrate evidence, develop reusable theory and standalone contributions,
@@ -14,9 +16,17 @@ description: >-
 
 # Honest Conjecture Resolution
 
-This skill selects and reviews work on hard conjectures. `conjecture-explorer` handles computational
-experiments; `proof-developer` handles proof construction. This skill owns campaign progress and
-stopping rules, including when those other skills are used. User-defined goals and budgets govern.
+This is the main driver for mathematical research campaigns. It owns objective selection, research
+mode, assignments, progress accounting, reviews, and integration. Specialized skills own the detailed
+mathematical or editorial work; they return evidence and open obligations to the same campaign state.
+User-defined goals, scope, and budgets govern. A focused standalone task can use its specialist
+directly without creating a campaign or loading this driver.
+
+Select a mode before evaluating its progress. A proof route is judged by its implications for the
+target; sustained theory-building is judged by cumulative foundations, constructions, connections,
+and structural understanding. Keep the conjecture's status separate. The selected theory skill's
+criteria govern theory reviews; generic short-attempt gates must not override them. Correctness,
+provenance, and actual user resource limits apply in every mode.
 
 ## Load References On Demand
 
@@ -34,6 +44,8 @@ needs detail:
   outputs, and source-of-truth synchronization.
 - `references/existing-results.md`: finding earlier campaign and related-repo results, comparing
   statements, preserving provenance, and distinguishing new contributions from rediscovery.
+- `references/skill-routing.md`: selecting specialist skills, composing their work, and returning
+  results to the driver. Consult at campaign start, a mode change, or an unfamiliar task.
 - `references/full-playbook.md`: historical material, not an additional operating checklist. Current
   instructions in this file and the focused references supersede its workflow rules.
 
@@ -58,7 +70,7 @@ needs detail:
    toward the user's goal; do not minimize or vary a witness without a reason that affects the goal.
 4. **Every active claim needs a status.** Use `proved`, `reduced`, `conditional`, `verified
    computationally`, `plausible`, `stalled`, or `refuted`. Avoid “morally” or “essentially” proved.
-5. **Test the vulnerable indispensable step early.** Work backward from the conclusion, check cheap
+5. **Test the vulnerable indispensable step early in a proof route.** Work backward from the conclusion, check cheap
    eligibility conditions, and attack the uncertain step before developing its routine consequences.
    For constructions, distinguish producing a witness from admissible inputs from proving those
    inputs exist jointly. Preserve the choices allowed by the target. See the input-existence audit
@@ -70,8 +82,8 @@ needs detail:
    page counts, and parameterized versions of a niche example do not establish that value alone.
 7. **Give exploration room, then select.** A bounded creative pass can end without a theorem.
    Continued investment needs either a credible route toward the conjecture or a worthwhile theory
-   objective within the user's research scope, a useful next test, and a reason to prefer it to
-   alternatives. Theory milestones may concern new objects, operations, or structural laws; they
+   objective within the user's research scope, meaningful next work, and a reason to pursue it.
+   Theory milestones may concern new objects, operations, or structural laws; they
    need not be smaller versions of the conjecture. See `references/state-compression.md`.
 8. **Enumeration needs a purpose.** Complete finite coverage when the user requests it or it closes
    a proved finite reduction. For a structural goal, extending a census needs a discriminating test
@@ -112,18 +124,21 @@ Before another serious round, the active ledger opening should answer:
 ```text
 Current exact target:
 What would constitute completion, including coverage/quantifiers:
+Research mode and selected specialist skills:
 Last goal advance (with round/date) and remaining essential obligations:
 Active theory objective and last reusable mathematical advance, if applicable:
 Current route, last exact reduction, and key proved inputs:
 Existing-result map and related-repo sources checked (link); actual unresolved difference:
 First unproved indispensable implication; supplied inputs and choices the method freezes:
 Why this route is preferable now; proposed new ingredient:
-Next test, possible outcomes, and decisions they would change:
+Next proof/test or theory milestone and what it would clarify:
 Effort spent since route review; next review point:
 Parked mechanisms and evidence needed to reopen them (link):
 ```
 
-If this does not fit in one screen, consolidate before proving more lemmas.
+Keep this opening compact and link detail. For a developing theory, an evolving question can replace
+an exact target; mark a connection or indispensable implication as unknown where appropriate.
+Do not invent a conjecture reduction to fill the template.
 
 ## Round Contract
 
@@ -133,8 +148,8 @@ than copying the whole campaign state:
 ```text
 Before: conjecture obligation or theory capability sought; reason to pursue it; decision to resolve;
         closest existing results/failures (links) and intended addition;
-        first unproved implication, supplied inputs and allowed choices;
-        proposed new ingredient; cheapest useful test; effort limit and stop condition.
+        selected mode and specialist; relevant open implication or structural question;
+        supplied inputs and allowed choices; proposed next work; resource scope and review point.
 After: new statement or capability; evidence/confidence; conjecture effect and theory effect;
        decision changed; first unproved implication remaining;
        contribution beyond prior work, or reuse/verification; effort used; next action or reopening.
@@ -146,7 +161,8 @@ do not invent cost estimates or completion percentages. Local
 results, maintenance, and route switches do not reset the campaign review counter. Track the last
 conjecture advance and last theory advance separately; progress on one need not advance the other.
 
-At strategy selection, set a review point. Default to a review after four substantive attempts,
+At strategy selection, set a review point appropriate to the mode. For direct proof/search routes,
+default to a review after four substantive attempts,
 including attempts on different routes, sooner if a test fails or cost exceeds the stated allowance.
 This is a review trigger, not a claim that hard proofs should take four attempts. Compare continuing, changing the
 mechanism, and returning to the original formulation. Renew a difficult route when concrete new
@@ -154,6 +170,11 @@ evidence improves its prospects; a renamed lemma or another variant of the same 
 enough. Record the review outcome: continue with a named new reason and test, change mechanism,
 pursue a distinct theory objective within scope, or hold with a reopening condition. Apply that
 outcome to the next assignment. See `references/state-compression.md` for the review procedure.
+
+For sustained theory programmes, use natural consolidation milestones and assess cumulative
+development. A review may continue work on definitions, examples, or foundational laws before a
+central theorem is available. No fixed attempt count, immediate application, or known return to
+the conjecture is required to justify coherent development within the agreed scope.
 
 ## Proof-Debt Table
 
@@ -179,9 +200,11 @@ direction on every arrow.
 2. At route selection or review, compare two or three materially different approaches by potential
    payoff, evidence, hardest missing step, and cost of a discriminating test. Do not redo this menu
    during every implementation step.
-3. Choose a bounded creative pass, proof attempt, adversarial experiment, exact literature match,
-   or consolidation. Use delegation only when authorized and useful for independent work.
-4. Check existing results and prerequisites, then run the most informative test or proof step with
+3. Choose the research mode and a concrete portion of work: discovery, proof, experiment, method
+   import, theory development, exact literature match, or consolidation. Select the specialist from
+   `references/skill-routing.md`; give it the question, sources, assumptions, intended output, and
+   mode-appropriate review criteria. Skill routing does not itself authorize spawning agents.
+4. Check existing results and prerequisites, then execute the selected mathematical work with
    compute hygiene. Reuse a matching proof or witness instead of reconstructing it by default.
 5. Record what is proved and what decision changes; apply the route review even if local output
    keeps appearing. Correctness work remains required regardless of its strategic classification.
@@ -189,6 +212,15 @@ direction on every arrow.
    change; promote selected results to a manuscript under `references/artifact-discipline.md`.
 
 ## Mode Selection
+
+Use `references/skill-routing.md` as the canonical specialist map. In particular, choose
+`proof-developer` for a selected proof, `alon-method` for an import, `grothendieck-rising-sea` for
+sustained surrounding theory, `proof-calculus` for generative operations and validity theorems,
+`mathematical-framework-design` for new settings or correspondences, and `proof-exegesis` for
+understanding an existing argument. These are choices, not mandatory stages. Load only the selected
+skills, reuse their shared context, and integrate their outputs before changing the campaign status.
+
+For specific campaign diagnostics:
 
 - **Need to test a lemma or search for witnesses:** use `conjecture-explorer`; read
   `references/adversaries-and-proxies.md` for adversary patterns.
@@ -202,8 +234,8 @@ direction on every arrow.
   adding another lemma.
 - **The campaign may need a change of perspective:** read `references/methodological-pivots.md`;
   consider the whole target or a solved analogue in a bounded discovery pass. Select an import,
-  abstraction, dual formulation, or invariant search for a concrete consequence in the original
-  problem; report inconclusive discovery honestly.
+  abstraction, dual formulation, calculus, or framework question for a consequence in the original
+  problem or a worthwhile theory objective; report inconclusive discovery honestly.
 - **Delegation is authorized and useful:** read `references/state-compression.md`; assign independent
   evidence contracts rather than asking multiple agents to elaborate the same route.
 - **Need an exact literature match or theorem import:** use `shared-literature` first to search

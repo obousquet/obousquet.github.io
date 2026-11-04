@@ -1,0 +1,4 @@
+interface:
+  display_name: "Honest Conjecture Resolution"
+  short_description: "Coordinate research modes, specialists and evidence."
+  default_prompt: "Use $honest-conjecture-resolution to recover the campaign state, select the research mode and specialist skills, execute the next work, and integrate its evidence under the appropriate review criteria."

@@ -31,7 +31,9 @@ and mark any ambiguous or stale annotation in the final response instead of gues
 
 ### Step 0: Scope and Strategy
 
-Ask the user (if not specified):
+Use the user's request or campaign assignment to set scope and priorities. Infer
+routine choices from the draft; ask only when missing information would materially
+change the work:
 1. **Scope**: Are we working on the entire paper, specific sections, or both?
 2. **Priorities**: Which of the three goals (self-containedness, intuition, complexity levels) matters most?
 3. **Existing structure**: Does the paper already have appendices, or should we create them?

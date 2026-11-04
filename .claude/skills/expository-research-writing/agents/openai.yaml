@@ -1,0 +1,4 @@
+interface:
+  display_name: "Expository Research Writing"
+  short_description: "Reader-friendly math paper style"
+  default_prompt: "Use $expository-research-writing to revise this paper for self-contained, non-expert-readable mathematical exposition."

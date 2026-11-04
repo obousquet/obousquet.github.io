@@ -127,11 +127,16 @@ pass, select a promising approach or report that no credible replacement emerged
 - **Solved analogue:** reconstruct the proof of the closest solved problem and isolate the step
   that supplied its decisive structure. Test that step's transfer before surveying more analogies.
 
-- **Alon-style import:** locate a theorem or technique from probability, algebra, topology,
-  geometry, spectral theory, entropy, coding theory, or additive combinatorics, and require a native
-  lemma or counterexample as output.
-- **Grothendieck-style abstraction:** define the objects, morphisms, invariants, universal property,
-  exact sequence, or functorial operation that makes the current cases shadows of one structure.
+- **Method import:** use `alon-method` to build a dictionary to a verified external theorem or
+  technique. Return a native consequence, exact missing transfer, or honest inconclusive result.
+- **Surrounding theory:** use `grothendieck-rising-sea` to develop the objects, constructions,
+  examples, and connections on their own merits, with a possibly unknown return to the target.
+- **Generative operations:** use `proof-calculus` to develop operations and composition laws
+  together with concrete models and a theorem establishing validity.
+- **New setting or correspondence:** use `mathematical-framework-design` to construct the
+  framework and the comparison needed for its claimed mathematical consequences.
+- **Proof interpretation:** use `proof-exegesis` to recover a solved argument's elementary
+  mechanism, portable method, or possible structural generalization.
 - **Dual formulation:** restate the target as a kernel/cokernel, separation, obstruction class,
   certificate, homology/cohomology statement, LP dual, or universal property.
 - **Invariant search:** ask which quantity is unchanged by the allowed operations and distinguishes

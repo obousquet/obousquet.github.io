@@ -24,7 +24,9 @@ The user wants to find related work for their paper or a specific result. Follow
 
 ### Step 0: Scope the Search
 
-Determine the search scope by asking (if not specified):
+In a campaign, inherit the question and scope from `honest-conjecture-resolution`.
+For a standalone search, infer them from the user's request and source material.
+Ask only when missing information would materially change the search:
 
 1. **Focus**: Are we searching broadly for the whole paper, or for a specific definition/theorem/technique?
 2. **Goals**: What are we looking for?

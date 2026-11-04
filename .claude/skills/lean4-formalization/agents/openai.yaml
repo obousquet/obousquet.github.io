@@ -1,0 +1,3 @@
+display_name: Lean4 Formalization
+short_description: Formalize and check Lean 4 proofs.
+default_prompt: Formalize this mathematical statement and proof in Lean 4, making the definitions and theorem statements inspectable and checking every proof with Lean.
