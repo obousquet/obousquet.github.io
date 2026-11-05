@@ -1,4 +1,4 @@
 interface:
   display_name: "Grothendieck Rising Sea"
-  short_description: "Surround conjectures with sustained theory-building."
-  default_prompt: "Use $grothendieck-rising-sea to develop the surrounding theory of these objects in depth, following natural generalizations and connections even while the route back to the conjecture remains unknown."
+  short_description: "Develop mathematical worlds and their structural laws."
+  default_prompt: "Use $grothendieck-rising-sea to develop the mathematical world around these objects: explore natural constructions, generalizations, invariants, and connections, and prove a coherent part of the emerging theory."

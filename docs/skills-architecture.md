@@ -25,9 +25,16 @@ conflating mathematical proof with empirical evidence.
 
 Method import adapts an existing technique. Surrounding theory develops a
 mathematical world. Proof calculus develops operations, their compositions,
-models, and validity theorems. Framework design constructs the setting or a
+models, and validity theorems. Representation refinement diagnoses lost information
+and proves a repair relative to intended observations and operations. Framework design constructs the setting or a
 substantial correspondence, with comparison theorems. Proof exegesis interprets
 an existing argument and can discover questions for any of these modes.
+
+The driver's [abstraction-development workflow](../.claude/skills/honest-conjecture-resolution/references/abstraction-development.md)
+owns the overall process: shared mathematical data, selection among closure,
+calculus, and refinement, feedback between them, and consolidation. Specialist
+references own the detailed procedures. AGENTS/CLAUDE links to that workflow;
+it does not maintain a second version.
 
 These modes can be combined. The driver records which objective is active and
 which criteria apply; specialists provide the mathematical work and its status.
@@ -67,10 +74,16 @@ performance.
 
 | Case | Required routing or decision |
 |------|------------------------------|
+| Objects or phenomena deserve a theory, with no specified conjecture | `grothendieck-rising-sea` develops constructions, invariants, and internal questions without manufacturing a target reduction |
+| An operation suggests hidden algebra but no reusable proof corpus exists | `proof-calculus` develops expressions, laws, models, and controls together; a ready master theorem is not required |
 | A precise lemma is ready for proof without numerical testing | Driver → `proof-developer`; computation is optional |
 | A computation refutes a sufficient surrogate but not the target | `conjecture-explorer` returns the witness's exact scope; driver revises the route, not the conjecture's truth status |
 | A known external theorem almost applies | `alon-method` identifies the exact transfer gap; no unnecessary new framework |
 | Repeated argument operations suggest a general calculus | `proof-calculus` develops models and composition validity; driver records assumptions and independent theory value |
+| Equal summaries give different required exact values | `representation-refinement` refutes exact recovery, chooses operation-motivated extra data, and proves the repaired law |
+| Two values differ but a common upper bound is requested | Unequal values alone do not refute the bound; test the stated inequality |
+| A supplied finite action system needs a sufficient quotient | `representation-refinement` uses stable partition refinement; the result may retain every state |
+| A construction leaves the current object class | Closure-driven rising-sea development or framework design compares enlargements and proves realization; formal syntax alone is insufficient |
 | An abstract class simply assumes the desired inequality | Record an interface or conditional result; require proofs of concrete instances |
 | Natural foundations develop while the return to the conjecture stays unknown | `grothendieck-rising-sea` consolidation can continue; no forced immediate application or fixed-attempt termination |
 | Numerical invariants match across two domains | `mathematical-framework-design` treats the match as a clue; construct and verify the claimed correspondence |

@@ -55,6 +55,15 @@ to fail. Distinguish direct conjecture progress from independent theory value.
 Use the selected theory mode's cumulative review criteria while retaining the
 driver's correctness standards and the user's actual scope and resource limits.
 
+
+When developing higher abstractions, use the driver's
+[three-process workflow](.claude/skills/honest-conjecture-resolution/references/abstraction-development.md):
+close objects under meaningful constructions, develop operations with models and
+validity theorems, and refine representations when they lose required information.
+Choose and combine these processes according to the mathematical question; they
+are not consecutive gates. Keep cumulative theory development and the initiating
+problem's actual status separately visible.
+
 ## Skills
 
 Choose the entry point by the task:

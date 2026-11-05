@@ -24,8 +24,9 @@ still requires inspection of its source hypotheses before application.
 | Prove a selected precise claim | `proof-developer` | Argument, exact assumptions, checked implications, or remaining gap |
 | Test a conjecture, find a witness, or complete a finite reduction | `conjecture-explorer` | Reproducible evidence, coverage, resource use, and exact scope |
 | Import an existing technique from another area | `alon-method` | Dictionary, theorem hypotheses, missing transfer, and native consequence |
-| Develop the objects' surrounding theory in depth | `grothendieck-rising-sea` | Foundations, constructions, examples, structural results, and evolving questions |
-| Invent operations generating families of arguments | `proof-calculus` | Operations, composition laws, concrete models, and validity theorem or open obligations |
+| Develop a mathematical world around objects, phenomena, or a hard problem | `grothendieck-rising-sea` | Foundations, constructions, invariants, connections, structural results, and evolving questions |
+| Discover operations, hidden algebra, or a generative calculus | `proof-calculus` | Expressions, algebraic laws, concrete models, controls, and validity/reconstruction results or open obligations |
+| Diagnose lost information and refine a mathematical representation | `representation-refinement` | Witness scope, retained data, repaired laws, and proved sufficiency or remaining gap |
 | Construct a new setting or substantial two-way correspondence | `mathematical-framework-design` | Construction, retained/lost information, comparison laws, and transfer status |
 | Understand an opaque existing argument | `proof-exegesis` | Elementary mechanism, reusable methods, and justified or conjectural generalizations |
 | Choose or audit a moment/tail inequality | `concentration-inequalities` | Exact assumptions, parameter losses, appropriate adversaries, and applicable bound |
@@ -37,6 +38,14 @@ programme may include framework design and method imports. This is shared work
 on one objective, not a reason to start parallel campaigns or repeat retrieval.
 A known theorem import need not become framework design, and a new invariant
 does not automatically require a calculus.
+
+Closure-driven theory building, operation-driven calculus construction, and
+failure-driven representation refinement are complementary processes. Select by
+the current mathematical question: which objects are missing, which rules generate
+arguments, or which information the representation loses. They can interact;
+neither a failed proof nor completion of another process is a prerequisite. See
+[abstraction development](abstraction-development.md) for the shared working data,
+selection and feedback loop, consolidation, and limits of mechanization.
 
 The driver records the chosen mode and the reason for changing it. Within the
 user's research scope, specialists can uncover valuable theory objectives without

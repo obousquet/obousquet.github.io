@@ -1,0 +1,4 @@
+interface:
+  display_name: "Representation Refinement"
+  short_description: "Find lost information and repair mathematical representations."
+  default_prompt: "Use $representation-refinement to diagnose what a mathematical representation loses, construct a justified repair, and prove the intended observation and operation laws."

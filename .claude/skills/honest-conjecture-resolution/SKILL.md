@@ -46,6 +46,10 @@ needs detail:
   statements, preserving provenance, and distinguishing new contributions from rediscovery.
 - `references/skill-routing.md`: selecting specialist skills, composing their work, and returning
   results to the driver. Consult at campaign start, a mode change, or an unfamiliar task.
+- `references/abstraction-development.md`: the overall process for developing higher
+  abstractions through closure-driven theory building, operation-driven calculus construction,
+  and representation refinement. Read when coordinating these processes or selecting their next
+  mathematical question; specialist skills own the detailed constructions.
 - `references/full-playbook.md`: historical material, not an additional operating checklist. Current
   instructions in this file and the focused references supersede its workflow rules.
 
@@ -216,9 +220,14 @@ direction on every arrow.
 Use `references/skill-routing.md` as the canonical specialist map. In particular, choose
 `proof-developer` for a selected proof, `alon-method` for an import, `grothendieck-rising-sea` for
 sustained surrounding theory, `proof-calculus` for generative operations and validity theorems,
+`representation-refinement` for lost information and sufficient representations,
 `mathematical-framework-design` for new settings or correspondences, and `proof-exegesis` for
 understanding an existing argument. These are choices, not mandatory stages. Load only the selected
 skills, reuse their shared context, and integrate their outputs before changing the campaign status.
+
+For a theory or abstraction-development objective, use
+[the three-process workflow](references/abstraction-development.md) to choose work, feed results
+between processes, and consolidate. The processes interact; they are not mandatory stages.
 
 For specific campaign diagnostics:
 

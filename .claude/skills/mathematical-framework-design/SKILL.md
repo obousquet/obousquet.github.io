@@ -40,6 +40,10 @@ that an entire subject has defective foundations. A category need not be abelian
 or Cartesian closed to support the intended mathematics. State why the missing
 property would help and what would remain difficult even if it were available.
 
+Use `representation-refinement` for a focused loss-of-information diagnosis or
+finite sufficient quotient. A repaired statistic need not become a new framework;
+use this skill when constructing the setting or comparison is itself substantial.
+
 ## Build A Setting Or A Bridge
 
 Choose the direction suggested by the examples; these may develop together.

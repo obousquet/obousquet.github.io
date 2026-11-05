@@ -1,213 +1,178 @@
 ---
 name: grothendieck-rising-sea
 description: >-
-  Build an extensive mathematical theory around a hard conjecture: develop the
-  objects, generalizations, constructions, examples, invariants, and connections
-  until the conjecture can become a natural consequence of a much larger picture.
-  Use when the user wants sustained theory-building, a comprehensive structural
-  understanding, or an indirect rising-sea approach whose eventual route back to
-  the conjecture may remain unknown through substantial development.
+  Develop a coherent mathematical world around objects, phenomena, or a hard
+  problem. Systematically explore generalizations, closure under constructions,
+  representations, invariants, and connections, and prove their structural laws.
+  Use for sustained theory building and the discovery of higher abstractions,
+  including independent results whose return to an initiating conjecture is unknown.
 ---
 
 # Grothendieck Rising Sea
 
-Treat the conjecture as an invitation to understand a mathematical world. Develop
-that world far enough that the conjecture can eventually be situated in a network
-of structural results and become a natural consequence. The immediate research
-question is what theory these objects deserve, including questions the original
-formulation does not yet make visible.
+Ask what mathematical world the objects deserve. Develop its constructions,
+examples, internal questions, and structural theorems until phenomena that were
+isolated or difficult can be understood through a larger picture. A hard problem
+can motivate this work, but the theory can discover its own central questions,
+objects, and applications. An explicit conjecture is not required to begin.
 
-This is a sustained theory-building mode. It can be chosen from the outset;
-it need not wait for direct proof attempts to fail. Substantial periods may
-produce no identifiable reduction of the conjecture. A direct return can remain
-unknown while the surrounding mathematics becomes richer and better understood.
+The objective is a coherent and extensible body of mathematics. A solution to the
+initiating problem is one possible outcome; an independently valuable theory or
+an unexpected connection is another. Pursue depth and integration, including
+foundations whose uses appear only later. The eventual return to the original
+problem may remain unknown through substantial development.
 
-A fruitful new theory and its unexpected results can be as important as, or more
-important than, the initiating conjecture. Contributions beyond its original scope
-are desirable outcomes in their own right, including when the conjecture remains
-open. Actively look for them as the theory develops.
+## Start From A Mathematical Territory
 
-In a campaign, `honest-conjecture-resolution` coordinates objectives, assignments,
-and integration; this skill supplies the theory-development and review criteria
-for the chosen mode. Return foundations, structural understanding, open questions,
-and conjecture status to the same campaign state. A directly requested theory
-exploration can use this skill without establishing a full campaign.
+Recover relevant definitions, examples, existing theories, and earlier results and
+corrections in the project, nearby work, and shared literature. Inspect original
+statements before importing them. Identify what is already understood and what a
+new account would add; unfamiliar terminology is not evidence of novelty.
 
-## Organizing Principle
+Choose a territory from actual mathematics: an object family, related phenomena,
+a revealing construction, parallel theories, or an operation without a satisfactory
+setting. Include ordinary, extremal, singular, and boundary examples where useful.
+State the initial question and assumptions, allowing them to evolve as the objects
+become better understood. Do not require a collection of failed proofs, a proposed
+master theorem, or a known reduction of a conjecture as an entry condition.
 
-Let the objects and their natural relationships guide the development. Seek a
-coherent picture: central examples, natural operations, general classes, structural
-theorems, exceptional cases, comparisons, and questions that connect them. Allow
-the theory to broaden and reorganize its own foundations as this picture emerges.
+## Generate And Develop The Surrounding World
 
-The useful abstraction may be algebraic, geometric, analytic, probabilistic,
-combinatorial, or categorical. Categories and universal properties are possible
-tools, not required destinations. Abstract to expose and develop structure;
-a change of vocabulary alone supplies no mathematical understanding.
+Use these directions as a recurring research process. Follow their mathematical
+interactions rather than passing through them as fixed gates.
 
-Do not require a candidate master theorem, a known implication to the conjecture,
-a cheapest decisive test, or a near-term application before substantial theory
-development. The right definitions and central theorems may themselves be among
-its eventual discoveries. Foundational lemmas can be essential infrastructure
-whose uses become apparent only after other parts of the theory have matured.
+**Vary and enlarge.** Change hypotheses, parameters, ambient structures, and notions
+of equivalence. Explore degenerations and neighboring examples. Ask which families
+belong together and which distinctions are essential. A useful generalization can
+expose a mechanism even if it does not strengthen the original statement.
 
-## Develop The Surrounding Theory
+**Close under meaningful constructions.** Investigate restrictions, extensions,
+products, quotients, gluing, duals, limits, or completions as the objects warrant.
+Specify domains and intended meanings. When an operation leaves the class, compare
+enlargements, enriched objects, latent presentations, or changed maps. Prove that
+the new objects exist and that their interpretation and composition behave as
+claimed. There need not be one smallest or universally best setting.
 
-Use the following as a recurring research cycle, not a sequence of gates that
-must be passed before work may continue.
+Read [closure-driven development](references/closure-process.md) for a concrete
+construction cycle and bounded generation procedure. Closure is a way to generate
+questions even when nothing has failed. Formal expressions, realized objects,
+and theorems about their interpretations are distinct mathematical achievements.
 
-1. **Map the mathematical territory.** Start from the objects, their examples and
-   sources, natural questions, known theories, and neighboring subjects. Include
-   the initiating conjecture, but do not let its latest auxiliary obstruction
-   determine the whole agenda. Search the shared extracted literature before
-   web searches, and distinguish existing foundations from prospective additions.
-2. **Enlarge the setting.** Vary assumptions, parameters, ambient structures, and
-   notions of equivalence. Include natural boundary cases and degenerations.
-   Seek classes closed under meaningful constructions and families that explain
-   several phenomena together. There need not be a single smallest framework.
-3. **Build foundations in depth.** Develop definitions, examples, morphisms where
-   useful, constructions, invariants, existence results, and basic laws. Work out
-   restrictions, extensions, products, quotients, dualities, limits, or gluing as
-   the objects warrant. Prove the foundational results needed to make these
-   tools reliable, even when they do not improve a bound in the conjecture.
-4. **Follow the theory's own questions.** Study representation, classification,
-   decomposition, obstruction, comparison, and realization problems. Ask which
-   hypotheses are essential, which phenomena extend, and what an exceptional
-   example teaches about the general setting. A question can deserve serious
-   development because it explains the objects, without supplying a proof route.
-5. **Connect and extend.** Develop relationships with other theories, including
-   translations of objects, invariants, and constructions in both directions.
-   A connection may require substantial work on both sides before it transports
-   a theorem. Let several interdependent parts of the theory mature together;
-   do not force them into a single sequence of short sufficient lemmas.
-6. **Consolidate the picture.** Integrate results into a coherent account, expose
-   dependencies and missing foundations, reconcile definitions, and generalize
-   proofs when their mechanism suggests it. Revisit earlier examples with the new
-   tools. A local result may acquire significance through these later connections.
-   Periodically assess independent contributions and opportunities for a standalone
-   paper or a distinct exploration branch, as described below.
-7. **Revisit the conjecture at natural milestones.** Ask whether it now fits a
-   classification, becomes a comparison statement, or follows from several
-   independently developed results. Prove any claimed implication carefully.
-   If no such connection is known, record that fact and continue the worthwhile
-   theory work within the user's scope and resources.
+**Build foundations and invariants.** Develop definitions, maps, examples,
+existence and representation results, transformation laws, and comparisons.
+Study what the invariants retain and forget, which values can occur, and how they
+interact with the constructions. Give foundations enough depth to support later
+work; an immediate improvement to the initiating problem is not required.
 
-For analogies and a worked research pattern, read `references/examples.md`.
-Use `alon-method` when an external technique helps; in this mode, developing the
-bridge to another subject can itself be a substantial mathematical project.
-Use `proof-calculus` when natural operations suggest a family of arguments and a
-theorem making their use reliable. Use `mathematical-framework-design` when the
-objects or ambient setting need reconstruction, or a two-way correspondence
-becomes a research objective. Use `proof-exegesis` to recover mechanisms and
-structural questions from existing proofs. These are focused directions within
-the broader programme, not requirements to choose a master theorem in advance.
+**Follow internal structural questions.** Pursue realization, decomposition,
+classification, obstruction, assembly, and exceptional cases when they explain
+the territory. Seek common mechanisms across examples. A census can reveal a
+pattern or support a requested classification, but multiplying cases alone does
+not establish an explanatory theory.
 
-## Aim For A Coherent And Extensible Picture
+**Connect and reorganize.** Compare neighboring subjects through explicit maps,
+models, or dictionaries. Develop both sides when needed. New representations,
+dual descriptions, and common structures can change which objects or statements
+are central. Prove the appropriate comparison rather than inferring a duality
+from matching invariants. Several interdependent parts may need to mature together.
 
-Keep asking what is still missing from an understanding of the objects: which
-constructions are unexplained, which examples lack a common account, which
-invariants omit important information, and which generalizations reveal a new
-phenomenon. The theory should develop its own landscape of results and questions,
-not just collect lemmas adjacent to the initial statement.
+**Consolidate and revisit.** Integrate definitions and proofs, reconcile conventions,
+expose missing foundations, and return to earlier examples with the new tools.
+Ask which questions are now natural and which old difficulties have become
+structural statements. Prove any claimed consequence for the initiating problem;
+when no return is known, record that status and assess the theory itself.
 
-Useful directions include:
+## Let Structure Emerge From Constructions
 
-- enlarging an object class to accommodate natural operations and limiting cases;
-- finding representations, dual descriptions, or universal constructions;
-- developing invariants together with their behavior under those operations;
-- explaining local and global phenomena, including failures of assembly;
-- relating previously separate examples, classifications, or mathematical subjects;
-- creating tools that support further questions not anticipated at the outset.
+The useful abstraction may be algebraic, geometric, analytic, combinatorial,
+probabilistic, or categorical. Derive its proposed laws from the constructions
+and phenomena it should explain. A category, universal property, cohomology theory,
+or new foundation is an option when its content is justified, not a predetermined
+endpoint. A change in language alone does not supply understanding.
 
-Pursue completeness relative to an evolving mathematical scope. This does not
-mean proving every statement about every generalization. Depth, breadth, and
-integration matter together; an elaborate formalism without explanatory or
-mathematical substance is not the intended outcome.
+Use concrete examples to separate a false target, a false auxiliary law, forgotten
+data, departure from the object class, and a missing estimate. They call for
+different work. Conversely, successful constructions and unexpected comparisons
+can motivate substantial development without an obstruction to repair.
 
-## Recognize Independent Contributions
+The three processes can inform one another:
 
-At consolidation reviews and natural milestones, ask what the theory now makes
-possible beyond the initiating problem: new structural results, useful constructions,
-connections between subjects, or a family of interesting questions with its own
-mathematical motivation. Assess their significance independently of whether they
-help prove the original conjecture.
+- Closure can produce a new object class whose natural operations deserve a
+  calculus. Use `proof-calculus` to develop their algebra, models, and validity.
+- An invariant or presentation can lose information required by those operations.
+  Use `representation-refinement` for a focused sufficiency question or repair.
+- An enlargement or correspondence can become a major construction in its own
+  right. Use `mathematical-framework-design` for that setting and its comparisons.
 
-When a contribution warrants it, propose a standalone paper or a distinct theory
-branch. State its central question, mathematical scope, strongest results and their
-proof status, relationship to existing literature, and natural next questions.
-Check the shared literature and relevant prior work before claiming novelty.
-A promising branch need not already have a publication-ready theorem; a paper
-proposal should distinguish established contributions from work still needed.
-Record these opportunities in the project artifacts so they survive handoffs.
+Use `alon-method` for a useful existing technique and `proof-exegesis` to extract
+structure from an existing argument. These directions share the same mathematics;
+none is a compulsory next stage. For coordinating them in a campaign, the driver
+provides [the overall process](../honest-conjecture-resolution/references/abstraction-development.md).
+Read [examples](references/examples.md) when a historical analogy or contrasting
+research decision would help, treating analogies as suggestions rather than proofs.
 
-Favor branches that develop explanatory principles, reusable tools, or independently
-interesting mathematics. A growing census of cases or a case-by-case decomposition
-of the original conjecture is not, by itself, a fruitful new theory or a reason to
-open another branch. Enumeration can inform the theory, and a structural
-classification can be a major contribution; assess what unifies or explains the
-cases and what new understanding follows. Redirect expanding casework when it
-supplies neither such understanding nor a substantive independent question.
+## Prove The Mathematics And Identify Its Scope
 
-## Assess Progress On The Scale Of Theory Development
+Establish the claimed constructions, laws, model assumptions, and comparisons.
+Distinguish preservation from reflection and exact recovery from bounds or
+approximation. An invariant that cannot distinguish two required outcomes may
+fail for that use without invalidating the whole theory. An exact identity can
+still need a difficult analytic estimate.
 
-Maintain two distinct accounts:
+Bounded generation, finite-model searches, and checking supplied proofs can be
+mechanized once their inputs are effective. Choosing fruitful objects, discovering
+uniform principles, proving existence and convergence, and extending finite
+patterns remain research. A finite pattern or elegant formalism does not guarantee
+a useful abstraction or eventual resolution.
 
-- **Development of the theory:** what can now be constructed, proved, compared,
-  classified, or understood; which examples or phenomena have become connected;
-  and which foundations or important questions are now accessible.
-- **Status of the initiating conjecture:** what is actually implied, which
-  implications are conditional, and where the connection remains unknown.
+Keep proved results, conditional results, conjectures, examples, and analogies
+explicit. Account for the cost of building models and proving comparisons when
+assessing shorter downstream proofs. Proof compression can reveal useful reuse;
+it is not the sole measure of theory value, correctness, or significance.
 
-Assess development cumulatively. A foundation, example, or generalization can
-matter through its place in the emerging theory rather than through immediate
-standalone novelty. Do not require each turn to yield a theorem, each definition
-to remove an old obligation, or each branch to show a short path to the target.
-An increasingly coherent theory may justify sustained investment despite an
-unchanged conjecture status.
+## Assess Development Cumulatively
 
-Use reviews to synthesize, redirect, and decide where depth is needed. A review
-is not an automatic expiry date. Generic short discovery allowances or counts
-of unsuccessful direct attempts must not terminate a theory-building program
-merely because a payoff for the conjecture has not appeared. If using
-`honest-conjecture-resolution`, retain its correctness and claim-accounting
-standards, while using these criteria for the explicitly chosen theory program.
-Respect actual user budgets, deadlines, and scope; this mode does not authorize
-unlimited execution or guarantee eventual resolution.
+At natural consolidation milestones, keep two accounts:
 
-Redirect when there are mathematical reasons: constructions remain artificial,
-examples do not support the proposed generality, proofs repeatedly recover only
-what was encoded in the definitions, or disconnected elaboration fails to deepen
-the picture. Locate the issue and improve the theory accordingly. Lack of a
-known return to the conjecture, by itself, is not such a reason.
+- **The mathematical world:** what can now be constructed, represented, proved,
+  compared, classified, or explained; which examples are connected; and what
+  important foundations or questions have become accessible.
+- **The initiating problem, if any:** what is proved, conditionally reduced,
+  refuted, or still unrelated to the developed theory.
 
-## Preserve Mathematical Honesty
+Judge depth, breadth, and integration together. A definition or foundational lemma
+can matter through its later interactions; each turn need not yield an immediately
+applicable theorem. Lack of a known return to a conjecture is not, by itself, a
+reason to abandon coherent theory work. Generic short proof-search allowances
+must not override this mode's cumulative assessment. Actual user scope, budgets,
+and deadlines still govern.
 
-Distinguish proved results, conjectural structure, instructive examples, and
-analogies. The ambition to build an extensive theory does not relax proof
-standards. Test definitions on varied examples, prove claimed laws, and use
-counterexamples to refine scope. An elegant proposed formalism may fail.
+Redirect for mathematical reasons: artificial constructions, unsupported generality,
+circular proofs, or disconnected elaboration that no longer deepens the picture.
+Use a review to identify the missing foundation or better direction. Do not treat
+elapsed reviews as automatic expiry dates.
 
-If an invariant cannot distinguish two relevant phenomena, identify what this
-rules out about that invariant's proposed use. A failed comparison can reveal
-missing structure without invalidating the rest of the theory. An equivalent
-reformulation is not automatically a simpler proof. Never claim the original
-conjecture is closer to resolution merely because the exposition has grown.
+Look for independent contributions and unexpected applications. When warranted,
+propose a standalone paper or a distinct exploration branch with its question,
+scope, strongest results, proof status, closest prior work, and natural next work.
+A proposal can precede a finished theorem, but should state what remains to prove.
+Keep these opportunities in project artifacts so they survive handoffs.
 
-## Working Output
+## Deliver A Developing Theory
 
-When asked to pursue this approach, actually develop the theory within the
-available work period: construct examples, formulate definitions and natural
-questions, prove foundational or structural results, and integrate connections.
-Do not stop at a list of proposed abstractions or a programmatic manifesto.
+Actually construct examples, formulate definitions and questions, prove a coherent
+portion of the foundations or structural results, and integrate the connections
+within the available work period. An exploration can remain inconclusive, but
+report its concrete mathematical content rather than only a manifesto.
 
-Maintain an evolving theory document with motivations, definitions, examples,
-proved results, open structural questions, and connections to existing work.
-Organize it by mathematical dependencies, not the chronology of attempts. It
-may grow into several coherent parts or papers as the mathematics warrants.
-Keep research-specific content in the project's artifacts, not in this skill.
+Maintain the existing theory document or result map, organized by mathematical
+dependencies with motivations, examples, proofs, comparisons, and open questions.
+Use multiple parts or papers when the mathematics warrants them, without creating
+parallel ledgers just to follow this skill. Keep project-specific state out of the
+reusable instructions.
 
-At a handoff, state what was developed, why it contributes to the surrounding
-picture, the natural next work, and what is known or unknown about its relation
-to the conjecture. Include any promising independent contributions and concrete
-paper or branch proposals. A valuable theory is a valid outcome even if the initiating
-problem remains open; resolving that problem still requires its own proof.
+In a campaign, `honest-conjecture-resolution` owns objectives, scope, assignments,
+and integration; return the foundations, theory value, open questions, and problem
+status to that same state. A directly requested exploration can use this skill
+without launching a campaign. At handoff, give the mathematical advance, why it
+matters, the next work, and what remains unknown.

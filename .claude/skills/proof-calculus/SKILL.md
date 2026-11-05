@@ -1,122 +1,165 @@
 ---
 name: proof-calculus
 description: >-
-  Develop operations that generate whole families of mathematical arguments,
-  together with composition laws and a theorem establishing their validity in
-  concrete models. Use when recurring estimates, constructions, substitutions,
-  or local-to-global arguments suggest a reusable calculus, or when designing
-  such a calculus is the research objective. Goes beyond importing an existing
-  technique or introducing another invariant.
+  Discover and develop operations, algebraic structures, and calculi that generate
+  mathematical constructions and families of arguments. Build their expressions,
+  composition laws, concrete models, and validity, reconstruction, or stability
+  theorems together. Use for hidden-algebra discovery and systematic method
+  invention, including settings without a large proof corpus or a known master theorem.
 ---
 
 # Proof Calculus
 
-Ask what operations could produce the arguments we want, and what theorem would
-make those operations reliable. Develop a mathematical method that supports new
-constructions and proofs. Its value can lie in a family of applications or a new
-theory even while the initiating conjecture remains open.
+Ask which operations organize the mathematics, what structures their interactions
+reveal, and what theorem makes their use reliable. Develop a language of
+constructions with concrete models and proved laws that can generate results
+beyond the arguments used to discover it.
 
-In a campaign, `honest-conjecture-resolution` selects the objective and integrates
-the results; this skill owns development of the calculus. Return its proved laws,
-models, open obligations, and theory value to that driver without restarting the
-campaign workflow.
+The objective can be a new calculus, an algebra/analysis interface, a representation
+of recurring constructions, or a theory of their transformations. Repeated proofs
+are one starting point; a revealing operation, analogy, or mathematical phenomenon
+can also suffice. A formalized corpus, a failed direct proof, and a candidate
+master theorem are not prerequisites. Operations, representations, admissible
+models, and the central theorem can emerge together.
 
-This can start from repeated proofs, a promising analogy, or operations that do
-not yet have a satisfactory interpretation. A large formalized corpus is not a
-prerequisite. The operations, admissible models, and central theorem may emerge
-together; do not require a finished master theorem before exploration begins.
+## Discover Operations And The Data They Need
 
-## Discover The Operations
+Recover relevant results, source constructions, and earlier corrections in the
+project, nearby work, and shared literature. Identify the precise difference from
+existing methods before claiming a new calculus. Inspect mathematical mechanisms
+rather than repeated prose, tactic syntax, or superficial graph patterns.
 
-Recover relevant results and corrections in the current campaign, sibling
-repositories, and shared literature before rebuilding a known method. Inspect
-actual proofs and constructions, including their hypotheses and failure cases.
+Start from actions: substitution, multiplication, integration, conditioning,
+gluing, changing base point, rescaling, transporting, eliminating variables,
+renormalizing, completing, or reconstructing, as appropriate. For each candidate
+operation record:
 
-Look for actions: composing, substituting, gluing, conditioning, changing base
-point, rescaling, decoupling, transporting, completing, or reconstructing. Identify
-what the action consumes and produces, why it is useful, and what information
-must survive. An invariant can help control an operation; a new name or statistic
-alone does not supply a calculus.
+- the objects or expressions it consumes and produces;
+- its domain, admissibility, and intended mathematical purpose;
+- the information that must survive, including signs, provenance, scale, domains,
+  regularity, dependence, constants, and errors where relevant;
+- the concrete interpretation and the laws or estimates still to establish.
 
-Compare representative arguments at the level of mathematical dependencies,
-not repeated text or tactic syntax. Apparent duplication may hide different
-independence, regularity, positivity, compactness, or cancellation assumptions.
-Keep such distinctions visible while seeking a common structure.
+Generate and compare small composites. Examine order, parenthesization, repeated
+inputs, boundary cases, cancellations, and accumulation of losses. A shared action
+can conceal different independence, positivity, compactness, or analytic assumptions.
+Keep these distinctions while seeking a common structure.
 
-## Develop Syntax, Models, And Validity Together
+Read [operation-driven development](references/operation-process.md) for the
+construction cycle, candidate-algebra table, finite-expression soundness pattern,
+and a worked calculus retaining signed source coefficients.
 
-Use these as interacting parts of the research, not a fixed sequence of gates:
+## Develop Expressions, Structure, And Models Together
 
-- **Expressions and operations.** Specify objects, admissible inputs, outputs,
-  and side conditions. Work out composition, substitution, units, relations,
-  and interactions where they have mathematical meaning. Operations may be
-  partial, noncommutative, or valid only up to a controlled error.
-- **Concrete models.** Define how expressions are interpreted in the original
-  mathematics. Construct examples and verify the defining assumptions. Include
-  quantitative data such as constants, norm scales, error terms, domains, and
-  dependencies; an algebraic identity does not provide an analytic bound.
-- **Validity theorem.** Seek the theorem that connects admissible expressions
-  to actual conclusions: soundness, reconstruction, realization, stability,
-  extension, or another appropriate statement. State its quantifiers and
-  hypotheses precisely. Separate formal consequences of composition from the
-  substantive estimates or existence arguments that make the theorem true.
-- **Applications and limits.** Recover known arguments with their exact scope,
-  then try different compositions or models. Check equality cases, degenerate
-  parameters, order of operations, and accumulation of losses. A failure can
-  identify a missing operation or a natural boundary of the theory.
+**Expressions and composition.** Choose sorts, generators, and operations that
+represent the actual mathematical actions. Specify partial domains and side
+conditions. Investigate units, associativity, substitutions, symmetries, and
+relations. Trees may represent nested substitutions, graphs shared data, or linear
+spaces signed combinations; choose according to the composition pattern.
 
-Prove primitive validity and compatibility laws before claiming that arbitrary
-composites work. Structural induction may then establish validity for finite
-expressions; infinite compositions require their own convergence or continuity
-theorem. A rule preserving an inequality can have a different status from a rule
-preserving equality. Equivalent expressions need not yield equally sharp bounds.
+**Algebra and defects.** Compare different composites in concrete examples. Prove
+identities where they hold, and calculate defects or commutators where they do not.
+Ask what additional data makes a law true and what quantitative control a defect
+needs. This can suggest a grading, action, algebra, coaction, substitution system,
+or compatibility structure. An observed pattern motivates a candidate; it does
+not establish its axioms. A Hopf algebra, operad, or cohomology theory should arise
+from a precise mathematical need rather than be prescribed in advance.
 
-Choose algebraic or categorical machinery because the operations call for it.
-Trees can record nested substitutions; overlapping substitutions need additional
-compatibility data. Do not prescribe a Hopf algebra, operad, category, or
-cohomology theory before identifying what its laws would express and proving
-those laws in the intended models.
+**Concrete models.** Interpret the expressions and transformations in the intended
+mathematics. Construct examples and prove their assumptions, including existence,
+regularity, positivity, dependence, bounds, and domains. Decide which information
+belongs to syntax, annotations, or the model. A useful formal relation may fail
+in some models and require a restricted class or a controlled remainder.
 
-## Keep The Difficult Mathematics Visible
+**Controls and comparisons.** Define the estimates, norms, error propagation, or
+other certificates needed to use the operations. Prove how they transform.
+Distinguish equality of interpretations from equality of estimates: equivalent
+expressions may carry bounds of different sharpness. If expressions are quotiented
+by relations, show the claimed interpretation and controls descend appropriately.
 
-A class whose field is the desired inequality offers an interface to that
-inequality. It becomes a usable theorem for a concrete model only after the field
-has been proved there. Trace where each substantial input enters, and distinguish
-an organizational reformulation from a new proof or stronger result.
+These are interacting research directions. The most useful algebra can become
+visible only after model construction, and analytic failures can change the
+expression language. Foundational work can be valuable before a broad application
+or finished generating theorem is available.
 
-Soundness is different from expressive completeness and from optimality. A
-calculus may certify only some valid arguments and may lose sharp constants.
-Do not promise the best bound because a search or type-class engine can compose
-the available rules. Track model-construction effort and prerequisites alongside
-the apparent shortening of individual proofs; description length is a heuristic
-for useful reuse, not a measure of mathematical truth or significance.
+## Establish What Makes The Calculus Reliable
 
-In formal code, predicates must express the intended mathematical conditions.
-Empty interfaces, `True` witnesses, assumed conclusions, `sorry`, and new axioms
-are not implementations of the missing mathematics. Check the statement as well
-as its proof and report assumptions and formalization status accurately.
+Seek the theorem appropriate to the setting: finite-expression soundness,
+reconstruction, realization, extension, stability, or continuity of transformations.
+State its hypotheses, quantifiers, and concrete conclusion. Identify which parts
+follow formally from composition and which require substantial existence or
+analytic arguments.
 
-Read [the examples](references/examples.md) when designing an algebra/analysis
-interface or evaluating a proposed calculus. They include the regularity-structure
-analogy, an elementary composition example, and examples of unsupported transfers.
+For finite expressions, prove the certificates of the generators, the validity
+of each primitive operation on its actual domain, and the required compatibility
+laws. Structural induction can then establish validity of generated expressions;
+a readout theorem connects their certificates to the desired mathematical result.
+For infinite constructions, completed spaces, or singular limits, prove the
+additional convergence, continuity, or reconstruction statements. Validity at
+every finite stage does not alone establish the limiting claim.
 
-## Consolidate And Continue
+Keep the difficult inputs visible. An interface whose field is the desired bound
+organizes an assumption; it supplies a theorem for a concrete model only when the
+field is proved there. The same applies to an admissibility condition or leaf
+certificate encoding the original conclusion. Trace these obligations through
+the calculus rather than hiding them in names or type classes.
 
-Develop an actual part of the calculus during the work period: a construction,
-model, composition law, validity argument, or informative counterexample. Keep
-definitions, proofs, remaining obligations, and worked applications together in
-the campaign's theory documents. A diagram of proposed operations is a research
-plan until its mathematical content has been established.
+Separate soundness from expressive completeness, and both from optimality. Search
+through valid expressions need not represent every proof or attain the best
+constant. In formal code, inspect the statements as well as their proofs: empty
+interfaces, `True` witnesses, `sorry`, or assumed new axioms do not implement the
+missing mathematics. Report the actual formalization status and assumptions.
 
-At natural reviews, assess what can now be constructed or proved systematically,
-what examples have become connected, and which hypotheses or losses remain.
-Foundations may warrant substantial work before broad applications appear.
-Compare with existing methods before claiming novelty, and keep the conjecture's
-status separate from the calculus's development. Seek independently interesting
-results and propose standalone papers or theory branches when warranted; mere
-growth of a case census is insufficient.
+Read [examples](references/examples.md) for the regularity-structure analogy,
+an elementary composition theorem, and unsupported algebra-to-analysis transfers.
+The methodological lesson is to develop algebraic operations, models, and validity
+together; another field's estimates still require its own mathematics.
 
-Use `grothendieck-rising-sea` for the wider theory programme, `alon-method` for an
-existing method import, and `mathematical-framework-design` when the objects or
-ambient setting need reconstruction. These are compatible research directions;
-none makes an unproved transfer automatic.
+## Use Successes And Failures To Extend The Calculus
+
+Recover known constructions with their exact scope, then try different composites,
+models, or phenomena not used in the initial design. Seek results and structural
+questions that the operations make newly accessible. A calculus can be valuable
+independently of the problem that prompted it.
+
+Use failures to select the appropriate next work. A false rule may need correction;
+forgotten dependence or cancellation may need `representation-refinement`; a
+construction leaving the object class may need an enlargement; a valid algebraic
+identity may still need an analytic estimate. Test the particular claim: unequal
+values with the same summary refute exact recovery, not every possible upper bound.
+
+Use `grothendieck-rising-sea` to develop the surrounding objects and theory,
+`mathematical-framework-design` when the setting or a substantial correspondence
+must be constructed, and `alon-method` when an existing technique suffices. The
+processes can develop together; no failure or fixed sequence is required. Campaign
+coordination follows [the overall process](../honest-conjecture-resolution/references/abstraction-development.md).
+
+## Consolidate The Method And Its Mathematical Value
+
+During the available work period, develop an actual construction, model, relation,
+validity argument, or informative counterexample. Keep definitions, proofs,
+applications, and remaining obligations together in the existing theory documents.
+A proposed diagram or axiom list is an agenda until its mathematical content is
+established; it can still guide worthwhile foundational work.
+
+At natural milestones, assess which constructions and arguments can now be
+produced systematically, which examples are connected, and what new questions
+have become accessible. Track the cost of building models, proving compatibility,
+and establishing analytic inputs alongside any shorter application proofs. Mere
+syntax compression is not the objective or a sufficient measure of value.
+
+Assess development cumulatively. Central theorems can require substantial
+foundations; neither each turn nor each definition needs an immediate application.
+Redirect circular rules, artificial models, or elaboration without deeper results.
+An unknown return to an initiating conjecture does not by itself discredit a
+coherent calculus. Respect actual user scope and resources, and keep the original
+problem's status distinct from the method's development.
+
+Record independently useful results, unexpected applications, and opportunities
+for a standalone paper or theory branch with their exact proof status and closest
+prior work. At handoff, state the operations and laws established, models realized,
+remaining analytic or comparison obligations, and concrete next work.
+
+In a campaign, `honest-conjecture-resolution` owns objectives, assignments, and
+integration; return these results to the existing state. A focused calculus request
+can use this skill directly without starting a campaign or a second result ledger.
