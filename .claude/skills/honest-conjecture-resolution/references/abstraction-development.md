@@ -40,6 +40,51 @@ can select the next task without requiring all three processes. When constructin
 a new setting or a substantial two-way correspondence is the main work, use
 `mathematical-framework-design`; it can support either closure or refinement.
 
+## Construct The Inputs, Not Only Their Description
+
+Separate a faithful formulation, a validity theorem for supplied data, and a
+construction of those data from the original hypotheses. An exact dual or complete
+finite certificate language determines what the recorded information can prove;
+it does not force a positive margin or produce a native realization. If the model's
+admissibility condition is the unknown target itself, the missing construction
+has only been renamed. Identify an independently obtainable structural input and
+prove its supply when claiming progress on the initiating problem. Independent
+theory value can still justify work before that return is known.
+
+Use interactions of operations to discover requirements. On small actual models,
+compare compose-then-observe with observe-then-compose, localize-then-average with
+an unlocalized conservation law, or eliminate-work-states with the original cost.
+Derive the exact signed defect before bounding it. Let hidden responses, boundary
+flux, source/exit memory, covariance or path data motivate a repair; do not prescribe
+an algebra in advance. Successful laws can also generate compatible choices or
+remove obstructions: construct the required operation on the actual source, rather
+than identifying it with an algebra on formal coefficients. Equality of selected
+actions need not identify the full model or its future uses.
+
+Construct required properties on one compatible realization. Separate favorable
+marginals, sources, couplings or completion profiles do not imply a jointly valid
+object. Conversely, retain families of attainable joint boundary laws and costs
+when choosing one object early would freeze freedoms the target permits. Preserve
+actual hard constraints and source/return records; distinguish them from conditions
+only required at the end. A stochastic policy chooses permitted actions, not their
+prescribed random outcomes. Comparison of presentations can expose new choices or
+invariants, but its maps and compatibility also need construction.
+
+Choose controls for the intended later evaluation. Joint signed error sets can
+preserve cancellation that coordinate boxes lose; scalar norm grades can lose
+physical grouping or hidden feedback. Derive the actual propagation law: it may be
+matrix multiplication, an inverse stability factor, or a contractive additive
+bound. Small entropy or total variation does not control every weighted or
+unbounded observable. Approximate algebra needs a proved error-to-conclusion
+step; exact discrete feasibility requires an admissible return or a strict paid
+margin, not merely proximity to an unknown witness.
+
+Before extending a formalism, ask which new native input it constructs, which
+operation it enables, which estimates it preserves, and which different model or
+composite it now handles. Charge construction and analytic proofs once and check
+subsequent application obligations. A theorem count or a shorter terminal wrapper
+is not evidence that an unsupplied structural input has been resolved.
+
 ## Execute, Compare, And Feed Back
 
 1. **Choose a concrete portion of work.** Specify the construction, comparison,
