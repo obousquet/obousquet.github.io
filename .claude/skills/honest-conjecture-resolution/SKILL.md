@@ -42,6 +42,8 @@ needs detail:
   prior campaigns.
 - `references/artifact-discipline.md`: ledgers, side drafts, dashboards, inventories, generated
   outputs, and source-of-truth synchronization.
+- `references/readable-reporting.md`: examples and review guidance for self-contained round
+  reports and dashboard summaries. Read when first reporting a campaign or repairing jargon drift.
 - `references/existing-results.md`: finding earlier campaign and related-repo results, comparing
   statements, preserving provenance, and distinguishing new contributions from rediscovery.
 - `references/skill-routing.md`: selecting specialist skills, composing their work, and returning
@@ -147,7 +149,8 @@ Do not invent a conjecture reduction to fill the template.
 ## Round Contract
 
 Use a short entry in the existing ledger for a significant attempt. Reuse unchanged context rather
-than copying the whole campaign state:
+than copying the whole campaign state. This is an internal accounting aid; the reader-facing report
+must follow **Readable Reporting Every Round** below, rather than repeat this template's shorthand:
 
 ```text
 Before: conjecture obligation or theory capability sought; reason to pursue it; decision to resolve;
@@ -179,6 +182,42 @@ For sustained theory programmes, use natural consolidation milestones and assess
 development. A review may continue work on definitions, examples, or foundational laws before a
 central theorem is available. No fixed attempt count, immediate application, or known return to
 the conjecture is required to justify coherent development within the agreed scope.
+
+## Readable Reporting Every Round
+
+Each round's user-facing summary must stand on its own for a mathematically literate reader who
+has not followed earlier rounds. Apply this also to dashboard overview text and substantive status
+updates; brief in-progress messages can remain brief. Internal ledgers may retain stable technical
+identifiers, but those identifiers are not explanations.
+
+- Begin with the mathematical question and current answer/status. Introduce the objects and the
+  essential conditions in ordinary language before using notation or specialized terms. Repeat the
+  small amount of context needed to understand this report, even if it appeared in a previous round.
+- Explain what was known before, what this round actually added, and why that difference matters.
+  State the result itself, not just a theorem name, round number, filename, or newly coined label.
+  Distinguish a proof, conditional implication, finite computation, conjecture, and recheck; include
+  assumptions and computational coverage where they limit the claim.
+- State what remains unproved in mathematical terms and what the next proposed step would clarify.
+  If the main problem is no closer to resolution, say so. Explain independent theory value on its
+  own merits; do not imply a connection to the conjecture that has not been established.
+- Use standard terminology with a short local explanation when needed. Define every campaign-specific
+  term, acronym, and symbol needed to understand the summary at first use, or replace it with its
+  meaning. Avoid chains of invented names and process jargon such as "gate closed" or "proof-contract
+  delta". Preserve precise hypotheses and quantifiers when simplifying language.
+- Put the explanation before source links and implementation details. Links provide proof and
+  provenance; readers must not need to follow them to understand the claim or its limitation.
+  Use a small example when an unfamiliar construction would otherwise remain opaque.
+- Include a clickable link to the campaign's public dashboard in each round's chat summary when
+  configured. Resolve its full HTTPS URL from the shared site's inventory and deployment guidance;
+  do not substitute a local file link or guess a URL from the repository name. If the latest changes
+  are not yet published, say so. See the reporting reference for unavailable-link handling.
+
+Usually a few short paragraphs suffice: question and status; actual change and significance;
+remaining difficulty and next step, with evidence links alongside the claims. This is a flexible
+shape, not a requirement for additional headings or a new artifact. Before sending, read the summary
+without the chat history or linked files: can the reader explain the question, achievement, and
+remaining gap? Revise undefined labels and unsupported progress language before publishing it.
+See [readable-reporting.md](references/readable-reporting.md) for an example and maintenance guidance.
 
 ## Proof-Debt Table
 
@@ -214,6 +253,7 @@ direction on every arrow.
    keeps appearing. Correctness work remains required regardless of its strategic classification.
 6. Update the authoritative status and evidence. Update linked views when their displayed claims
    change; promote selected results to a manuscript under `references/artifact-discipline.md`.
+   Close the round with the self-contained explanation required by **Readable Reporting Every Round**.
 
 ## Mode Selection
 

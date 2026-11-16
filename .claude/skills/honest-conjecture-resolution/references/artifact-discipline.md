@@ -20,6 +20,9 @@ truth records after a research round.
 ## Ledger Rules
 
 - Start with the current target and proof-debt table before history.
+- Give the current-state opening a readable explanation of the question, established results, and
+  remaining difficulty, following [readable-reporting.md](readable-reporting.md). Keep technical
+  identifiers in the detailed records; do not make readers reconstruct their meaning from history.
 - Update by replacement, not sedimentation; avoid stacked “Update/Earlier/Now” layers.
 - Remove closed material from active-open lists.
 - Record false shortcuts once: false claim, witness/mechanism, replacement rule.
@@ -58,6 +61,8 @@ truth records after a research round.
 
 Use the `conjecture-dashboard` skill for format and rendering details.
 
+- Apply [readable-reporting.md](readable-reporting.md) to the overview and changed node descriptions.
+  Links support the explanation; they do not replace definitions or a statement of what was achieved.
 - The authored manifest (`dashboard.json` or another `*dashboard*.json`) is the route-tree source of
   truth for the dashboard.
 - Update the manifest when a displayed route status or claim changes. A local record update that

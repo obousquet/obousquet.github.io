@@ -64,6 +64,19 @@ Choose and combine these processes according to the mathematical question; they
 are not consecutive gates. Keep cumulative theory development and the initiating
 problem's actual status separately visible.
 
+### Readable Campaign Updates
+
+Every round's user-facing summary and the dashboard overview must explain the mathematical
+question, what is established, what this round added, and what remains unresolved without assuming
+the reader has followed earlier rounds. Define necessary terms and notation locally; replace
+campaign nicknames and process jargon with their mathematical meaning. Keep assumptions, proof
+status, and limits explicit, and distinguish independent theory value from progress on the original
+problem. Source links support the explanation rather than substitute for it. Use the main driver's
+[readable-reporting guidance](.claude/skills/honest-conjecture-resolution/references/readable-reporting.md).
+Include the campaign's public dashboard link in each round's chat summary, resolved from the shared
+site's inventory and deployment guidance. Use its full HTTPS URL and indicate if updates are not
+yet published; do not guess a URL or substitute a local path for an available public link.
+
 ## Skills
 
 Choose the entry point by the task:

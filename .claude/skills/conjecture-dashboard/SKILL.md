@@ -114,14 +114,27 @@ summarizes the current route tree and points to the authoritative artifacts.
 ## Dashboard language discipline
 
 - Dashboard labels and summaries are mathematical communication, not internal scratchpad shorthand.
-  Keep them compact, but make every compact phrase precise enough for a reader who has not followed
-  the whole chat history.
+  The overview must stand on its own for a mathematically literate reader who has not followed the
+  campaign. Explain the objects, question, actual achievement, and remaining difficulty before
+  asking readers to open a node or source link. Follow the driver's
+  [readable-reporting guidance](../honest-conjecture-resolution/references/readable-reporting.md).
+- In `goal`, introduce essential objects, conditions, and notation. In `honest_assessment`, state
+  what is established and the concrete missing step. In `latest_progress`, explain the previous
+  state, actual addition, and its significance. A round number or theorem name is provenance, not
+  a statement of the result. If the main difficulty is unchanged, say so alongside any independent
+  theory achievement. Use the existing fields; no new schema or chronological log is required.
+- A node should be understandable from the overview, its parent, and its own description, without
+  reading siblings or past rounds. Use a descriptive label; explain the claim and essential
+  hypotheses in the description. Define additional terms and symbols locally, and specify what
+  `proved`, `refuted`, or `closed` applies to. A proved conditional construction must not read as
+  proof that its required inputs exist.
 - Use the most precise node kind available. Prefer `classification` for a branch that classifies a
   family of objects, and `problem` for a branch that records a named open problem or subproblem.
   Use `route` only when the node really is a proof approach rather than a mathematical object,
   problem, classification, or reduction.
-- Avoid generic proof-process words in labels or summaries unless they are qualified, contextualized,
-  or formally defined in the linked ledger/TeX file. Terms that often become unclear include
+- Avoid generic proof-process words in labels or summaries unless their mathematical meaning is
+  explained in the visible text. A definition only in a linked ledger/TeX file is insufficient.
+  Terms that often become unclear include
   "gate", "obstruction", "proof debt", "proof obligation", "assay", "certificate", "finite
   certificate", "boundary", "sector", "mechanism", "proof spine", "proof package", "route",
   "pipeline", and "stratum".
@@ -131,9 +144,11 @@ summarizes the current route tree and points to the authoritative artifacts.
   actual mathematical content, such as "remaining lemma to prove", "necessary condition",
   "counterexample family", "main reduction", "induction step", "comparison lemma", "auxiliary
   construction", or "case split".
-- Prefer node labels that name the mathematical state directly: `Alexander-dual CM criterion
-  proved`, `endpoint-separation lemma stalled`, or `rank-3 counterexample search active` is better
-  than `CM gate`, `boundary obstruction`, or `finite certificate route`.
+- Prefer labels that name the mathematical content, such as "Coloring graphs with no cycles",
+  over "acyclic gate closed". Give the precise result and status in the description: "Every finite
+  graph with no cycles can be colored with two colors so that adjacent vertices have different
+  colors; proved." Retain stable internal identifiers in links or source records, rather than
+  making them the reader's only way to identify a result.
 - Use `method_role` to expose risk when a branch is only a census, proxy, or local test. Such active
   nodes should have a linked stop rule, native-structure audit, or local-to-global compatibility
   gate in the ledger.
@@ -165,6 +180,10 @@ summarizes the current route tree and points to the authoritative artifacts.
 - Do not commit generated Markdown preview pages such as `notes.md.html`; they are reproducible
   side outputs and should be ignored by `.gitignore`.
 - Link the generated `dashboard.html` from the repo homepage or site index.
+- Include the campaign's full public HTTPS dashboard link in each round's chat summary, using the
+  shared site's configured domain and published path. Resolve it from the inventory or deployment
+  guidance rather than guessing from the repository name. Indicate unpublished updates or a missing
+  public URL honestly; see the driver's readable-reporting guidance for the fallback.
 
 ## Maintenance rules
 
@@ -187,7 +206,11 @@ summarizes the current route tree and points to the authoritative artifacts.
 - Keep `goal`, `honest_assessment`, and `latest_progress` accurate when displayed claims change. These
   fields are the dashboard's executive summary and should be readable before opening any tree node.
   They should usually fit in a few short paragraphs total; if they start to sprawl, compress them
-  into the current target, current status, and latest proof-contract delta.
+  into the question, what is established, what actually changed, and what remains unresolved.
+  At each substantive update, reread the overview and changed nodes without consulting earlier
+  rounds. Repair unexplained acronyms, renamed concepts, and missing context in the affected text;
+  do not merely append another status sentence. A glossary can support deeper reading but cannot
+  replace the short definitions needed to understand the overview.
 - If literature packets materially affect a route, use `shared-literature` and link to the
   shared index or canonical packet, using a compatibility view when needed for existing URLs.
 - Put durable status changes in the ledger or TeX file first, then reflect them in the dashboard.
