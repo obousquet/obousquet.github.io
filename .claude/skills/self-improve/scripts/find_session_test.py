@@ -78,3 +78,37 @@ def test_find_recent_sessions_scans_arbitrary_directory_by_mtime(
         "middle-session",
     ]
     assert all(candidate.cwd_matches for candidate in candidates)
+
+
+def test_find_sessions_supports_antigravity_brain_layout(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    workspace = tmp_path / "workspace/project"
+    workspace.mkdir(parents=True, exist_ok=True)
+    conv_id = "abcd1234-1111-2222-3333-444455556666"
+    transcript = (
+        home
+        / ".gemini/antigravity-cli/brain"
+        / conv_id
+        / ".system_generated/logs/transcript.jsonl"
+    )
+    transcript.parent.mkdir(parents=True, exist_ok=True)
+    record = {
+        "step_index": 0,
+        "type": "PLANNER_RESPONSE",
+        "tool_calls": [
+            {
+                "name": "read_file",
+                "args": {"Path": str(workspace / "main.tex")},
+            }
+        ],
+    }
+    transcript.write_text(
+        json.dumps(record, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+
+    candidates = find_sessions(home, workspace, limit=1)
+
+    assert len(candidates) == 1
+    assert candidates[0].client == "antigravity"
+    assert candidates[0].session_id == conv_id
+    assert candidates[0].cwd_matches

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Theory Building"
+  short_description: "Develop closures, calculi, representations, and correspondences."
+  default_prompt: "Use $theory-building to develop constructions, operations/calculi, refined representations, or comparison frameworks together with concrete models and proved structural laws."

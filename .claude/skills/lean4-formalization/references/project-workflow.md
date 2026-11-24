@@ -45,14 +45,18 @@ Do not commit `.lake/`.
 
 Before reporting a formalization as checked:
 
-1. Run the target file with `lake env lean <file>` or run `lake build`.
-2. Search the formalization directory for `sorry`, `admit`, `axiom`, `unsafe`, and placeholder names.
+1. Run a fast static pre-check locally before syncing:
+   `python3 scripts/check_lean_theorem.py --file <file> --theorem <name> --workdir formalization --static-only`
+2. Run the theorem/statement checker locally or on the remote worker (for example via
+   `scripts/lean_worker_sync_run.sh`) and save the JSON receipt with `--receipt-out`:
+   `python3 scripts/check_lean_theorem.py --file <file> --theorem <name> --workdir formalization --statement-file <stmt.txt> --defs-module <DefsModule> --build --receipt-out <receipt.json>`
+   Confirm `status: "ACCEPTED"` and transitive axioms subset of `{propext, Classical.choice, Quot.sound}`.
 3. Inspect the theorem statement with `#check` or by reading Lean's elaborated output when implicit
    arguments matter.
-4. Compare the Lean statement against the LaTeX theorem line by line: objects, assumptions,
-   quantifier order, finiteness, decidability, nonemptiness, equality/inequality direction, and
-   conclusion.
-5. Record any mismatch or dependency on a custom definition in `TRANSLATION_LEDGER.md`.
+4. Have a non-author compare the Lean statement against the LaTeX theorem line by line: objects,
+   assumptions, quantifier order, finiteness, decidability, nonemptiness, equality/inequality
+   direction, and conclusion (resolving `faithfulness_review`).
+5. Record the receipt and any mismatch or dependency on a custom definition in `TRANSLATION_LEDGER.md`.
 
 ## Remote Command Examples
 

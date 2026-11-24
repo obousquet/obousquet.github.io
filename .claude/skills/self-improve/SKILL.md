@@ -39,8 +39,8 @@ you actually loaded; do not assume a particular installation alias exists:
 python3 <skill-directory>/scripts/find_session.py --cwd "$PWD"
 ```
 
-The helper checks supported project/session layouts under `.claude`, `.agents`,
-and `.codex`, ranks candidates by matching working directory and modification
+The helper checks supported project/session layouts under `.gemini/antigravity-cli/brain`,
+`.claude`, `.agents`, and `.codex`, ranks candidates by matching working directory and modification
 time, and prints metadata only. Select the candidate consistent with the current
 runtime, working directory, session identifier when exposed, and latest user
 request. If candidates remain ambiguous, search them for a distinctive fragment

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Proof Simplification"
+  short_description: "Shorten and structurally streamline existing proofs."
+  default_prompt: "Use $proof-simplification to audit load-bearing steps, simplify the proof structure and constants, verify assumptions and citations, and synchronize the surrounding manuscript without losing rigor or readability."

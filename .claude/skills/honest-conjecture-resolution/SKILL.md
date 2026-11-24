@@ -1,321 +1,132 @@
 ---
 name: honest-conjecture-resolution
 description: >-
-  Main driver for mathematical research campaigns: choose and coordinate proof,
-  computation, method import, theory-building, knowledge retrieval, and writing
-  skills. Drive a hard mathematical conjecture toward resolution across competing proof
-  routes while staying epistemically honest: test the right adversaries,
-  distinguish false claims from lossy tools, reduce to named crux lemmas,
-  calibrate evidence, develop reusable theory and standalone contributions,
-  avoid route proliferation, and keep ledgers/drafts/
-  dashboards synchronized. Use for multi-round open-problem campaigns,
-  plateau audits, proof/disproof alternation, side-route decisions, subagent
-  packet design, and converting route state into readable mathematical drafts.
-  Load targeted references only when needed.
+  Main driver for mathematical research campaigns: coordinate proof,
+  computation, method import, theory-building, literature, and writing skills.
+  Drive open problems or sustained theory across competing routes while staying
+  epistemically honest: test right adversaries, separate lossy tools from false
+  targets, break micro-case plateaus, prune subsumed results, and keep ledgers,
+  drafts, and dashboards synchronized. Load references on demand.
 ---
 
 # Honest Conjecture Resolution
 
-This is the main driver for mathematical research campaigns. It owns objective selection, research
-mode, assignments, progress accounting, reviews, and integration. Specialized skills own the detailed
-mathematical or editorial work; they return evidence and open obligations to the same campaign state.
-User-defined goals, scope, and budgets govern. A focused standalone task can use its specialist
-directly without creating a campaign or loading this driver.
+Main driver for mathematical campaigns. It owns objective selection, mode,
+assignments, route reviews, subsumption/pruning, and authoritative campaign
+state. Specialists return evidence and open obligations to the same state; do
+not create competing ledgers. Standalone tasks need no campaign machinery.
 
-Select a mode before evaluating its progress. A proof route is judged by its implications for the
-target; sustained theory-building is judged by cumulative foundations, constructions, connections,
-and structural understanding. Keep the conjecture's status separate. The selected theory skill's
-criteria govern theory reviews; generic short-attempt gates must not override them. Correctness,
-provenance, and actual user resource limits apply in every mode.
+## Focused References (Load On Demand)
 
-## Load References On Demand
-
-Use this main file for every campaign round. Load only the relevant reference file when the task
-needs detail:
-
-- `references/adversaries-and-proxies.md`: adversary design, proxy failures, assembly traps, exact
-  dual targets, and compute hygiene.
-- `references/state-compression.md`: proof-contract accounting, plateau gates, route walkback,
-  consolidation, side quests, and subagent discipline.
-- `references/methodological-pivots.md`: native-structure audits, census/proxy/local-to-global
-  failure modes, stronger-statement quarantine, and perspective-pivot triggers distilled from
-  prior campaigns.
-- `references/artifact-discipline.md`: ledgers, side drafts, dashboards, inventories, generated
-  outputs, and source-of-truth synchronization.
-- `references/readable-reporting.md`: examples and review guidance for self-contained round
-  reports and dashboard summaries. Read when first reporting a campaign or repairing jargon drift.
-- `references/existing-results.md`: finding earlier campaign and related-repo results, comparing
-  statements, preserving provenance, and distinguishing new contributions from rediscovery.
-- `references/skill-routing.md`: selecting specialist skills, composing their work, and returning
-  results to the driver. Consult at campaign start, a mode change, or an unfamiliar task.
-- `references/abstraction-development.md`: the overall process for developing higher
-  abstractions through closure-driven theory building, operation-driven calculus construction,
-  and representation refinement. Read when coordinating these processes or selecting their next
-  mathematical question; specialist skills own the detailed constructions.
-- `references/full-playbook.md`: historical material, not an additional operating checklist. Current
-  instructions in this file and the focused references supersede its workflow rules.
-
-## When To Use
-
-- A conjecture has several candidate routes, live subclaims, or possible counterexample families.
-- A route looks numerically robust but lacks a proof.
-- A bound or proxy is growing and you need to decide whether the target is false or the tool is lossy.
-- The campaign is plateauing, looping through reductions, or expanding the dashboard without closing
-  proof debt.
-- Subagents or side quests may help, but only if their contracts are precise and mergeable.
-- The ledger has become chronological clutter and needs conversion into a current-state proof map.
+- `references/skill-routing.md`: specialist map and write/review/publish routes.
+- `references/swarm-coordination.md`: Antigravity `/swarm` discipline, briefs,
+  five seat roles, authority separation, typed dispositions, and gates.
+- `references/state-compression.md`: progress accounting, route review,
+  anti-micro-case circuit breaker, checkpoint pruning, proxy/pivot checks.
+- `references/reporting-and-artifacts.md`: self-contained round summaries, public
+  dashboard links, ledger/TeX/dashboard ownership, and SyncTeX build sync.
 
 ## Cardinal Rules
 
-1. **Lossy bound does not mean false target.** Measure the actual target and the proxy separately.
-   A proxy can grow while the theorem remains true.
-2. **Numerical robustness is not proof.** Robust tests count only against the right adversaries and
-   should be paired with a proved analytic core or a precise reduced lemma.
-3. **A counterexample has a scope.** Verify the witness and identify the claim it refutes. Explain
-   which live decision changes. Refuting another convenient shortcut is not automatically progress
-   toward the user's goal; do not minimize or vary a witness without a reason that affects the goal.
-4. **Every active claim needs a status.** Use `proved`, `reduced`, `conditional`, `verified
-   computationally`, `plausible`, `stalled`, or `refuted`. Avoid “morally” or “essentially” proved.
-5. **Test the vulnerable indispensable step early in a proof route.** Work backward from the conclusion, check cheap
-   eligibility conditions, and attack the uncertain step before developing its routine consequences.
-   For constructions, distinguish producing a witness from admissible inputs from proving those
-   inputs exist jointly. Preserve the choices allowed by the target. See the input-existence audit
-   in `references/methodological-pivots.md`. Alternate proof and falsification where informative.
-6. **Recognize both conjecture progress and reusable theory.** Track direct advances separately
-   from general tools, structural understanding, decision-changing learning, local results, and
-   verification. A new theory can be a substantive research outcome before its implication for the
-   original conjecture is known. State its scope and demonstrated mathematical value; definitions,
-   page counts, and parameterized versions of a niche example do not establish that value alone.
-7. **Give exploration room, then select.** A bounded creative pass can end without a theorem.
-   Continued investment needs either a credible route toward the conjecture or a worthwhile theory
-   objective within the user's research scope, meaningful next work, and a reason to pursue it.
-   Theory milestones may concern new objects, operations, or structural laws; they
-   need not be smaller versions of the conjecture. See `references/state-compression.md`.
-8. **Enumeration needs a purpose.** Complete finite coverage when the user requests it or it closes
-   a proved finite reduction. For a structural goal, extending a census needs a discriminating test
-   or a credible path to a reusable principle. More cases alone do not justify the next range.
-9. **Do not flatten away native structure.** Before importing a generic theorem, proxy, or local
-   criterion, record which data it preserves and which it forgets. Signs, colors, paired layers,
-   endpoint provenance, quotient/gauge choices, and global compatibility often carry the theorem.
-10. **Preserve correctness; control overhead.** Fix errors and preserve evidence promptly. Promote
-    results and update derived views according to relevance and actual status changes, not a ritual
-    of producing new TeX, dashboard nodes, and skill rules every round.
+1. **Lossy bound does not mean false target.** Measure target and proxy separately.
+2. **Numerical robustness is not proof.** Pair tests against real adversaries
+   with an analytic core or exact reduced lemma.
+3. **Every counterexample has a scope.** Verify hypotheses and record which live
+   decision changes; never minimize a witness without affecting the goal.
+4. **Separate claim status, verification, review, and barriers.** Use `proved`,
+   `reduced`, `conditional`, `verified computationally`, `plausible`, `stalled`,
+   or `refuted`. Keep `lean_checked`/`script_verified`/`author_proof` distinct
+   from independent faithfulness (`not_faithful` when statement misses intent)
+   and `proved_barrier` vs. `working_judgment`.
+5. **Test the vulnerable indispensable step early.** Work backward from the
+   conclusion; distinguish constructing a witness from admissible inputs vs.
+   proving joint input existence.
+6. **Separate conjecture advance from reusable theory.** A coherent theory can
+   be a major achievement before its return to the target is known; keep the
+   initiating conjecture's status honest and separate.
+7. **Give exploration room, then select.** Bounded creative discovery needs no
+   theorem every turn; continued investment needs either a credible route to the
+   conjecture or worthwhile theory within scope.
+8. **Enumeration needs a decision.** Complete finite coverage when requested or
+   closing a proved finite reduction; otherwise state what hypothesis a search
+   distinguishes. Never extend a structural census merely because small $n$
+   passed.
+9. **Preserve native structure.** Before adopting a proxy or generic import,
+   audit what data (signs, colors, paired layers, labels, compatibility) it
+   forgets.
+10. **Control overhead and prune.** Sync views only when displayed claims
+    change; subsume superseded lemmas at checkpoints rather than accumulating
+    clutter.
 
-## Check Existing Results Before Investing
+## Check Existing Results First
 
-When configured, use `research-knowledge` to sync the shared index and read a bounded context bundle
-for the current task at campaign start/resume. Search it across campaign and sibling sources, then
-inspect original proofs and corrections. Register substantive writeups as internal packets; keep
-result cards and source fingerprints current. Use direct source searches for gaps in index coverage.
-Apply that skill's bounded recovery procedure when retrieval fails; do not repeat unchanged failing
-index calls every round.
+At campaign start/resume or before a substantial new route:
 
-Before a substantial attempt or reopening a route, search the current campaign's earlier results
-and failures, relevant sibling repositories, and the shared literature. After a handoff or
-compaction, recover the linked result map before selecting work. Search statements, equivalent
-formulations, and older terminology; the latest dashboard and the literature catalog do not cover
-all campaign artifacts. Inspect source proofs and later corrections before importing a claim.
+1. Use `research-knowledge` (`sync`, `context --campaign . --task '...'`,
+   `search`) to recover campaign/sibling cards, corrections, and failures.
+2. Search shared literature via `literature-research` before web searches.
+3. If the index or `../ResearchWork` is unavailable or outside a single-repo
+   sandbox, fall back cleanly to targeted `grep -rn -i` (or `rg` when installed)
+   over campaign `.md`/`.tex`/`*dashboard*.json` files and record the coverage
+   limit—never loop on failing index commands or build a local cache substitute.
+4. Inspect original proofs/witnesses before reusing claims. Compare new results
+   with the closest existing statement and record the exact addition.
 
-Before reporting a new result, compare it with the closest existing statement: hypotheses,
-quantifiers, conclusion, and proof mechanism. Cite the original source and identify the actual
-addition. Rediscovery counts as reuse or verification, not a new theorem or a reset of the last
-advance. A new proof, extension, or application can matter; state exactly what changed. Reuse recent
-search coverage for unchanged work rather than rescanning all repos every turn. For the search and
-recording procedure, read `references/existing-results.md`.
+## Minimal Campaign-State Invariant & Round Contract
 
-## Minimal Campaign-State Invariant
+Keep one compact opening in the active ledger answering: current exact target
+and completion standard; selected mode/skills; last target advance & remaining
+obligations; active theory advance (if separate); current route & proved inputs;
+closest prior results; first unproved indispensable implication; effort spent
+since route review; parked mechanisms and reopening criteria.
 
-Before another serious round, the active ledger opening should answer:
+Track active targets in a compact debt row (`Claim`, `Relation`
+[equivalent/necessary/sufficient/special-case/independent theory/heuristic],
+`Status`, `Evidence`, `Missing implication`, `Smallest falsifier`, `Next test`).
+Default review trigger for direct proof/search routes: every **4 substantive
+attempts** (across names, turns, and workers; sooner on failure), or after **2
+consecutive micro-case waves** (see `references/state-compression.md`). Theory
+programmes use cumulative milestones instead of fixed attempt limits.
 
-```text
-Current exact target:
-What would constitute completion, including coverage/quantifiers:
-Research mode and selected specialist skills:
-Last goal advance (with round/date) and remaining essential obligations:
-Active theory objective and last reusable mathematical advance, if applicable:
-Current route, last exact reduction, and key proved inputs:
-Existing-result map and related-repo sources checked (link); actual unresolved difference:
-First unproved indispensable implication; supplied inputs and choices the method freezes:
-Why this route is preferable now; proposed new ingredient:
-Next proof/test or theory milestone and what it would clarify:
-Effort spent since route review; next review point:
-Parked mechanisms and evidence needed to reopen them (link):
-```
+Close every round using [reporting-and-artifacts.md](references/reporting-and-artifacts.md):
+self-contained mathematical prose (objects, question, what changed, remaining
+gap, explicit assumptions/coverage) before links, plus the campaign's public
+HTTPS dashboard link when configured.
 
-Keep this opening compact and link detail. For a developing theory, an evolving question can replace
-an exact target; mark a connection or indispensable implication as unknown where appropriate.
-Do not invent a conjecture reduction to fill the template.
+## Core Operating Loop & Mode Selection
 
-## Round Contract
-
-Use a short entry in the existing ledger for a significant attempt. Reuse unchanged context rather
-than copying the whole campaign state. This is an internal accounting aid; the reader-facing report
-must follow **Readable Reporting Every Round** below, rather than repeat this template's shorthand:
-
-```text
-Before: conjecture obligation or theory capability sought; reason to pursue it; decision to resolve;
-        closest existing results/failures (links) and intended addition;
-        selected mode and specialist; relevant open implication or structural question;
-        supplied inputs and allowed choices; proposed next work; resource scope and review point.
-After: new statement or capability; evidence/confidence; conjecture effect and theory effect;
-       decision changed; first unproved implication remaining;
-       contribution beyond prior work, or reuse/verification; effort used; next action or reopening.
-```
-
-Count effort against the same unresolved implication across names, turns, workers, and compactions,
-both per route and for the campaign. Use available elapsed time, compute, or substantive attempts;
-do not invent cost estimates or completion percentages. Local
-results, maintenance, and route switches do not reset the campaign review counter. Track the last
-conjecture advance and last theory advance separately; progress on one need not advance the other.
-
-At strategy selection, set a review point appropriate to the mode. For direct proof/search routes,
-default to a review after four substantive attempts,
-including attempts on different routes, sooner if a test fails or cost exceeds the stated allowance.
-This is a review trigger, not a claim that hard proofs should take four attempts. Compare continuing, changing the
-mechanism, and returning to the original formulation. Renew a difficult route when concrete new
-evidence improves its prospects; a renamed lemma or another variant of the same failure is not
-enough. Record the review outcome: continue with a named new reason and test, change mechanism,
-pursue a distinct theory objective within scope, or hold with a reopening condition. Apply that
-outcome to the next assignment. See `references/state-compression.md` for the review procedure.
-
-For sustained theory programmes, use natural consolidation milestones and assess cumulative
-development. A review may continue work on definitions, examples, or foundational laws before a
-central theorem is available. No fixed attempt count, immediate application, or known return to
-the conjecture is required to justify coherent development within the agreed scope.
-
-## Readable Reporting Every Round
-
-Each round's user-facing summary must stand on its own for a mathematically literate reader who
-has not followed earlier rounds. Apply this also to dashboard overview text and substantive status
-updates; brief in-progress messages can remain brief. Internal ledgers may retain stable technical
-identifiers, but those identifiers are not explanations.
-
-- Begin with the mathematical question and current answer/status. Introduce the objects and the
-  essential conditions in ordinary language before using notation or specialized terms. Repeat the
-  small amount of context needed to understand this report, even if it appeared in a previous round.
-- Explain what was known before, what this round actually added, and why that difference matters.
-  State the result itself, not just a theorem name, round number, filename, or newly coined label.
-  Distinguish a proof, conditional implication, finite computation, conjecture, and recheck; include
-  assumptions and computational coverage where they limit the claim.
-- State what remains unproved in mathematical terms and what the next proposed step would clarify.
-  If the main problem is no closer to resolution, say so. Explain independent theory value on its
-  own merits; do not imply a connection to the conjecture that has not been established.
-- Use standard terminology with a short local explanation when needed. Define every campaign-specific
-  term, acronym, and symbol needed to understand the summary at first use, or replace it with its
-  meaning. Avoid chains of invented names and process jargon such as "gate closed" or "proof-contract
-  delta". Preserve precise hypotheses and quantifiers when simplifying language.
-- Put the explanation before source links and implementation details. Links provide proof and
-  provenance; readers must not need to follow them to understand the claim or its limitation.
-  Use a small example when an unfamiliar construction would otherwise remain opaque.
-- Include a clickable link to the campaign's public dashboard in each round's chat summary when
-  configured. Resolve its full HTTPS URL from the shared site's inventory and deployment guidance;
-  do not substitute a local file link or guess a URL from the repository name. If the latest changes
-  are not yet published, say so. See the reporting reference for unavailable-link handling.
-
-Usually a few short paragraphs suffice: question and status; actual change and significance;
-remaining difficulty and next step, with evidence links alongside the claims. This is a flexible
-shape, not a requirement for additional headings or a new artifact. Before sending, read the summary
-without the chat history or linked files: can the reader explain the question, achievement, and
-remaining gap? Revise undefined labels and unsupported progress language before publishing it.
-See [readable-reporting.md](references/readable-reporting.md) for an example and maintenance guidance.
-
-## Proof-Debt Table
-
-For each active theorem-level target, maintain rows like:
-
-```text
-Claim:
-Relation to objectives: equivalent / necessary / sufficient / special-case / independent theory / heuristic
-Status: proved / refuted / reduced / computational / plausible / stalled / open
-Evidence:
-Missing implication:
-Smallest falsifier profile:
-Next decisive test:
-```
-
-Most rabbit holes start when a sufficient condition is refined as if it were equivalent. Track the
-direction on every arrow.
-
-## Core Operating Loop
-
-1. State the user's research objectives. Locate the route's contribution to a solution or identify
-   the general tool or theory being developed on its own merits, with its connection to the objects.
-2. At route selection or review, compare two or three materially different approaches by potential
-   payoff, evidence, hardest missing step, and cost of a discriminating test. Do not redo this menu
-   during every implementation step.
-3. Choose the research mode and a concrete portion of work: discovery, proof, experiment, method
-   import, theory development, exact literature match, or consolidation. Select the specialist from
-   `references/skill-routing.md`; give it the question, sources, assumptions, intended output, and
-   mode-appropriate review criteria. Skill routing does not itself authorize spawning agents.
-4. Check existing results and prerequisites, then execute the selected mathematical work with
-   compute hygiene. Reuse a matching proof or witness instead of reconstructing it by default.
-5. Record what is proved and what decision changes; apply the route review even if local output
-   keeps appearing. Correctness work remains required regardless of its strategic classification.
-6. Update the authoritative status and evidence. Update linked views when their displayed claims
-   change; promote selected results to a manuscript under `references/artifact-discipline.md`.
-   Close the round with the self-contained explanation required by **Readable Reporting Every Round**.
-
-## Mode Selection
-
-Use `references/skill-routing.md` as the canonical specialist map. In particular, choose
-`proof-developer` for a selected proof, `alon-method` for an import, `grothendieck-rising-sea` for
-sustained surrounding theory, `proof-calculus` for generative operations and validity theorems,
-`representation-refinement` for lost information and sufficient representations,
-`mathematical-framework-design` for new settings or correspondences, and `proof-exegesis` for
-understanding an existing argument. These are choices, not mandatory stages. Load only the selected
-skills, reuse their shared context, and integrate their outputs before changing the campaign status.
-
-For a theory or abstraction-development objective, use
-[the three-process workflow](references/abstraction-development.md) to choose work, feed results
-between processes, and consolidate. The processes interact; they are not mandatory stages.
-
-For specific campaign diagnostics:
-
-- **Need to test a lemma or search for witnesses:** use `conjecture-explorer`; read
-  `references/adversaries-and-proxies.md` for adversary patterns.
-- **Proxy or bound looks wrong:** read `references/adversaries-and-proxies.md`; measure proxy and
-  target separately.
-- **Dashboard/ledger is growing faster than theorem progress:** read `references/state-compression.md`.
-- **A case split, census, or classification table is expanding:** read
-  `references/state-compression.md`; run the census-pivot audit before adding more cases.
-- **A route keeps using generic proxies, local tests, or broad imported theorems:** read
-  `references/methodological-pivots.md`; run the native-structure and local-to-global audits before
-  adding another lemma.
-- **The campaign may need a change of perspective:** read `references/methodological-pivots.md`;
-  consider the whole target or a solved analogue in a bounded discovery pass. Select an import,
-  abstraction, dual formulation, calculus, or framework question for a consequence in the original
-  problem or a worthwhile theory objective; report inconclusive discovery honestly.
-- **Delegation is authorized and useful:** read `references/state-compression.md`; assign independent
-  evidence contracts rather than asking multiple agents to elaborate the same route.
-- **Need an exact literature match or theorem import:** use `shared-literature` first to search
-  local extracted results and project notes, then `literature-reviewer` for any web search still
-  needed. Reuse or reserve the packet in the common library, preserve precise statements and
-  separate project context, refresh the shared index, and link results from the ledger/dashboard.
-- **Need to clean route records or write a readable synthesis:** read
-  `references/artifact-discipline.md`.
-- **Need dashboard format/rendering details:** use the `conjecture-dashboard` skill.
+1. Clarify objective (target resolution vs. standalone theory) and current mode.
+2. Compare 2–3 genuinely different approaches by payoff, evidence, hardest step,
+   and cheapest discriminating test (skip repeating this on routine steps).
+3. Select the smallest needed specialist set from `references/skill-routing.md`:
+   - `proof-developer` (prove a selected claim) or `conjecture-explorer`
+     (adversary/witness/finite checks);
+   - `alon-method` (one-way import via mathematical dictionary);
+   - `theory-building` (closures/world-building, generative calculi,
+     representation refinement, new settings/correspondences);
+   - `proof-exegesis` (interpret an opaque proof) or `proof-simplification`
+     (shorten/streamline a valid proof);
+   - `concentration-inequalities` (moment/tail bounds & loss audits);
+   - `lean4-formalization` (formal verification only after thinker +
+     faithfulness gates);
+   - `literature-research` (local-first packets + primary verification);
+   - `submission-prep` (scholarly preflight + arXiv clean-room bundling).
+4. Execute with compute hygiene; assign independent `/swarm` or subagent work
+   only when authorized under `references/swarm-coordination.md`.
+5. Record proved results, refutations, or subsumptions; run route review when
+   triggered; prune superseded material and synchronize ledger, TeX, PDF
+   (SyncTeX), and dashboard at checkpoints.
 
 ## Compute Hygiene On EC2
 
-The EC2 instance also serves the research site and may host other work.
+The host serves the research site and may run parallel workers concurrently.
 
-- Start small, estimate memory/CPU growth, and scale gradually.
-- Before launching any nontrivial numerical computation, read `MemAvailable` from `/proc/meminfo`
-  and set `prlimit --as` to at most 75% of that value. Do not include swap in the budget and do not
-  rely on swap to finish a run.
-- Prefer a bounded, lower-priority launch such as:
+- Check `MemAvailable` in `/proc/meminfo` before nontrivial runs and never rely on
+  swap. Divide the 75% ceiling across active concurrent workers (`N_workers`):
   ```bash
-  mem_cap=$(awk '/MemAvailable:/ {printf "%.0f\n", $2 * 1024 * 0.75}' /proc/meminfo)
-  nice -n 10 prlimit --as="$mem_cap" --cpu=3600 -- uv run python scripts/explore_foo.py ...
+  mem_cap=$(awk -v n="${N_WORKERS:-1}" '/MemAvailable:/ {printf "%.0f\n", $2 * 1024 * 0.75 / n}' /proc/meminfo)
+  nice -n 10 prlimit --as="$mem_cap" --cpu=3600 -- python3 scripts/explore_foo.py ...
   ```
-- Limit worker counts; do not launch several all-core or high-memory jobs at once.
-- Use timeouts, sample limits, chunking, checkpointing, or symmetry reduction.
-- Stop jobs that start swapping, peg all cores for too long, or threaten server responsiveness.
-
-## Exit Criteria
-
-A round may end with a proved result, a verified refutation, a bounded inconclusive attempt, or a
-completed review. Report the result's effect on the original goal separately from its mathematical
-status. Continuing a route requires a concrete next step within its current allowance or a recorded
-renewal at review. A local plateau does not by itself establish that the original problem is
-impossible, out of reach, or resolved. Follow the user's instructions about continuing the campaign.
+- Start with small parameter bounds; use timeouts, chunking, checkpointing, and
+  capped worker thread counts. Stop immediately if a job swaps or threatens
+  host responsiveness.

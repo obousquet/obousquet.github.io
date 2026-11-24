@@ -96,12 +96,41 @@ summarizes the current route tree and points to the authoritative artifacts.
 - `goal_assessment`: optional backwards-compatible alternative. It may be a markdown string, or an
   object with `goal` and `assessment` fields. Prefer the separate `goal` and `honest_assessment`
   fields for new manifests.
+- `navigation`: optional list of top topic-card links (`{label, href, description}`) rendered above
+  the goal/progress summary grid (`href` pointing to local `.md` files automatically links to the
+  generated preview HTML, preserving `#fragment` anchors).
+- `proof_costs` (with optional `proof_costs_title`, default `"Benchmark proof costs"`): optional
+  markdown section/table rendered below the goal/progress summary grid.
+- `reading_guide` (with optional `reading_guide_title`, default `"Definitions by topic and how to
+  read the results"`): optional markdown glossary rendered as a collapsible guide, splitting `###`
+  headings into individual collapsible topics preserving heading IDs for anchor jumps.
+- `barriers`: optional list of known campaign obstructions (`{id, label, description, authority, links}`),
+  where `authority` is `proved_barrier` or `working_judgment`.
+- `milestones`: optional list of bounded milestones (`{id, owner, title, outcome, conclusion, claims, date}`),
+  keeping `conclusion` to a concrete one-line finding and `outcome` in `{confirmed, refuted, done,
+  inconclusive, parked, abandoned}`.
 - `nodes`: top-level tree nodes.
 - Each node may contain:
+  - `id`: optional stable node identifier enabling anchor jumps (`#node-<id>`), DAG links, and
+    `--touch <id>` updates
   - `label`
   - `kind` such as `classification`, `problem`, `route`, `reduction`, `conjecture`,
     `counterexample`, `lemma`, `tool`, or `archive`
   - `status`
+  - `aims_at`: optional direction (`prove`, `refute`, `classify`, `theory`, or `library`) on
+    top-level fronts so proof-vs-disproof coverage stays visible; leaf counts are never probabilities
+  - `verification`: optional proof/check strength (`unverified`, `author_proof`, `script_verified`,
+    `lean_checked`), kept distinct from `status`
+  - `review`: optional faithfulness/independent-reading axis (`unreviewed`, `independent_audit`,
+    `human_reviewed`, `not_faithful`, `judgment`), kept distinct from mechanical checks
+  - `depends_on`: optional list of upstream node `id`s; the renderer computes reverse `Used by`
+    links and highlights nodes transitively tainted by `refuted` or `not_faithful` prerequisites
+  - `critical_path`: optional object on route/problem nodes (`{target, chain, hard_link}`) surfacing
+    the ordered rung chain and the single active `hard_link` (`{id, label, why_hard, attempts_died}`)
+  - `death_cause`: optional post-mortem cause on `refuted` or `closed` nodes (`counterexample`,
+    `barrier`, `proxy_loss`, `vacuous_or_misstated`, `missing_input`, `superseded`)
+  - `killed_by`: optional concise explanation of the witness or obstruction that killed the claim
+  - `corrections`: optional list of `[{date, note}]` clarifications displayed above the description
   - `updated_version`: optional integer recording the dashboard version at which this node was last
     materially touched
   - `method_role`: optional compact phrase identifying the branch's current methodological role
@@ -117,7 +146,7 @@ summarizes the current route tree and points to the authoritative artifacts.
   The overview must stand on its own for a mathematically literate reader who has not followed the
   campaign. Explain the objects, question, actual achievement, and remaining difficulty before
   asking readers to open a node or source link. Follow the driver's
-  [readable-reporting guidance](../honest-conjecture-resolution/references/readable-reporting.md).
+  [reporting and artifact guidance](../honest-conjecture-resolution/references/reporting-and-artifacts.md).
 - In `goal`, introduce essential objects, conditions, and notation. In `honest_assessment`, state
   what is established and the concrete missing step. In `latest_progress`, explain the previous
   state, actual addition, and its significance. A round number or theorem name is provenance, not
@@ -153,11 +182,25 @@ summarizes the current route tree and points to the authoritative artifacts.
   nodes should have a linked stop rule, native-structure audit, or local-to-global compatibility
   gate in the ledger.
 
-## Status semantics
+## Status semantics And Multi-View Features
 
 - Use stable status words such as `active`, `stalled`, `proved`, `refuted`, `draft`, `tool`,
   `verification`, `historical`, or `closed`.
 - Keep the status vocabulary small and consistent across the tree.
+- Visual grammar distinguishes settled nodes (`proved`, `refuted`, `closed`, `tool`, `verification`,
+  `historical`: solid left border) from unsettled ones (`open`, `active`, `stalled`, `draft`: dashed
+  left border). A collapsible **How to read this dashboard** table explains status vs. verification
+  vs. independent review.
+- Keep `verification` (mechanical/proof strength) and `review` (faithfulness and independent
+  reading, including `not_faithful` and `judgment`) separate from `status`. A `lean_checked` lemma
+  that proves the wrong statement must be tagged `not_faithful` rather than presented as solved.
+- The renderer (`scripts/render_conjecture_dashboard.py`) provides **Tree** and **Board** (Front ×
+  Status matrix) tabs for every manifest, instant `/` client-side search/filtering, plus conditional
+  **Dependencies** (when `depends_on` is used) and **Graveyard** (when `refuted`/`closed` nodes or
+  `death_cause` exist) tabs, and top **Critical Paths & Bottlenecks** / **Barriers & Milestones**
+  panels when configured.
+- Keep dashboard nodes at theorem and crux granularity; do **not** auto-populate micro-lemmas or
+  routine helper negations just to increase counts.
 - A proved construction leaf should display its input hypotheses. Proved assembly leaves do not
   prove their parent existence target while joint input availability remains open. Link shared
   dependencies to one proof owner rather than counting each appearance as another advance.
@@ -166,6 +209,9 @@ summarizes the current route tree and points to the authoritative artifacts.
 ## Rendering workflow
 
 - Maintain the manifest in the repo next to the route artifacts, typically as `dashboard.json`.
+- Validate integrity before rendering with `scripts/render_conjecture_dashboard.py --check
+  dashboard.json` (add `--strict` to fail on warnings such as missing post-mortems or stale
+  `OPEN:` phrasing on proved nodes).
 - Render it with `scripts/render_conjecture_dashboard.py`.
 - For active multi-leaf campaigns, prefer version staleness over wall-clock staleness:
   - bump the top-level `version` when the displayed campaign state changes;
@@ -174,8 +220,9 @@ summarizes the current route tree and points to the authoritative artifacts.
     or an instruction to revisit low-priority leaves. Route reviews use cumulative effort and the
     time since the last goal advance; cosmetic touches do not renew a route.
 - If the renderer supports it, use an explicit command such as
-  `scripts/render_conjecture_dashboard.py --bump-version --touch "Leaf label"` so version bumps and
-  node touches are reproducible.  Do not bump the version for a render-only refresh.
+  `scripts/render_conjecture_dashboard.py --bump-version --touch "Leaf label"` (or `--touch <id>`)
+  so version bumps and node touches are reproducible. Do not bump the version for a render-only
+  refresh.
 - Commit the manifest and the generated HTML together when the dashboard is part of the repo record.
 - Do not commit generated Markdown preview pages such as `notes.md.html`; they are reproducible
   side outputs and should be ignored by `.gitignore`.
@@ -183,7 +230,7 @@ summarizes the current route tree and points to the authoritative artifacts.
 - Include the campaign's full public HTTPS dashboard link in each round's chat summary, using the
   shared site's configured domain and published path. Resolve it from the inventory or deployment
   guidance rather than guessing from the repository name. Indicate unpublished updates or a missing
-  public URL honestly; see the driver's readable-reporting guidance for the fallback.
+  public URL honestly; see `reporting-and-artifacts.md` for unavailable-link handling.
 
 ## Maintenance rules
 
@@ -211,8 +258,10 @@ summarizes the current route tree and points to the authoritative artifacts.
   rounds. Repair unexplained acronyms, renamed concepts, and missing context in the affected text;
   do not merely append another status sentence. A glossary can support deeper reading but cannot
   replace the short definitions needed to understand the overview.
-- If literature packets materially affect a route, use `shared-literature` and link to the
+- If literature packets materially affect a route, use `literature-research` and link to the
   shared index or canonical packet, using a compatibility view when needed for existing URLs.
+- Prefer baseline-vs-current progress summaries over chronological per-iteration tallies, and prune
+  or archive superseded nodes whenever a stronger theorem absorbs them.
 - Put durable status changes in the ledger or TeX file first, then reflect them in the dashboard.
 - Use the dashboard to answer three questions quickly: what is alive, what is dead, and where does
   each branch live in the route tree.

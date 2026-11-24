@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import re
 from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -63,23 +64,54 @@ def _metadata(
 ) -> SessionCandidate:
     transcript_cwd: str | None = None
     session_id: str | None = None
+    expected_cwd_str = (
+        str(expected_cwd.resolve()) if expected_cwd is not None else None
+    )
+    cwd_pattern = (
+        re.compile(re.escape(expected_cwd_str) + r'(?=$|[/\\"\'\s,:])')
+        if expected_cwd_str is not None
+        else None
+    )
+    matched_in_content = False
     for value in _iter_json_objects(path):
         transcript_cwd = transcript_cwd or _first_key(value, frozenset({"cwd"}))
         session_id = session_id or _first_key(
             value, frozenset({"session_id", "sessionId"})
         )
+        if (
+            client == "antigravity"
+            and cwd_pattern is not None
+            and not matched_in_content
+            and cwd_pattern.search(json.dumps(value, ensure_ascii=False))
+        ):
+            matched_in_content = True
         if transcript_cwd is not None and session_id is not None:
             break
 
+    if (
+        session_id is None
+        and client == "antigravity"
+        and path.name == "transcript.jsonl"
+        and path.parent.name == "logs"
+        and len(path.parents) >= 3
+    ):
+        session_id = path.parents[2].name
+
+    if transcript_cwd is None and matched_in_content and expected_cwd_str is not None:
+        transcript_cwd = expected_cwd_str
+
     cwd_matches = False
     if expected_cwd is not None:
-        try:
-            cwd_matches = (
-                transcript_cwd is not None
-                and Path(transcript_cwd).resolve() == expected_cwd.resolve()
-            )
-        except OSError:
-            cwd_matches = False
+        if matched_in_content:
+            cwd_matches = True
+        else:
+            try:
+                cwd_matches = (
+                    transcript_cwd is not None
+                    and Path(transcript_cwd).resolve() == expected_cwd.resolve()
+                )
+            except OSError:
+                cwd_matches = False
 
     modified_at = datetime.fromtimestamp(
         path.stat().st_mtime, tz=timezone.utc
@@ -129,6 +161,8 @@ def _session_paths(root: Path) -> Iterable[Path]:
 
 def _client_from_path(path: Path) -> str:
     parts = set(path.parts)
+    if ".gemini" in parts and "antigravity-cli" in parts:
+        return "antigravity"
     if ".codex" in parts:
         return "codex"
     if ".agents" in parts:
@@ -139,6 +173,13 @@ def _client_from_path(path: Path) -> str:
 
 
 def _candidate_paths(home: Path, cwd: Path) -> Iterable[tuple[Path, str]]:
+    ag_brain = home / ".gemini" / "antigravity-cli" / "brain"
+    if ag_brain.is_dir():
+        for path in _existing_jsonl(
+            ag_brain.glob("*/.system_generated/logs/transcript.jsonl")
+        ):
+            yield path, "antigravity"
+
     encoded_cwd = _encoded_project_path(cwd)
     project_roots = (
         (home / ".claude" / "projects" / encoded_cwd, "claude"),
@@ -212,7 +253,7 @@ def _parse_args() -> argparse.Namespace:
         "--home",
         type=Path,
         default=Path(os.environ.get("HOME", str(Path.home()))),
-        help="Home directory containing .claude, .agents, or .codex.",
+        help="Home directory containing .gemini, .claude, .agents, or .codex.",
     )
     parser.add_argument(
         "--limit", type=int, default=5, help="Maximum number of candidates to print."

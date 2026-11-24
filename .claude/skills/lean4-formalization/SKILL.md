@@ -52,8 +52,22 @@ Set `LEAN_REMOTE_WORKDIR` to the target project directory on the worker.
 5. **Prove incrementally.** Replace `by sorry` with structured proof blocks, run Lean after each
    meaningful step, and use the error messages to refine terms, imports, typeclass assumptions, and
    statement shape.
-6. **Validate the artifact.** A theorem is valid only after the target file or Lake package checks with
-   no `sorry`, `admit`, `axiom`, or placeholder theorem used to close the proof.
+6. **Validate the artifact and audit faithfulness separately.**
+   - Run `scripts/check_lean_theorem.py` (locally with `--static-only` before syncing, and via
+     `scripts/lean_worker_sync_run.sh` or locally where Lean is installed for full verification) to
+     confirm zero `sorry`/`admit`/`axiom`/`unsafe`/`native_decide` and transitive axioms inside
+     `{propext, Classical.choice, Quot.sound}`:
+     ```bash
+     python3 scripts/check_lean_theorem.py --file formalization/Formalization/Main.lean \
+       --theorem Formalization.Main.thm_name --workdir formalization --receipt-out receipt.json
+     ```
+   - For high-stakes claims, pass `--statement-file statement.txt --defs-module Formalization.Defs`
+     (optionally `--meta-checker .claude/skills/lean4-formalization/references/CheckTheorem.lean`)
+     to verify the frozen target statement elaborates strictly against pinned definitions without
+     proof-module notation or instance smuggling.
+   - Mechanical `ACCEPTED` confirms only logical validity of the encoded statement; record
+     `faithfulness_review: "pending"` until a non-author reads the elaborated type against the
+     intended LaTeX/mathematical statement.
 
 ## Statement Discipline
 
@@ -89,5 +103,7 @@ Set `LEAN_REMOTE_WORKDIR` to the target project directory on the worker.
 ## References
 
 - Read `references/project-workflow.md` when creating or maintaining a Lean project.
+- Use `scripts/check_lean_theorem.py` and `references/CheckTheorem.lean` for statement-isolation,
+  transitive-axiom checks, and structured JSON receipts.
 - Use `scripts/lean_worker_sync_run.sh` for repo sync + remote checking.
 - Use `scripts/remote_lean.sh` for low-level remote guarded execution.

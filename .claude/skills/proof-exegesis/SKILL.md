@@ -47,12 +47,12 @@ description at all three.
   inputs, hypotheses, outputs, and losses. Locate where methods interact and
   why their assumptions are compatible. Test whether a proposed reusable lemma
   genuinely covers different instances. Use `alon-method` for importing a known
-  technique and `proof-calculus` if the operations themselves deserve a theory.
+  technique and `theory-building` if the operations themselves deserve a calculus.
 - **Structural explanation.** Ask which definitions or laws account for the
   mechanism across a larger class. Formulate the proposed generalization and
   check that the original argument realizes its assumptions. Universal properties,
   dualities, or cohomology can explain something only after their relation to the
-  proof is established. Use `grothendieck-rising-sea` when this becomes a sustained
+  proof is established. Use `theory-building` when this becomes a sustained
   theory programme.
 
 Move between these views. A small example may reveal a missing hypothesis in a
@@ -87,6 +87,8 @@ what the account adds: simpler dependencies, a new proof, a wider scope, a usefu
 operation, or improved understanding. Independently interesting methods and
 structural consequences can justify a separate paper or exploration branch;
 distinguish proved contributions from the work such a proposal still needs.
+Once the mechanism is clear and the task shifts to shortening or structurally
+refactoring the proof itself, hand off to `proof-simplification`.
 
 Keep research-specific findings in the campaign's writeups and result records.
 Contribute a new generic skill only when the extracted method has a distinct,

@@ -73,7 +73,7 @@ Prefer primary papers and trial registry records over secondary summaries. When 
 
 ## Shared source packets
 
-Use `shared-literature` before downloading or extracting a study. Search the
+Use `literature-research` before downloading or extracting a study. Search the
 configured common library across all domains by DOI, PMID/PMCID, title, trial ID,
 and aliases. Reuse existing sources and extractions. Reserve absent papers in
 the `biomed` subject directory using `scripts/research_library.py`; retain

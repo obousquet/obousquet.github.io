@@ -30,7 +30,7 @@ reason to download or convert it again when an adequate local version exists.
 
 ## Shared literature source
 
-Before acquiring or extracting papers, use `shared-literature` to search and
+Before acquiring or extracting papers, use `literature-research` to search and
 reuse the configured common library. Store new source packets in its `biomed`
 section, with project interpretation in separate notes. Do not start a new
 per-project download cache.

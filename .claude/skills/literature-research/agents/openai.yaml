@@ -1,0 +1,4 @@
+interface:
+  display_name: "Literature Research"
+  short_description: "Search shared literature, verify primary sources, maintain packets."
+  default_prompt: "Use $literature-research to search the shared library first, verify primary sources verbatim, maintain canonical packets and indexes, and map related work accurately."

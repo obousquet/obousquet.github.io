@@ -1,0 +1,4 @@
+interface:
+  display_name: "Submission Prep"
+  short_description: "Run scholarly preflight and build clean-room arXiv bundles."
+  default_prompt: "Use $submission-prep to audit citations, provenance, AI residue, and disclosure, then package and clean-room verify a minimal submission bundle."

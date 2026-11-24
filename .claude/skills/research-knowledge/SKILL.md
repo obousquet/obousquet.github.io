@@ -33,8 +33,8 @@ navigation and reusable summaries, not independent proof certification.
 Compare hypotheses, quantifiers, conventions and conclusions before importing a result. Corrections,
 refutations and superseding cards accompany known IDs; uncurated archive corrections can still
 require direct searches. An empty result or incomplete index does not establish novelty. When the
-registry is unavailable, use targeted `rg` searches of campaign and sibling sources and report the
-coverage limit. Use `shared-literature` for external paper acquisition and identity reservations.
+registry is unavailable, use targeted `grep -rn` (or `rg` when installed) searches of campaign and sibling sources and report the
+coverage limit. Use `literature-research` for external paper acquisition and identity reservations.
 
 Use `status` to diagnose retrieval trouble: it cheaply reports index age, schema/registry status,
 coverage issues and a running writer. Readers can query the previous committed snapshot during sync;
@@ -43,7 +43,9 @@ returned hits check source drift and corrections. The default lock allowance is 
 copy lacks these commands. Repair or finish synchronization before treating retrieval as unavailable;
 do not launch duplicate rebuilds or repeat unchanged short timeouts. Do not remove a shared lock or
 terminate another campaign's job. If the checkout/index is actually unavailable or cannot be repaired
-within scope, record the failure and coverage limit before using direct-source retrieval. That is
+within scope, record the failure and coverage limit cleanly—including when `../ResearchWork` sits outside
+a single-repo sandbox or `.research-knowledge.json` is absent—rather than looping or creating a local
+cache substitute before using direct-source retrieval. That is
 an exceptional recovery path, not the normal campaign startup. Retrieval failure never establishes
 that a mathematical result is absent.
 

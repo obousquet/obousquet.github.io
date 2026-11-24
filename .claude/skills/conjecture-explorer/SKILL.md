@@ -49,7 +49,7 @@ a stronger supplier claim, but passing them does not enlarge the known positive 
 
 ## Implement The Mathematical Test
 
-Use `explore_<topic>.py` for working scripts and run them with `uv run python`. Prioritize transparent
+Use `explore_<topic>.py` for working scripts and run them with `python3`. Prioritize transparent
 mathematical logic over software polish. Reuse a trusted representation when possible.
 
 - State the conjecture, tested domain, coverage assumptions, and stop condition in the script.
@@ -73,11 +73,11 @@ range could change the decision or is required for the specified finite coverage
 - Be a good EC2 citizen: do not saturate CPU or memory with unconstrained searches. Start with small
   limits, estimate memory growth before scaling, and avoid launching several heavy jobs at once.
 - Before any numerical run that could grow beyond a trivial toy case, check current RAM with
-  `/proc/meminfo` and set a hard address-space cap no larger than 75% of `MemAvailable`; do not
-  count swap as usable memory. A standard launch pattern is:
+  `/proc/meminfo` and set a hard address-space cap no larger than 75% of `MemAvailable` divided
+  across concurrent active workers (`N_workers`); do not count swap as usable memory. Standard launch:
   ```bash
-  mem_cap=$(awk '/MemAvailable:/ {printf "%.0f\n", $2 * 1024 * 0.75}' /proc/meminfo)
-  nice -n 10 prlimit --as="$mem_cap" --cpu=3600 -- uv run python explore_<topic>.py ...
+  mem_cap=$(awk -v n="${N_WORKERS:-1}" '/MemAvailable:/ {printf "%.0f\n", $2 * 1024 * 0.75 / n}' /proc/meminfo)
+  nice -n 10 prlimit --as="$mem_cap" --cpu=3600 -- python3 explore_<topic>.py ...
   ```
 - If the resulting cap is too small for the intended run, shrink the parameters, stream/chunk the
   computation, checkpoint intermediate output, or ask before using a larger fraction of RAM. Do not
